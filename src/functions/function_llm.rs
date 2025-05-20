@@ -1,9 +1,11 @@
 use std::collections::HashMap;
 
 use crate::{
-    content::{ContentBuilder, Contents},
     error::{Error, Result},
-    genini::Gemini,
+    llm::gemini::{
+        content::{ContentBuilder, Contents},
+        genini::Gemini,
+    },
 };
 
 use super::function_handler::FunctionTrait;

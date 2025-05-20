@@ -3,10 +3,11 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     config::AdoConfig,
-    content::{Content, ContentBuilder, Contents, Part},
     error::{Error, Result},
     functions::config::ConfigFunctions,
 };
+
+use super::content::{Content, ContentBuilder, Contents, Part};
 
 #[derive(Serialize)]
 pub struct Gemini {

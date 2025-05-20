@@ -25,6 +25,9 @@ pub enum Error {
     UnknownFunction {
         name: String,
     },
+    LlmNotFound {
+        llm: String,
+    },
     MissingArgument {
         name: String,
     },

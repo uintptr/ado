@@ -2,7 +2,10 @@ use std::{fs, path::Path};
 
 use serde::Deserialize;
 
-use crate::{error::Result, staples::find_file};
+use crate::{
+    error::{Error, Result},
+    staples::find_file,
+};
 
 const CONFIG_FILE: &str = "config.toml";
 
@@ -13,9 +16,28 @@ pub struct AdoGemini {
 }
 
 #[derive(Deserialize)]
+pub struct OpenAi {
+    pub key: String,
+    #[serde(default = "openai_default_url")]
+    pub url: String,
+    #[serde(default = "openai_default_model")]
+    pub model: String,
+}
+
+#[derive(Deserialize)]
 pub enum AdoConfig {
     #[serde(rename = "gemini")]
     Gemini(AdoGemini),
+    #[serde(rename = "openai")]
+    Openai(OpenAi),
+}
+
+fn openai_default_url() -> String {
+    "https://api.openai.com/v1/responses".to_string()
+}
+
+fn openai_default_model() -> String {
+    "gpt-4.1".to_string()
 }
 
 impl AdoConfig {
@@ -34,6 +56,22 @@ impl AdoConfig {
     pub fn gemini(&self) -> Result<&AdoGemini> {
         match self {
             AdoConfig::Gemini(g) => Ok(g),
+            _ => {
+                return Err(Error::LlmNotFound {
+                    llm: "gemini".to_string(),
+                });
+            }
+        }
+    }
+
+    pub fn openai(&self) -> Result<&OpenAi> {
+        match self {
+            AdoConfig::Openai(o) => Ok(o),
+            _ => {
+                return Err(Error::LlmNotFound {
+                    llm: "openai".to_string(),
+                });
+            }
         }
     }
 }

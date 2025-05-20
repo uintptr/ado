@@ -2,8 +2,8 @@ use std::{fs, path::Path};
 
 use ado::{
     error::{Error, Result},
-    genini::Gemini,
-    logging::setup_logger,
+    llm::gemini::genini::Gemini,
+    staples::setup_logger,
 };
 use clap::Parser;
 use log::info;
@@ -14,9 +14,15 @@ struct UserArgs {
     /// Use this url instead of the one in the config file
     #[arg(short, long)]
     url: Option<String>,
+
+    /// LLM provider
+    #[arg(short, long, default_value = "openai")]
+    provider: String,
+
     /// Read the query from a file
     #[arg(short, long)]
     query_file: Option<String>,
+
     /// verbose
     #[arg(short, long)]
     verbose: bool,
