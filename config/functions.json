@@ -14,5 +14,42 @@
                 "domain_name"
             ]
         }
+    },
+    {
+        "name": "generate_text",
+        "description": "function that asks an LLM to generate any sort of text",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "prompt": {
+                    "type": "string",
+                    "description": "the prompt for the LLKM"
+                }
+            },
+            "required": [
+                "prompt"
+            ]
+        }
+    },
+    {
+        "name": "write_file",
+        "description": "function to write a file to the local disk",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "file_name": {
+                    "type": "string",
+                    "description": "the full path of the file to write"
+                },
+                "file_data": {
+                    "type": "string",
+                    "description": "the data of the file to write. It has to be base64 encoded"
+                }
+            },
+            "required": [
+                "file_name",
+                "file_data"
+            ]
+        }
     }
 ]

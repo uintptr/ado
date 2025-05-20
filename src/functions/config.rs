@@ -1,6 +1,7 @@
 use std::{collections::HashMap, fs, path::Path};
 
 use derive_more::Debug;
+use log::info;
 use serde::{Deserialize, Deserializer, Serialize};
 
 use crate::{
@@ -28,23 +29,23 @@ pub struct Parameters {
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]
-pub struct FunctionCall {
+pub struct ConfigFunctionCall {
     pub name: String,
     pub args: HashMap<String, String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Function {
+pub struct ConfigFunction {
     name: String,
     description: String,
     parameters: Parameters,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct AdoFunctions {
+pub struct ConfigFunctions {
     #[debug(skip)]
     json_data: String,
-    pub list: Vec<Function>,
+    pub list: Vec<ConfigFunction>,
 }
 
 fn validate_param_type<'de, D>(deserializer: D) -> std::result::Result<String, D::Error>
@@ -63,7 +64,7 @@ where
     }
 }
 
-impl AdoFunctions {
+impl ConfigFunctions {
     pub fn load() -> Result<Self> {
         let config_rel_path = Path::new("config").join(FUNCTIONS_FILE);
 
@@ -71,8 +72,12 @@ impl AdoFunctions {
 
         let json_data = fs::read_to_string(config_file)?;
 
-        let list: Vec<Function> = serde_json::from_str(&json_data)?;
+        let list: Vec<ConfigFunction> = serde_json::from_str(&json_data)?;
 
-        Ok(AdoFunctions { json_data, list })
+        for f in list.iter() {
+            info!("function: {}", f.name)
+        }
+
+        Ok(ConfigFunctions { json_data, list })
     }
 }

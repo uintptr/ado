@@ -4,8 +4,10 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     error::Result,
-    function_call::FunctionCall,
-    functions::{AdoFunctions, Function},
+    functions::{
+        config::{ConfigFunction, ConfigFunctions},
+        function_handler::FunctionCall,
+    },
 };
 
 #[derive(Debug, Default, Serialize, Deserialize)]
@@ -38,7 +40,7 @@ pub struct Content {
 #[derive(Debug, Serialize)]
 pub struct Tool<'a> {
     #[serde(rename = "functionDeclarations")]
-    functions: &'a [Function],
+    functions: &'a [ConfigFunction],
 }
 
 #[derive(Debug, Serialize)]
@@ -106,15 +108,19 @@ impl<'c> ContentBuilder {
 }
 
 impl<'a, 'b> Contents<'a> {
-    pub fn new(functions: &'a AdoFunctions) -> Self {
+    pub fn new() -> Self {
+        Contents {
+            contents: Vec::new(),
+            tools: vec![],
+        }
+    }
+
+    pub fn with_functions(&mut self, functions: &'a ConfigFunctions) {
         let tool = Tool {
             functions: &functions.list,
         };
 
-        Contents {
-            contents: Vec::new(),
-            tools: vec![tool],
-        }
+        self.tools = vec![tool];
     }
 
     pub fn with_content(&mut self, content: &'a Content) {

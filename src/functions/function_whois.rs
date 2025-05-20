@@ -1,7 +1,5 @@
 use std::{collections::HashMap, path::Path};
 
-use log::error;
-use serde::{Deserialize, Serialize};
 use whois_rust::{WhoIs, WhoIsLookupOptions};
 
 use crate::{
@@ -9,16 +7,16 @@ use crate::{
     staples::find_file,
 };
 
-trait FunctionTrait {
-    fn exec(&self) -> Result<String>;
-}
+use log::error;
 
-struct FunctionWhoisExists {
+use super::function_handler::FunctionTrait;
+
+pub struct FunctionWhoisExists {
     domain_name: String,
 }
 
 impl FunctionWhoisExists {
-    pub fn new(args: &HashMap<String, String>) -> Result<FunctionWhoisExists> {
+    pub fn from_args(args: &HashMap<String, String>) -> Result<FunctionWhoisExists> {
         let domain = match args.get("domain_name") {
             Some(v) => v,
             None => {
@@ -52,41 +50,5 @@ impl FunctionTrait for FunctionWhoisExists {
         };
 
         Ok(res_string)
-    }
-}
-
-enum FunctionExecutor {
-    WhoisExists(FunctionWhoisExists),
-}
-
-impl FunctionExecutor {
-    pub fn parse(call: &FunctionCall) -> Result<Self> {
-        match call.name.as_str() {
-            "whois_exists" => {
-                let e = FunctionWhoisExists::new(&call.args)?;
-                Ok(FunctionExecutor::WhoisExists(e))
-            }
-            f => {
-                return Err(Error::UnknownFunction {
-                    name: f.to_string(),
-                });
-            }
-        }
-    }
-}
-
-#[derive(Debug, Default, Serialize, Deserialize)]
-pub struct FunctionCall {
-    pub name: String,
-    pub args: HashMap<String, String>,
-}
-
-impl FunctionCall {
-    pub fn execute(&self) -> Result<String> {
-        let exe = FunctionExecutor::parse(self)?;
-
-        match exe {
-            FunctionExecutor::WhoisExists(f) => f.exec(),
-        }
     }
 }

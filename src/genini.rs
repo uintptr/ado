@@ -1,15 +1,16 @@
+use log::{error, info};
 use serde::{Deserialize, Serialize};
 
 use crate::{
     config::AdoConfig,
     content::{Content, ContentBuilder, Contents, Part},
     error::{Error, Result},
-    functions::AdoFunctions,
+    functions::config::ConfigFunctions,
 };
 
 #[derive(Serialize)]
 pub struct Gemini {
-    functions: AdoFunctions,
+    functions: ConfigFunctions,
     url: String,
 }
 
@@ -71,11 +72,20 @@ impl GeminiResponse {
             None => Err(Error::LlmTextNotFound),
         }
     }
+
+    pub fn has_text(&self) -> bool {
+        let part = match self.get_first_part() {
+            Ok(v) => v,
+            Err(_) => return false,
+        };
+
+        part.text.is_some()
+    }
 }
 
 impl Gemini {
     pub fn new() -> Result<Self> {
-        let functions = AdoFunctions::load()?;
+        let functions = ConfigFunctions::load()?;
         let config = AdoConfig::load()?;
 
         let g = config.gemini()?;
@@ -85,15 +95,21 @@ impl Gemini {
         Ok(Gemini { functions, url })
     }
 
-    fn parse_response(&self, response: &GeminiResponse) -> Result<GeminiResponse> {
+    fn parse_response(&self, response: GeminiResponse) -> Result<GeminiResponse> {
         let candidate = response.candidates.get(0).ok_or(Error::EmptyLlmResponse)?;
 
         if candidate.content.parts.is_empty() {
             return Err(Error::EmptyLlmParts);
         }
 
-        let mut contents = Contents::new(&self.functions);
+        let mut contents = Contents::new();
+
+        contents.with_functions(&self.functions);
         contents.with_content(&candidate.content);
+
+        if response.has_text() {
+            return Ok(response);
+        }
 
         let (func_name, func_resp) = response.call_function()?;
 
@@ -106,13 +122,23 @@ impl Gemini {
         self.post_contents(contents)
     }
 
-    fn post_contents(&self, contents: Contents) -> Result<GeminiResponse> {
+    pub fn post_contents(&self, contents: Contents) -> Result<GeminiResponse> {
         let json_content = contents.to_json()?;
 
         let res = minreq::post(&self.url)
             .with_header("Content-Type", "application/json")
             .with_body(json_content)
             .send()?;
+
+        let log_msg = format!(
+            "post -> code={} reason={}",
+            res.status_code, res.reason_phrase
+        );
+
+        match res.status_code {
+            200..299 => info!("{log_msg}"),
+            _ => error!("{log_msg}"),
+        }
 
         let response_json = res.as_str()?;
         let res: GeminiResponse = serde_json::from_str(response_json)?;
@@ -131,7 +157,9 @@ impl Gemini {
     where
         S: AsRef<str>,
     {
-        let mut contents = Contents::new(&self.functions);
+        let mut contents = Contents::new();
+
+        contents.with_functions(&self.functions);
 
         let cb = ContentBuilder::new("user").with_text(&query);
 
@@ -140,7 +168,9 @@ impl Gemini {
 
         let res = self.post_contents(contents)?;
 
-        let res = self.parse_response(&res)?;
+        //dbg!(&res);
+
+        let res = self.parse_response(res)?;
 
         res.get_text()
     }
@@ -166,6 +196,6 @@ mod tests {
 
         let res: GeminiResponse = serde_json::from_str(&resp_json).unwrap();
 
-        gemini.parse_response(&res).unwrap();
+        gemini.parse_response(res).unwrap();
     }
 }
