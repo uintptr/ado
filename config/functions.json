@@ -17,13 +17,13 @@
     },
     {
         "name": "generate_text",
-        "description": "function that asks an LLM to generate any sort of text",
+        "description": "function that asks an LLM to generate some sort of text",
         "parameters": {
             "type": "object",
             "properties": {
                 "prompt": {
                     "type": "string",
-                    "description": "the prompt for the LLKM"
+                    "description": "the prompt for the large languge model"
                 }
             },
             "required": [
@@ -43,7 +43,7 @@
                 },
                 "file_data": {
                     "type": "string",
-                    "description": "the data of the file to write. It has to be base64 encoded"
+                    "description": "the data of the file to write. the file_data has to be encoded using base64"
                 }
             },
             "required": [
