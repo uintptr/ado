@@ -1,0 +1,39 @@
+{
+    "candidates": [
+        {
+            "content": {
+                "parts": [
+                    {
+                        "functionCall": {
+                            "name": "whois_exists",
+                            "args": {
+                                "domain_name": "test.com"
+                            }
+                        }
+                    }
+                ],
+                "role": "model"
+            },
+            "finishReason": "STOP",
+            "avgLogprobs": 1.8312217434868217e-06
+        }
+    ],
+    "usageMetadata": {
+        "promptTokenCount": 48,
+        "candidatesTokenCount": 10,
+        "totalTokenCount": 58,
+        "promptTokensDetails": [
+            {
+                "modality": "TEXT",
+                "tokenCount": 48
+            }
+        ],
+        "candidatesTokensDetails": [
+            {
+                "modality": "TEXT",
+                "tokenCount": 10
+            }
+        ]
+    },
+    "modelVersion": "gemini-2.0-flash"
+}
