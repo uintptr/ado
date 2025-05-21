@@ -2,7 +2,7 @@ use std::{fs, path::Path};
 
 use ado::{
     error::{Error, Result},
-    llm::gemini::genini::Gemini,
+    llm::openai::close_ai::OpenAI,
     staples::setup_logger,
 };
 use clap::Parser;
@@ -56,16 +56,9 @@ fn main() -> Result<()> {
 
     info!("query: {query}");
 
-    let mut g = Gemini::new()?;
+    let o = OpenAI::new()?;
 
-    //
-    // this'll replace the url from the config file
-    //
-    if let Some(url) = args.url {
-        g.with_url(url);
-    }
-
-    let resp = g.ask(query)?;
+    let resp = o.ask(query)?;
 
     println!("{resp}");
 

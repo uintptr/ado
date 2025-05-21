@@ -16,7 +16,7 @@ pub struct AdoGemini {
 }
 
 #[derive(Deserialize)]
-pub struct OpenAi {
+pub struct OpenAiConfig {
     pub key: String,
     #[serde(default = "openai_default_url")]
     pub url: String,
@@ -29,7 +29,7 @@ pub enum AdoConfig {
     #[serde(rename = "gemini")]
     Gemini(AdoGemini),
     #[serde(rename = "openai")]
-    Openai(OpenAi),
+    Openai(OpenAiConfig),
 }
 
 fn openai_default_url() -> String {
@@ -64,7 +64,7 @@ impl AdoConfig {
         }
     }
 
-    pub fn openai(&self) -> Result<&OpenAi> {
+    pub fn openai(self) -> Result<OpenAiConfig> {
         match self {
             AdoConfig::Openai(o) => Ok(o),
             _ => {

@@ -1,5 +1,6 @@
 use std::{collections::HashMap, path::Path};
 
+use log::info;
 use whois_rust::{WhoIs, WhoIsLookupOptions};
 
 use crate::{
@@ -7,17 +8,22 @@ use crate::{
     staples::find_file,
 };
 
-use log::error;
-
-use super::function_handler::FunctionTrait;
-
-pub struct FunctionWhoisExists {
-    domain_name: String,
+pub struct FunctionWhois {
+    provider: WhoIs,
 }
 
-impl FunctionWhoisExists {
-    pub fn from_args(args: &HashMap<String, String>) -> Result<FunctionWhoisExists> {
-        let domain = match args.get("domain_name") {
+impl FunctionWhois {
+    pub fn new() -> Result<Self> {
+        let rel_servers = Path::new("config").join("whois_servers.json");
+        let servers_file = find_file(rel_servers)?;
+
+        let provider = WhoIs::from_path(servers_file)?;
+
+        Ok(Self { provider })
+    }
+
+    pub fn exists(&self, args: &HashMap<String, String>) -> Result<String> {
+        let domain_name = match args.get("domain_name") {
             Some(v) => v,
             None => {
                 return Err(Error::MissingArgument {
@@ -26,29 +32,12 @@ impl FunctionWhoisExists {
             }
         };
 
-        Ok(FunctionWhoisExists {
-            domain_name: domain.into(),
-        })
-    }
-}
+        info!("looking for domain_name={domain_name}");
 
-impl FunctionTrait for FunctionWhoisExists {
-    fn exec(&self) -> Result<String> {
-        let rel_servers = Path::new("config").join("whois_servers.json");
-        let servers_file = find_file(rel_servers)?;
+        let opts = WhoIsLookupOptions::from_str(domain_name)?;
 
-        let whois = WhoIs::from_path(servers_file)?;
+        self.provider.lookup(opts)?;
 
-        let opts = WhoIsLookupOptions::from_str(&self.domain_name)?;
-
-        let res_string = match whois.lookup(opts) {
-            Ok(_) => format!("{} exists", self.domain_name),
-            Err(e) => {
-                error!("{e}");
-                format!("{} does not exist", self.domain_name)
-            }
-        };
-
-        Ok(res_string)
+        Ok(format!("{domain_name} is registered"))
     }
 }

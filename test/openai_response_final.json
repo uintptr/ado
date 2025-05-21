@@ -1,0 +1,100 @@
+{
+    "id": "resp_682d371f07708191b20f7382c144bde108516396141cd20a",
+    "object": "response",
+    "created_at": 1747793695,
+    "status": "completed",
+    "background": false,
+    "error": null,
+    "incomplete_details": null,
+    "instructions": null,
+    "max_output_tokens": null,
+    "model": "gpt-4.1-2025-04-14",
+    "output": [
+        {
+            "id": "msg_682d371f99408191b6621d4407eb102008516396141cd20a",
+            "type": "message",
+            "status": "completed",
+            "content": [
+                {
+                    "type": "output_text",
+                    "annotations": [],
+                    "text": "The domain \"test.com\" is already registered and not available for purchase. If you need suggestions for similar available domains, let me know!"
+                }
+            ],
+            "role": "assistant"
+        }
+    ],
+    "parallel_tool_calls": true,
+    "previous_response_id": null,
+    "reasoning": {
+        "effort": null,
+        "summary": null
+    },
+    "service_tier": "default",
+    "store": true,
+    "temperature": 1.0,
+    "text": {
+        "format": {
+            "type": "text"
+        }
+    },
+    "tool_choice": "auto",
+    "tools": [
+        {
+            "type": "function",
+            "description": "query the whois database if a domain name exists",
+            "name": "whois_exists",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "domain_name": {
+                        "type": "string",
+                        "description": "Name of the domain name to query. The input name must look like a proper domain name"
+                    }
+                },
+                "required": [
+                    "domain_name"
+                ]
+            },
+            "strict": true
+        },
+        {
+            "type": "function",
+            "description": "function to write a file to the local disk",
+            "name": "write_file",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "file_data": {
+                        "type": "string",
+                        "description": "the data of the file to write. the file_data has to be encoded using base64"
+                    },
+                    "file_name": {
+                        "type": "string",
+                        "description": "the full path of the file to write"
+                    }
+                },
+                "required": [
+                    "file_name",
+                    "file_data"
+                ]
+            },
+            "strict": true
+        }
+    ],
+    "top_p": 1.0,
+    "truncation": "disabled",
+    "usage": {
+        "input_tokens": 157,
+        "input_tokens_details": {
+            "cached_tokens": 0
+        },
+        "output_tokens": 30,
+        "output_tokens_details": {
+            "reasoning_tokens": 0
+        },
+        "total_tokens": 187
+    },
+    "user": null,
+    "metadata": {}
+}

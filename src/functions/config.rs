@@ -36,6 +36,8 @@ pub struct ConfigFunctionCall {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ConfigFunction {
+    #[serde(rename = "type")]
+    t: String,
     name: String,
     description: String,
     parameters: Parameters,

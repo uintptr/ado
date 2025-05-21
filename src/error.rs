@@ -25,6 +25,13 @@ pub enum Error {
     UnknownFunction {
         name: String,
     },
+    TypeError {
+        error: String,
+    },
+    TypeMissing {
+        t: String,
+    },
+    ContentTextNotFound,
     LlmNotFound {
         llm: String,
     },

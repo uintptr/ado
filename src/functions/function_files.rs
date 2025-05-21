@@ -1,16 +1,15 @@
-use std::{collections::HashMap, fs, io::Write, path::PathBuf};
+use std::{collections::HashMap, fs, io::Write};
 
 use crate::error::{Error, Result};
 
-use super::function_handler::FunctionTrait;
+pub struct FunctionFiles;
 
-pub struct FunctionWriteFile {
-    path: PathBuf,
-    content: Vec<u8>,
-}
+impl FunctionFiles {
+    pub fn new() -> FunctionFiles {
+        FunctionFiles {}
+    }
 
-impl FunctionWriteFile {
-    pub fn from_args(args: &HashMap<String, String>) -> Result<Self> {
+    pub fn write(&self, args: &HashMap<String, String>) -> Result<String> {
         let file_name = match args.get("file_name") {
             Some(v) => v,
             None => {
@@ -29,22 +28,15 @@ impl FunctionWriteFile {
             }
         };
 
-        Ok(Self {
-            path: PathBuf::new().join(file_name),
-            content: file_data.as_bytes().to_vec(),
-        })
-    }
-}
-
-impl FunctionTrait for FunctionWriteFile {
-    fn exec(&self) -> Result<String> {
         let mut f = fs::OpenOptions::new()
             .write(true)
-            .create(true)
-            .open(&self.path)?;
+            .truncate(true)
+            .open(file_name)?;
 
-        f.write_all(&self.content)?;
+        f.write_all(file_data.as_bytes())?;
 
-        Ok(format!("successfully wrote {}", self.path.display()))
+        let msg = format!("{file_name} was successfully written");
+
+        Ok(msg)
     }
 }

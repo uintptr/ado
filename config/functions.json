@@ -1,5 +1,6 @@
 [
     {
+        "type": "function",
         "name": "whois_exists",
         "description": "query the whois database if a domain name exists",
         "parameters": {
@@ -12,26 +13,12 @@
             },
             "required": [
                 "domain_name"
-            ]
+            ],
+            "additionalProperties": false
         }
     },
     {
-        "name": "generate_text",
-        "description": "function that asks an LLM to generate some sort of text",
-        "parameters": {
-            "type": "object",
-            "properties": {
-                "prompt": {
-                    "type": "string",
-                    "description": "the prompt for the large languge model"
-                }
-            },
-            "required": [
-                "prompt"
-            ]
-        }
-    },
-    {
+        "type": "function",
         "name": "write_file",
         "description": "function to write a file to the local disk",
         "parameters": {
@@ -49,7 +36,8 @@
             "required": [
                 "file_name",
                 "file_data"
-            ]
+            ],
+            "additionalProperties": false
         }
     }
 ]
