@@ -56,22 +56,18 @@ impl AdoConfig {
     pub fn gemini(&self) -> Result<&AdoGemini> {
         match self {
             AdoConfig::Gemini(g) => Ok(g),
-            _ => {
-                return Err(Error::LlmNotFound {
-                    llm: "gemini".to_string(),
-                });
-            }
+            _ => Err(Error::LlmNotFound {
+                llm: "gemini".to_string(),
+            }),
         }
     }
 
     pub fn openai(self) -> Result<OpenAiConfig> {
         match self {
             AdoConfig::Openai(o) => Ok(o),
-            _ => {
-                return Err(Error::LlmNotFound {
-                    llm: "openai".to_string(),
-                });
-            }
+            _ => Err(Error::LlmNotFound {
+                llm: "openai".to_string(),
+            }),
         }
     }
 }

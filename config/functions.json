@@ -19,7 +19,7 @@
     },
     {
         "type": "function",
-        "name": "write_file",
+        "name": "file_write",
         "description": "function to write a file to the local disk",
         "parameters": {
             "type": "object",
@@ -28,14 +28,50 @@
                     "type": "string",
                     "description": "the full path of the file to write"
                 },
-                "file_data": {
+                "file_data_encoded": {
                     "type": "string",
-                    "description": "the data of the file to write. the file_data has to be encoded using base64"
+                    "description": "the data of the file to write. the file_data_encoded has to be always encoded using base64"
                 }
             },
             "required": [
                 "file_name",
-                "file_data"
+                "file_data_encoded"
+            ],
+            "additionalProperties": false
+        }
+    },
+    {
+        "type": "function",
+        "name": "file_find",
+        "description": "function to find a file in a directory",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "file_name": {
+                    "type": "string",
+                    "description": "name of the file that we're looking for"
+                }
+            },
+            "required": [
+                "file_name"
+            ],
+            "additionalProperties": false
+        }
+    },
+    {
+        "type": "function",
+        "name": "file_read",
+        "description": "read a file on the local disk using a file path",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "file_path": {
+                    "type": "string",
+                    "description": "path of the file to read"
+                }
+            },
+            "required": [
+                "file_path"
             ],
             "additionalProperties": false
         }

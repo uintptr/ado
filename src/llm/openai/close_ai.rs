@@ -84,17 +84,21 @@ impl OpenAI {
 
         req.with_input_role("user", query.as_ref());
 
-        let res = self.post_contents(&req)?;
+        loop {
+            let res = self.post_contents(&req)?;
 
-        let inputs = res.call_functions(&self.handler)?;
+            let inputs = res.call_functions(&self.handler)?;
 
-        req.with_inputs(inputs);
+            req.with_inputs(inputs);
 
-        //
-        // with the updated request
-        //
-        let res = self.post_contents(&req)?;
+            //
+            // with the updated request
+            //
+            let res = self.post_contents(&req)?;
 
-        res.content_text()
+            if !res.is_function_call() {
+                return res.content_text();
+            }
+        }
     }
 }

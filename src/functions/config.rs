@@ -58,11 +58,9 @@ where
 
     match PARAM_VALID_TYPES.contains(&param_type.as_str()) {
         true => Ok(param_type),
-        false => {
-            return Err(serde::de::Error::custom(Error::InvalidInputType {
-                input: param_type,
-            }));
-        }
+        false => Err(serde::de::Error::custom(Error::InvalidInputType {
+            input: param_type,
+        })),
     }
 }
 

@@ -22,8 +22,14 @@ pub enum Error {
     EmptyLlmParts,
     LlmFunctionNotFound,
     LlmTextNotFound,
+    FunctionNotImplemented {
+        name: String,
+    },
     UnknownFunction {
         name: String,
+    },
+    InvalidFilePath {
+        path: PathBuf,
     },
     TypeError {
         error: String,

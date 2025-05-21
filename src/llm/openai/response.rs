@@ -118,6 +118,17 @@ impl OpenAIFunctionResponse {
         Err(Error::ContentTextNotFound)
     }
 
+    pub fn is_function_call(&self) -> bool {
+        let output = match self.output.first() {
+            Some(v) => v,
+            None => {
+                return false;
+            }
+        };
+
+        output.t == "function_call"
+    }
+
     pub fn call_functions(
         &self,
         handler: &FunctionHandler,

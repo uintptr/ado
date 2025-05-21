@@ -64,7 +64,7 @@ pub struct OpenAIFunctionRequest<'a> {
 impl<'a> OpenAIFunctionRequest<'a> {
     pub fn new(model: &'a str, functions: &'a ConfigFunctions) -> Self {
         Self {
-            model: model.as_ref(),
+            model,
             input: vec![],
             tools: &functions.list,
         }
