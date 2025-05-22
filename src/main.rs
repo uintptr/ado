@@ -11,17 +11,13 @@ use log::info;
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
 struct UserArgs {
-    /// Use this url instead of the one in the config file
-    #[arg(short, long)]
-    url: Option<String>,
-
-    /// LLM provider
-    #[arg(short, long, default_value = "openai")]
-    provider: String,
-
     /// Read the query from a file
     #[arg(short, long)]
     query_file: Option<String>,
+
+    /// max loop
+    #[arg(short, long, default_value = "10")]
+    max_loop: i32,
 
     /// verbose
     #[arg(short, long)]
@@ -58,9 +54,5 @@ fn main() -> Result<()> {
 
     let o = OpenAI::new()?;
 
-    let resp = o.ask(query)?;
-
-    println!("{resp}");
-
-    Ok(())
+    o.ask(query)
 }

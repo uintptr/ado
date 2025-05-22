@@ -1,4 +1,5 @@
-use serde::Deserialize;
+use serde::{Deserialize, Deserializer};
+use serde_json::Value;
 use std::collections::HashMap;
 
 use crate::{
@@ -6,79 +7,51 @@ use crate::{
     functions::function_handler::FunctionHandler,
 };
 
-use log::error;
+use super::request::{OpenAIFunctionInput, OpenAIFunctionOutput, OpenAIInput};
 
 #[derive(Debug, Deserialize)]
-pub struct OpenAiContent {
+pub struct OpenAiOutputMessageContent {
     #[serde(rename = "type")]
     pub t: String,
     pub text: String,
 }
 
-#[derive(Default)]
-struct OpenAIFunctionDef {
+#[derive(Debug, Deserialize)]
+pub struct OpenAIOutputMessage {
     pub id: String,
+    pub status: String,
+    pub content: Vec<OpenAiOutputMessageContent>,
+    pub role: String,
+}
+
+impl OpenAIOutputMessage {
+    pub fn process(&self) {
+        for c in self.content.iter() {
+            println!("{}", c.text)
+        }
+    }
+}
+
+#[derive(Debug, Deserialize)]
+pub struct OpenAIOutputFunctionCall {
+    pub id: String,
+    pub status: String,
     pub arguments: String,
     pub call_id: String,
     pub name: String,
 }
 
-#[derive(Debug, Deserialize)]
-pub struct OpenAIFunctionResponseEntry {
-    pub name: Option<String>,
-    #[serde(rename = "type")]
-    pub t: String,
-    pub id: String,
-    pub status: String,
-    pub call_id: Option<String>,
-    pub arguments: Option<String>,
-    pub role: Option<String>,
-    pub content: Option<Vec<OpenAiContent>>,
+impl OpenAIOutputFunctionCall {
+    pub fn process(&self, handler: &FunctionHandler) -> Result<String> {
+        let args_map: HashMap<String, String> = serde_json::from_str(&self.arguments)?;
+        handler.call(&self.name, &args_map)
+    }
 }
 
-impl TryFrom<&OpenAIFunctionResponseEntry> for OpenAIFunctionDef {
-    type Error = Error;
-
-    fn try_from(value: &OpenAIFunctionResponseEntry) -> Result<Self> {
-        let mut def = OpenAIFunctionDef::default();
-
-        if value.t != "function_call" {
-            return Err(Error::TypeError {
-                error: "Not a function_call".into(),
-            });
-        }
-
-        def.id = value.id.to_string();
-
-        def.arguments = match &value.arguments {
-            Some(v) => v.to_string(),
-            None => {
-                return Err(Error::TypeMissing {
-                    t: "arguments".to_string(),
-                });
-            }
-        };
-
-        def.call_id = match &value.call_id {
-            Some(v) => v.to_string(),
-            None => {
-                return Err(Error::TypeMissing {
-                    t: "call_id".to_string(),
-                });
-            }
-        };
-
-        def.name = match &value.name {
-            Some(v) => v.to_string(),
-            None => {
-                return Err(Error::TypeMissing {
-                    t: "name".to_string(),
-                });
-            }
-        };
-
-        Ok(def)
-    }
+#[derive(Debug, Deserialize)]
+pub enum OpenAIOutput {
+    Message(OpenAIOutputMessage),
+    FunctionCall(OpenAIOutputFunctionCall),
 }
 
 #[derive(Debug, Deserialize)]
@@ -92,10 +65,72 @@ pub struct OpenAIFunctionResponse {
     pub model: String,
     pub parallel_tool_calls: bool,
     pub previous_response_id: Option<String>,
-    pub output: Vec<OpenAIFunctionResponseEntry>,
+    #[serde(deserialize_with = "deserialized_openai_output")]
+    pub output: Vec<OpenAIOutput>,
     pub service_tier: String,
     pub store: bool,
     pub temperature: f64,
+}
+
+fn deserialized_openai_output<'de, D>(
+    deserializer: D,
+) -> std::result::Result<Vec<OpenAIOutput>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let mut outputs = Vec::new();
+
+    let values: Vec<Value> = Deserialize::deserialize(deserializer)?;
+
+    for v in values {
+        let t = match v.get("type") {
+            Some(v) => v,
+            None => {
+                return Err(serde::de::Error::custom(Error::TypeMissing {
+                    t: "type missing".to_string(),
+                }));
+            }
+        };
+
+        let type_str = match t.as_str() {
+            Some(v) => v,
+            None => {
+                return Err(serde::de::Error::custom(Error::TypeMissing {
+                    t: "not a string".to_string(),
+                }));
+            }
+        };
+
+        let output = match type_str {
+            "function_call" => {
+                let func: OpenAIOutputFunctionCall = match serde_json::from_value(v) {
+                    Ok(v) => v,
+                    Err(e) => {
+                        return Err(serde::de::Error::custom(e));
+                    }
+                };
+                OpenAIOutput::FunctionCall(func)
+            }
+            "message" => {
+                let msg: OpenAIOutputMessage = match serde_json::from_value(v) {
+                    Ok(v) => v,
+                    Err(e) => {
+                        return Err(serde::de::Error::custom(e));
+                    }
+                };
+                OpenAIOutput::Message(msg)
+            }
+            _ => {
+                return Err(serde::de::Error::custom(Error::TypeMissing {
+                    t: "not implemented".to_string(),
+                }));
+            }
+        };
+
+        outputs.push(output);
+    }
+
+    Ok(outputs)
 }
 
 impl OpenAIFunctionResponse {
@@ -104,68 +139,35 @@ impl OpenAIFunctionResponse {
         Ok(res)
     }
 
-    pub fn content_text(&self) -> Result<String> {
-        for o in &self.output {
-            if let Some(content_list) = &o.content {
-                for content in content_list {
-                    if content.t == "output_text" {
-                        return Ok(content.text.to_string());
-                    }
-                }
-            }
-        }
-
-        Err(Error::ContentTextNotFound)
-    }
-
-    pub fn is_function_call(&self) -> bool {
-        let output = match self.output.first() {
-            Some(v) => v,
-            None => {
-                return false;
-            }
-        };
-
-        output.t == "function_call"
-    }
-
-    pub fn call_functions(
-        &self,
-        handler: &FunctionHandler,
-    ) -> Result<Vec<HashMap<String, String>>> {
+    pub fn process_output(&self, handler: &FunctionHandler) -> Result<Vec<OpenAIInput>> {
         let mut inputs = Vec::new();
 
-        for f in self.output.iter() {
-            let f: OpenAIFunctionDef = match f.try_into() {
-                Ok(v) => v,
-                Err(e) => {
-                    error!("{e}");
-                    continue;
+        for output in self.output.iter() {
+            match output {
+                OpenAIOutput::Message(m) => m.process(),
+                OpenAIOutput::FunctionCall(f) => {
+                    let output = match f.process(handler) {
+                        Ok(v) => v,
+                        Err(e) => format!("error: {e}"),
+                    };
+
+                    let out_func = OpenAIFunctionOutput {
+                        t: "function_call_output".to_string(),
+                        call_id: f.call_id.to_string(),
+                        output: output,
+                    };
+
+                    let in_func = OpenAIFunctionInput {
+                        t: "function_call".to_string(),
+                        call_id: f.call_id.to_string(),
+                        name: f.name.to_string(),
+                        arguments: f.arguments.to_string(),
+                    };
+
+                    inputs.push(OpenAIInput::FunctionOutput(out_func));
+                    inputs.push(OpenAIInput::FunctionInput(in_func))
                 }
-            };
-
-            let args_map: HashMap<String, String> = serde_json::from_str(&f.arguments)?;
-
-            let output = match handler.call(&f.name, &args_map) {
-                Ok(v) => v,
-                Err(e) => format!("error: {e}"),
-            };
-
-            let mut function_output: HashMap<String, String> = HashMap::new();
-
-            function_output.insert("output".into(), output);
-            function_output.insert("call_id".into(), f.call_id.to_string());
-            function_output.insert("type".into(), "function_call_output".into());
-
-            let mut function_call: HashMap<String, String> = HashMap::new();
-
-            function_call.insert("type".into(), "function_call".into());
-            function_call.insert("call_id".into(), f.call_id.to_string());
-            function_call.insert("name".into(), f.name.to_string());
-            function_call.insert("arguments".into(), f.arguments.to_string());
-
-            inputs.push(function_output);
-            inputs.push(function_call);
+            }
         }
 
         Ok(inputs)
@@ -192,7 +194,7 @@ mod tests {
 
         let handler = FunctionHandler::new().unwrap();
 
-        let inputs = res.call_functions(&handler).unwrap();
+        let inputs = res.process_output(&handler).unwrap();
 
         let res_json = serde_json::to_string_pretty(&inputs).unwrap();
 
@@ -208,11 +210,6 @@ mod tests {
         let resp_json = fs::read_to_string(test_file).unwrap();
 
         let res = OpenAIFunctionResponse::from_string(&resp_json).unwrap();
-
-        let text = res.content_text().unwrap();
-
-        println!("{text}");
-
         dbg!(res);
     }
 }

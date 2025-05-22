@@ -28,14 +28,14 @@
                     "type": "string",
                     "description": "the full path of the file to write"
                 },
-                "file_data_encoded": {
+                "file_data": {
                     "type": "string",
-                    "description": "the data of the file to write. the file_data_encoded has to be always encoded using base64"
+                    "description": "the data of the file to write. the file_data has to be always encoded using base64"
                 }
             },
             "required": [
                 "file_name",
-                "file_data_encoded"
+                "file_data"
             ],
             "additionalProperties": false
         }

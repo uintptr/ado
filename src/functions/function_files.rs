@@ -20,23 +20,26 @@ impl FunctionFiles {
         FunctionFiles {}
     }
 
-    pub fn write(&self, args: &HashMap<String, String>) -> Result<String> {
+    pub fn command_write(&self, args: &HashMap<String, String>) -> Result<String> {
         let file_name = get_arg(args, "file_name")?;
         let file_data = get_arg(args, "file_data")?;
+
+        let file_data = BASE64_STANDARD.decode(file_data.as_bytes())?;
 
         let mut f = fs::OpenOptions::new()
             .write(true)
             .truncate(true)
+            .create(true)
             .open(file_name)?;
 
-        f.write_all(file_data.as_bytes())?;
+        f.write_all(&file_data)?;
 
         let msg = format!("{file_name} was successfully written");
 
         Ok(msg)
     }
 
-    pub fn read(&self, args: &HashMap<String, String>) -> Result<String> {
+    pub fn command_read(&self, args: &HashMap<String, String>) -> Result<String> {
         let file_path = get_arg(args, "file_path")?;
 
         let mut f = fs::OpenOptions::new().read(true).open(file_path)?;

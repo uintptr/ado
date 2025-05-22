@@ -63,6 +63,8 @@ pub enum Error {
     HttpError(minreq::Error),
     #[from]
     Whois(WhoIsError),
+    #[from]
+    Base64Error(base64::DecodeError),
 }
 
 impl core::fmt::Display for Error {

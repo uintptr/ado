@@ -76,7 +76,7 @@ impl OpenAI {
         Ok(res)
     }
 
-    pub fn ask<S>(&self, query: S) -> Result<String>
+    pub fn ask<S>(&self, query: S) -> Result<()>
     where
         S: AsRef<str>,
     {
@@ -87,18 +87,19 @@ impl OpenAI {
         loop {
             let res = self.post_contents(&req)?;
 
-            let inputs = res.call_functions(&self.handler)?;
+            //
+            // not a function call, we're done
+            //
+
+            let inputs = res.process_output(&self.handler)?;
+
+            if inputs.is_empty() {
+                break;
+            }
 
             req.with_inputs(inputs);
-
-            //
-            // with the updated request
-            //
-            let res = self.post_contents(&req)?;
-
-            if !res.is_function_call() {
-                return res.content_text();
-            }
         }
+
+        Ok(())
     }
 }
