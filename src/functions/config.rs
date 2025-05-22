@@ -1,15 +1,13 @@
 use std::{collections::HashMap, fs, path::Path};
 
 use derive_more::Debug;
-use log::info;
+use log::{error, info};
 use serde::{Deserialize, Deserializer, Serialize};
 
 use crate::{
     error::{Error, Result},
     staples::find_file,
 };
-
-const FUNCTIONS_FILE: &str = "functions.json";
 
 const PARAM_VALID_TYPES: &[&str] = &["object", "string", "integer", "boolean", "array"];
 
@@ -45,8 +43,6 @@ pub struct ConfigFunction {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ConfigFunctions {
-    #[debug(skip)]
-    json_data: String,
     pub list: Vec<ConfigFunction>,
 }
 
@@ -66,18 +62,32 @@ where
 
 impl ConfigFunctions {
     pub fn load() -> Result<Self> {
-        let config_rel_path = Path::new("config").join(FUNCTIONS_FILE);
+        let config_dir_rel = Path::new("config").join("functions");
+        let config_dir = find_file(config_dir_rel)?;
 
-        let config_file = find_file(config_rel_path)?;
+        let json_patt = format!("{}/*.json", config_dir.display());
 
-        let json_data = fs::read_to_string(config_file)?;
+        let glob_files = glob::glob(&json_patt)?;
 
-        let list: Vec<ConfigFunction> = serde_json::from_str(&json_data)?;
+        let mut list = Vec::new();
 
-        for f in list.iter() {
-            info!("function: {}", f.name)
+        for file_res in glob_files {
+            let file = match file_res {
+                Ok(v) => v,
+                Err(e) => {
+                    error!("{e}");
+                    continue;
+                }
+            };
+
+            let json_data = fs::read_to_string(file)?;
+            let inner_list: Vec<ConfigFunction> = serde_json::from_str(&json_data)?;
+
+            list.extend(inner_list);
         }
 
-        Ok(ConfigFunctions { json_data, list })
+        info!("function count: {}", list.len());
+
+        Ok(ConfigFunctions { list })
     }
 }

@@ -3,6 +3,7 @@ pub type Result<T> = core::result::Result<T, Error>;
 use std::path::PathBuf;
 
 use derive_more::From;
+use glob::PatternError;
 use whois_rust::WhoIsError;
 
 #[derive(Debug, From)]
@@ -65,6 +66,8 @@ pub enum Error {
     Whois(WhoIsError),
     #[from]
     Base64Error(base64::DecodeError),
+    #[from]
+    Glob(PatternError),
 }
 
 impl core::fmt::Display for Error {
