@@ -2,7 +2,7 @@ use std::{fs, io::Write, path::Path};
 
 use crate::{
     config::{AdoConfig, OpenAiConfig},
-    error::Result,
+    error::{Error, Result},
     functions::{config::ConfigFunctions, function_handler::FunctionHandler},
 };
 
@@ -22,6 +22,10 @@ impl OpenAI {
         let config = AdoConfig::load()?;
 
         let config = config.openai()?;
+
+        if config.key.is_empty() {
+            return Err(Error::ApiKeyNotFound);
+        }
 
         let handler = FunctionHandler::new()?;
 

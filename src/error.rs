@@ -45,6 +45,7 @@ pub enum Error {
     MissingArgument {
         name: String,
     },
+    ApiKeyNotFound,
     //
     // 2nd party
     //
@@ -72,6 +73,12 @@ pub enum Error {
 
 impl core::fmt::Display for Error {
     fn fmt(&self, fmt: &mut core::fmt::Formatter) -> core::result::Result<(), core::fmt::Error> {
-        write!(fmt, "{self:?}")
+        match self {
+            Error::ApiKeyNotFound => write!(
+                fmt,
+                "API was not found. Either use an config file or define the OPENAI_API_KEY env variable"
+            ),
+            _ => write!(fmt, "{self:?}"),
+        }
     }
 }
