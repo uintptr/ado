@@ -1,7 +1,7 @@
 [
     {
         "type": "function",
-        "name": "whois_exists",
+        "name": "whois_query",
         "description": "query the whois database if a domain name exists",
         "parameters": {
             "type": "object",

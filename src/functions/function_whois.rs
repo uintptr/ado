@@ -3,10 +3,9 @@ use std::{collections::HashMap, path::Path};
 use log::info;
 use whois_rust::{WhoIs, WhoIsLookupOptions};
 
-use crate::{
-    error::{Error, Result},
-    staples::find_file,
-};
+use crate::{error::Result, staples::find_file};
+
+use super::function_handler::get_arg;
 
 pub struct FunctionWhois {
     provider: WhoIs,
@@ -22,22 +21,33 @@ impl FunctionWhois {
         Ok(Self { provider })
     }
 
-    pub fn exists(&self, args: &HashMap<String, String>) -> Result<String> {
-        let domain_name = match args.get("domain_name") {
-            Some(v) => v,
-            None => {
-                return Err(Error::MissingArgument {
-                    name: "domain_name".to_string(),
-                });
-            }
-        };
-
+    pub fn query_domain(&self, domain_name: &str) -> Result<String> {
         info!("looking for domain_name={domain_name}");
 
         let opts = WhoIsLookupOptions::from_str(domain_name)?;
 
-        self.provider.lookup(opts)?;
+        let data = self.provider.lookup(opts)?;
 
-        Ok(format!("{domain_name} is registered"))
+        Ok(data)
+    }
+
+    pub fn query(&self, args: &HashMap<String, String>) -> Result<String> {
+        let domain_name = get_arg(args, "domain_name")?;
+        self.query_domain(domain_name)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+
+    use crate::staples::setup_logger;
+
+    use super::*;
+
+    #[test]
+    fn whois_test() {
+        setup_logger(true).unwrap();
+        let whois = FunctionWhois::new().unwrap();
+        whois.query_domain("example.com").unwrap();
     }
 }

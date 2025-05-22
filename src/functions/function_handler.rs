@@ -37,7 +37,7 @@ impl FunctionHandler {
         info!("executing {name}");
 
         match name {
-            "whois_exists" => self.whois.exists(args),
+            "whois_query" => self.whois.query(args),
             "file_write" => self.files.write(args),
             "file_read" => self.files.read(args),
             "file_find" => self.files.find(args),
