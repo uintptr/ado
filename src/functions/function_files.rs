@@ -20,7 +20,7 @@ impl FunctionFiles {
         FunctionFiles {}
     }
 
-    pub fn command_write(&self, args: &HashMap<String, String>) -> Result<String> {
+    pub fn write(&self, args: &HashMap<String, String>) -> Result<String> {
         let file_name = get_arg(args, "file_name")?;
         let file_data = get_arg(args, "file_data")?;
 
@@ -39,7 +39,7 @@ impl FunctionFiles {
         Ok(msg)
     }
 
-    pub fn command_read(&self, args: &HashMap<String, String>) -> Result<String> {
+    pub fn read(&self, args: &HashMap<String, String>) -> Result<String> {
         let file_path = get_arg(args, "file_path")?;
 
         let mut f = fs::OpenOptions::new().read(true).open(file_path)?;
@@ -101,7 +101,7 @@ impl FunctionFiles {
         })
     }
 
-    pub fn command_find_file(&self, args: &HashMap<String, String>) -> Result<String> {
+    pub fn find(&self, args: &HashMap<String, String>) -> Result<String> {
         let file_name = get_arg(args, "file_name")?;
 
         let cwd = env::current_dir()?;

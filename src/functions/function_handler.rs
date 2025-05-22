@@ -38,9 +38,9 @@ impl FunctionHandler {
 
         match name {
             "whois_exists" => self.whois.exists(args),
-            "file_write" => self.files.command_write(args),
-            "file_read" => self.files.command_read(args),
-            "file_find" => self.files.command_find_file(args),
+            "file_write" => self.files.write(args),
+            "file_read" => self.files.read(args),
+            "file_find" => self.files.find(args),
             _ => {
                 error!("function {name} was not found");
 
