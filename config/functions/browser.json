@@ -1,0 +1,20 @@
+[
+    {
+        "type": "function",
+        "name": "browse",
+        "description": "Ask the default browser to go the specified URL",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "url": {
+                    "type": "string",
+                    "description": "url to browse to"
+                }
+            },
+            "required": [
+                "url"
+            ],
+            "additionalProperties": false
+        }
+    }
+]

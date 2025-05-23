@@ -1,10 +1,11 @@
 pub type Result<T> = core::result::Result<T, Error>;
 
-use std::path::PathBuf;
+use std::{path::PathBuf, string::FromUtf8Error};
 
 use derive_more::From;
 use glob::PatternError;
 use whois_rust::WhoIsError;
+use x11rb::errors::{ConnectError, ReplyError};
 
 #[derive(Debug, From)]
 pub enum Error {
@@ -12,6 +13,9 @@ pub enum Error {
     // 1st party
     //
     DirnameError,
+    NotFound,
+    InvalidFormat,
+    Empty,
     QueryMissingError,
     FileNotFoundError {
         file_path: PathBuf,
@@ -51,6 +55,8 @@ pub enum Error {
     //
     #[from]
     Io(std::io::Error),
+    #[from]
+    Utf8(FromUtf8Error),
 
     //
     // 3rd party
@@ -69,6 +75,14 @@ pub enum Error {
     Base64Error(base64::DecodeError),
     #[from]
     Glob(PatternError),
+    #[from]
+    X11(ConnectError),
+    #[from]
+    X11Connection(x11rb::errors::ConnectionError),
+    #[from]
+    X11Reply(ReplyError),
+    #[from]
+    Which(which::Error),
 }
 
 impl core::fmt::Display for Error {

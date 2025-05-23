@@ -40,7 +40,8 @@ pub struct ConfigFunction {
     t: String,
     name: String,
     description: String,
-    parameters: Parameters,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    parameters: Option<Parameters>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

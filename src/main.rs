@@ -1,11 +1,12 @@
-use std::{fs, path::Path};
-
-use ado::{
-    error::{Error, Result},
-    llm::openai::query::OpenAI,
-    staples::setup_logger,
+use std::{
+    fs,
+    io::{self},
+    path::Path,
 };
+
+use ado::{error::Result, llm::openai::query::OpenAI, staples::setup_logger};
 use clap::Parser;
+
 use log::info;
 
 #[derive(Parser, Debug)]
@@ -34,6 +35,18 @@ where
     Ok(data)
 }
 
+fn read_query() -> Result<String> {
+    let mut query = String::new();
+
+    println!("Enter Query:");
+    //
+    // use readline or something so we can use CTRL+ENTER to return
+    //
+    io::stdin().read_line(&mut query)?;
+
+    Ok(query.trim_end_matches('\n').to_string())
+}
+
 fn main() -> Result<()> {
     let args = UserArgs::parse();
 
@@ -41,13 +54,10 @@ fn main() -> Result<()> {
 
     let query = match args.query_file {
         Some(v) => file_to_string(v)?,
-        None => {
-            if args.query_parts.is_empty() {
-                return Err(Error::QueryMissingError);
-            }
-
-            args.query_parts.join(" ")
-        }
+        None => match args.query_parts.is_empty() {
+            true => read_query()?,
+            false => args.query_parts.join(" "),
+        },
     };
 
     info!("query: {query}");
