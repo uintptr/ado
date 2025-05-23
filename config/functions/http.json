@@ -2,7 +2,7 @@
     {
         "type": "function",
         "name": "http_get",
-        "description": "Issue an HTTP GET request to the specified URL.",
+        "description": "Issue an HTTP GET request to the specified URL. This can also work for REST APIs",
         "parameters": {
             "type": "object",
             "properties": {
