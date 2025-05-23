@@ -2,7 +2,7 @@ use std::{fs, path::Path};
 
 use ado::{
     error::{Error, Result},
-    llm::openai::close_ai::OpenAI,
+    llm::openai::query::OpenAI,
     staples::setup_logger,
 };
 use clap::Parser;

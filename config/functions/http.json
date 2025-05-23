@@ -1,0 +1,41 @@
+[
+    {
+        "type": "function",
+        "name": "http_get",
+        "description": "Issue an HTTP GET request to the specified URL.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "url": {
+                    "type": "string",
+                    "description": "The URL to query. Must be a valid domain name."
+                },
+                "http_headers": {
+                    "type": "array",
+                    "description":"The value of the http header",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "key": {
+                                "type": "string",
+                                "description": "The name of the http header to set"
+                            },
+                            "value": {
+                                "type": "string",
+                                "description": "The value of the http header"
+                            }
+                        },
+                        "required": [
+                            "key",
+                            "value"
+                        ]
+                    }
+                }
+            },
+            "required": [
+                "url"
+            ],
+            "additionalProperties": false
+        }
+    }
+]

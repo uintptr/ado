@@ -1,5 +1,4 @@
 use std::{
-    collections::HashMap,
     env, fs,
     io::{Read, Write},
     path::{Path, PathBuf},
@@ -11,18 +10,18 @@ use walkdir::WalkDir;
 
 use crate::error::{Error, Result};
 
-use super::function_handler::get_arg;
+use super::function_args::FunctionArgs;
 
-pub struct FunctionFiles;
+pub struct FunctionsFiles;
 
-impl FunctionFiles {
-    pub fn new() -> FunctionFiles {
-        FunctionFiles {}
+impl FunctionsFiles {
+    pub fn new() -> FunctionsFiles {
+        FunctionsFiles {}
     }
 
-    pub fn write(&self, args: &HashMap<String, String>) -> Result<String> {
-        let file_name = get_arg(args, "file_name")?;
-        let file_data = get_arg(args, "file_data")?;
+    pub fn write(&self, args: &FunctionArgs) -> Result<String> {
+        let file_name = args.get_string("file_name")?;
+        let file_data = args.get_string("file_data")?;
 
         let file_data = BASE64_STANDARD.decode(file_data.as_bytes())?;
 
@@ -39,8 +38,8 @@ impl FunctionFiles {
         Ok(msg)
     }
 
-    pub fn read(&self, args: &HashMap<String, String>) -> Result<String> {
-        let file_path = get_arg(args, "file_path")?;
+    pub fn read(&self, args: &FunctionArgs) -> Result<String> {
+        let file_path = args.get_string("file_path")?;
 
         let mut f = fs::OpenOptions::new().read(true).open(file_path)?;
 
@@ -101,8 +100,8 @@ impl FunctionFiles {
         })
     }
 
-    pub fn find(&self, args: &HashMap<String, String>) -> Result<String> {
-        let file_name = get_arg(args, "file_name")?;
+    pub fn find(&self, args: &FunctionArgs) -> Result<String> {
+        let file_name = args.get_string("file_name")?;
 
         let cwd = env::current_dir()?;
 
@@ -130,7 +129,7 @@ mod tests {
     fn find_file_test() {
         setup_logger(true).unwrap();
 
-        let files = FunctionFiles::new();
+        let files = FunctionsFiles::new();
 
         let cwd = env::current_dir().unwrap();
 

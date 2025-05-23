@@ -16,6 +16,8 @@ pub struct Properties {
     #[serde(rename = "type", deserialize_with = "validate_param_type")]
     t: String,
     description: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    items: Option<Parameters>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -87,6 +89,16 @@ impl ConfigFunctions {
         }
 
         info!("function count: {}", list.len());
+
+        /*
+        let json_str = serde_json::to_string_pretty(&list)?;
+
+        println!("{json_str}");
+
+        if json_str.len() > 0 {
+            panic!("ok");
+        }
+        */
 
         Ok(ConfigFunctions { list })
     }

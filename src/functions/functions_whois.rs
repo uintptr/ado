@@ -1,17 +1,17 @@
-use std::{collections::HashMap, path::Path};
+use std::path::Path;
 
 use log::info;
 use whois_rust::{WhoIs, WhoIsLookupOptions};
 
 use crate::{error::Result, staples::find_file};
 
-use super::function_handler::get_arg;
+use super::function_args::FunctionArgs;
 
-pub struct FunctionWhois {
+pub struct FunctionsWhois {
     provider: WhoIs,
 }
 
-impl FunctionWhois {
+impl FunctionsWhois {
     pub fn new() -> Result<Self> {
         let rel_servers = Path::new("config").join("whois_servers.json");
         let servers_file = find_file(rel_servers)?;
@@ -31,8 +31,8 @@ impl FunctionWhois {
         Ok(data)
     }
 
-    pub fn query(&self, args: &HashMap<String, String>) -> Result<String> {
-        let domain_name = get_arg(args, "domain_name")?;
+    pub fn query(&self, args: &FunctionArgs) -> Result<String> {
+        let domain_name = args.get_string("domain_name")?;
         self.query_domain(domain_name)
     }
 }
@@ -47,7 +47,7 @@ mod tests {
     #[test]
     fn whois_test() {
         setup_logger(true).unwrap();
-        let whois = FunctionWhois::new().unwrap();
+        let whois = FunctionsWhois::new().unwrap();
         whois.query_domain("example.com").unwrap();
     }
 }

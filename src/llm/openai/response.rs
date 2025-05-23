@@ -1,6 +1,5 @@
 use serde::{Deserialize, Deserializer};
 use serde_json::Value;
-use std::collections::HashMap;
 
 use crate::{
     error::{Error, Result},
@@ -43,8 +42,7 @@ pub struct OpenAIOutputFunctionCall {
 
 impl OpenAIOutputFunctionCall {
     pub fn process(&self, handler: &FunctionHandler) -> Result<String> {
-        let args_map: HashMap<String, String> = serde_json::from_str(&self.arguments)?;
-        handler.call(&self.name, &args_map)
+        handler.call(&self.name, &self.arguments)
     }
 }
 
@@ -154,7 +152,7 @@ impl OpenAIFunctionResponse {
                     let out_func = OpenAIFunctionOutput {
                         t: "function_call_output".to_string(),
                         call_id: f.call_id.to_string(),
-                        output: output,
+                        output,
                     };
 
                     let in_func = OpenAIFunctionInput {

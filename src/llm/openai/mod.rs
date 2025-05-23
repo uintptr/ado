@@ -1,3 +1,3 @@
-pub mod close_ai;
+pub mod query;
 mod request;
 mod response;
