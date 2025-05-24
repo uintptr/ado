@@ -47,13 +47,7 @@ impl FunctionsFiles {
 
         f.read_to_end(&mut buf)?;
 
-        let encoded_data = BASE64_STANDARD.encode(buf);
-
-        let mut msg = "data:text/plain;charset=utf-8;base64,".to_string();
-
-        msg.push_str(&encoded_data);
-
-        Ok(msg)
+        args.to_base64_string(&buf)
     }
 
     pub fn find_file<P, T>(&self, root: P, file_name: T) -> Result<PathBuf>

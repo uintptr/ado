@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+use base64::{Engine, prelude::BASE64_STANDARD};
+
 use serde::Deserialize;
 use serde_json::Value;
 
@@ -20,6 +22,16 @@ impl FunctionArgs {
         let map: HashMap<String, Value> = serde_json::from_str(args)?;
 
         Ok(FunctionArgs { inner: map })
+    }
+
+    pub fn to_base64_string(&self, data: &[u8]) -> Result<String> {
+        let encoded_data = BASE64_STANDARD.encode(data);
+
+        let mut msg = "data:text/plain;charset=utf-8;base64,".to_string();
+
+        msg.push_str(&encoded_data);
+
+        Ok(msg)
     }
 
     pub fn get_string(&self, key: &str) -> Result<&str> {

@@ -8,15 +8,16 @@ use crate::{
 use super::{
     functions_browser::FunctionsBrowser, functions_desktop_x11::FunctionsDesktop,
     functions_files::FunctionsFiles, functions_http::FunctionsHttp,
-    functions_whois::FunctionsWhois,
+    functions_search::FunctionsSearch, functions_whois::FunctionsWhois,
 };
 
 pub struct FunctionHandler {
     whois: FunctionsWhois,
     files: FunctionsFiles,
     http: FunctionsHttp,
-    desktop: FunctionsDesktop,
+    desktop: Option<FunctionsDesktop>,
     browser: FunctionsBrowser,
+    search: FunctionsSearch,
 }
 
 impl FunctionHandler {
@@ -25,8 +26,9 @@ impl FunctionHandler {
             whois: FunctionsWhois::new()?,
             files: FunctionsFiles::new(),
             http: FunctionsHttp::new(),
-            desktop: FunctionsDesktop::new()?,
+            desktop: FunctionsDesktop::new().ok(),
             browser: FunctionsBrowser::new()?,
+            search: FunctionsSearch::new()?,
         })
     }
 
@@ -37,11 +39,15 @@ impl FunctionHandler {
 
         match name {
             "browse" => self.browser.browse(&args),
-            "desktop_windows" => self.desktop.windows(),
+            "desktop_windows" => match &self.desktop {
+                Some(d) => d.windows(),
+                None => Err(Error::FunctionNotAvailable),
+            },
             "http_get" => self.http.get(&args),
             "file_write" => self.files.write(&args),
             "file_read" => self.files.read(&args),
             "file_find" => self.files.find(&args),
+            "search" => self.search.search(&args),
             "whois_query" => self.whois.query(&args),
             _ => {
                 error!("function {name} was not found");

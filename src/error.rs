@@ -17,6 +17,7 @@ pub enum Error {
     InvalidFormat,
     Empty,
     QueryMissingError,
+    ConfigNotFound,
     FileNotFoundError {
         file_path: PathBuf,
     },
@@ -31,6 +32,7 @@ pub enum Error {
     FunctionNotImplemented {
         name: String,
     },
+    FunctionNotAvailable,
     UnknownFunction {
         name: String,
     },

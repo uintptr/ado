@@ -5,7 +5,7 @@ use std::{
 };
 
 use crate::{
-    config::{AdoConfig, OpenAiConfig},
+    config::file::{ConfigFile, OpenAiConfig},
     console::ConsoleUI,
     error::{Error, Result},
     functions::{config::ConfigFunctions, function_handler::FunctionHandler},
@@ -25,7 +25,7 @@ pub struct OpenAI {
 impl OpenAI {
     pub fn new() -> Result<Self> {
         let functions = ConfigFunctions::load()?;
-        let config = AdoConfig::load()?;
+        let config = ConfigFile::load()?;
 
         let config = config.openai()?;
 

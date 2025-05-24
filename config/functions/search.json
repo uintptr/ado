@@ -1,0 +1,20 @@
+[
+    {
+        "type": "function",
+        "name": "search",
+        "description": "submit a request to a web search engine like google",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "description": "the query to send to the search engine. The data will be json base64 encoded"
+                }
+            },
+            "required": [
+                "query"
+            ],
+            "additionalProperties": false
+        }
+    }
+]
