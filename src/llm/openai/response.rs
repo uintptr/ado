@@ -2,11 +2,13 @@ use serde::{Deserialize, Deserializer};
 use serde_json::Value;
 
 use crate::{
+    console::ConsoleUI,
     error::{Error, Result},
     functions::function_handler::FunctionHandler,
 };
 
 use super::request::{OpenAIFunctionInput, OpenAIFunctionOutput, OpenAIInput};
+use log::error;
 
 #[derive(Debug, Deserialize)]
 pub struct OpenAiOutputMessageContent {
@@ -24,9 +26,11 @@ pub struct OpenAIOutputMessage {
 }
 
 impl OpenAIOutputMessage {
-    pub fn process(&self) {
+    pub fn process(&self, console: &ConsoleUI) {
         for c in self.content.iter() {
-            println!("{}", c.text)
+            if let Err(e) = console.display_text(&c.text) {
+                error!("{e}");
+            }
         }
     }
 }
@@ -137,14 +141,18 @@ impl OpenAIFunctionResponse {
         Ok(res)
     }
 
-    pub fn process_output(&self, handler: &FunctionHandler) -> Result<Vec<OpenAIInput>> {
+    pub fn process_output(
+        &self,
+        console: &ConsoleUI,
+        func_handler: &FunctionHandler,
+    ) -> Result<Vec<OpenAIInput>> {
         let mut inputs = Vec::new();
 
         for output in self.output.iter() {
             match output {
-                OpenAIOutput::Message(m) => m.process(),
+                OpenAIOutput::Message(m) => m.process(console),
                 OpenAIOutput::FunctionCall(f) => {
-                    let output = match f.process(handler) {
+                    let output = match f.process(func_handler) {
                         Ok(v) => v,
                         Err(e) => format!("error: {e}"),
                     };
@@ -191,8 +199,9 @@ mod tests {
         let res = OpenAIFunctionResponse::from_string(&resp_json).unwrap();
 
         let handler = FunctionHandler::new().unwrap();
+        let console = ConsoleUI::new();
 
-        let inputs = res.process_output(&handler).unwrap();
+        let inputs = res.process_output(&console, &handler).unwrap();
 
         let res_json = serde_json::to_string_pretty(&inputs).unwrap();
 

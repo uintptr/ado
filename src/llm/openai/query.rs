@@ -1,12 +1,17 @@
-use std::{fs, io::Write, path::Path};
+use std::{
+    fs,
+    io::{self, Write},
+    path::Path,
+};
 
 use crate::{
     config::{AdoConfig, OpenAiConfig},
+    console::ConsoleUI,
     error::{Error, Result},
     functions::{config::ConfigFunctions, function_handler::FunctionHandler},
 };
 
-use log::{error, info};
+use log::{error, info, warn};
 
 use super::{request::OpenAIFunctionRequest, response::OpenAIFunctionResponse};
 
@@ -14,6 +19,7 @@ pub struct OpenAI {
     functions: ConfigFunctions,
     config: OpenAiConfig,
     handler: FunctionHandler,
+    console: ConsoleUI,
 }
 
 impl OpenAI {
@@ -27,12 +33,11 @@ impl OpenAI {
             return Err(Error::ApiKeyNotFound);
         }
 
-        let handler = FunctionHandler::new()?;
-
         Ok(OpenAI {
             functions,
             config,
-            handler,
+            handler: FunctionHandler::new()?,
+            console: ConsoleUI::new(),
         })
     }
 
@@ -80,28 +85,57 @@ impl OpenAI {
         Ok(res)
     }
 
-    pub fn ask<S>(&self, query: S) -> Result<()>
-    where
-        S: AsRef<str>,
-    {
+    fn read_user_input(&self) -> Result<String> {
+        let mut query = String::new();
+
+        loop {
+            print!("Query: ");
+            io::stdout().flush()?;
+            //
+            // use readline or something so we can use CTRL+ENTER to return
+            //
+            io::stdin().read_line(&mut query)?;
+
+            let query = query.trim_end_matches('\n');
+
+            if query.is_empty() {
+                warn!("empty input...");
+                continue;
+            }
+            break;
+        }
+
+        Ok(query.trim_end_matches('\n').to_string())
+    }
+
+    pub fn ask(&self, query: Option<String>) -> Result<()> {
         let mut req = OpenAIFunctionRequest::new(&self.config.model, &self.functions);
+
+        let query = match query {
+            Some(v) => v,
+            None => self.read_user_input()?,
+        };
 
         req.with_input_role("user", query.as_ref());
 
         loop {
             let res = self.post_contents(&req)?;
 
-            //
-            // not a function call, we're done
-            //
-
-            let inputs = res.process_output(&self.handler)?;
+            let inputs = res.process_output(&self.console, &self.handler)?;
 
             if inputs.is_empty() {
-                break;
-            }
+                let query = match self.read_user_input() {
+                    Ok(v) => v,
+                    Err(e) => {
+                        error!("{e}");
+                        break;
+                    }
+                };
 
-            req.with_inputs(inputs);
+                req.with_input_role("user", query.as_ref());
+            } else {
+                req.with_inputs(inputs);
+            }
         }
 
         Ok(())
