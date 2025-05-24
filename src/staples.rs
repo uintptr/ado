@@ -5,6 +5,8 @@ use std::{
 
 use crate::error::{Error, Result};
 
+const HOME_CONFIG_DIR: &str = ".ado";
+
 fn find_file_cwd<P>(file_name: P) -> Result<PathBuf>
 where
     P: AsRef<Path>,
@@ -35,13 +37,30 @@ where
     }
 }
 
+fn find_file_home<P>(file_name: P) -> Result<PathBuf>
+where
+    P: AsRef<Path>,
+{
+    let home = env::var("HOME")?;
+
+    let file_path = Path::new(&home).join(HOME_CONFIG_DIR).join(file_name);
+
+    match file_path.exists() {
+        true => Ok(file_path),
+        false => Err(Error::FileNotFoundError { file_path }),
+    }
+}
+
 pub fn find_file<P>(file_name: P) -> Result<PathBuf>
 where
     P: AsRef<Path>,
 {
     match find_file_sxs(&file_name) {
         Ok(v) => Ok(v),
-        Err(_) => find_file_cwd(file_name),
+        Err(_) => match find_file_cwd(&file_name) {
+            Ok(v) => Ok(v),
+            Err(_) => find_file_home(file_name),
+        },
     }
 }
 

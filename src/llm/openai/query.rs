@@ -89,7 +89,7 @@ impl OpenAI {
         let mut query = String::new();
 
         loop {
-            print!("Query: ");
+            print!("Q: ");
             io::stdout().flush()?;
             //
             // use readline or something so we can use CTRL+ENTER to return

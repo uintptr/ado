@@ -1,6 +1,6 @@
 pub type Result<T> = core::result::Result<T, Error>;
 
-use std::{path::PathBuf, string::FromUtf8Error};
+use std::{env::VarError, path::PathBuf, string::FromUtf8Error};
 
 use derive_more::From;
 use glob::PatternError;
@@ -58,6 +58,8 @@ pub enum Error {
     Io(std::io::Error),
     #[from]
     Utf8(FromUtf8Error),
+    #[from]
+    Env(VarError),
 
     //
     // 3rd party
