@@ -29,6 +29,7 @@ pub enum Error {
     FunctionNotImplemented {
         name: String,
     },
+    FunctionNotSupported,
     FunctionNotAvailable,
     UnknownFunction {
         name: String,
@@ -73,21 +74,17 @@ pub enum Error {
     #[from]
     HttpError(minreq::Error),
     #[from]
-    Whois(whois_rust::WhoIsError),
-    #[from]
     Base64Error(base64::DecodeError),
     #[from]
     Glob(glob::PatternError),
     #[from]
-    X11(x11rb::errors::ConnectError),
-    #[from]
-    X11Connection(x11rb::errors::ConnectionError),
-    #[from]
-    X11Reply(x11rb::errors::ReplyError),
-    #[from]
+    #[cfg(not(target_arch = "wasm32"))]
     Which(which::Error),
     #[from]
     ShellToken(shell_words::ParseError),
+    #[from]
+    #[cfg(not(target_arch = "wasm32"))]
+    Whois(whois_rust::WhoIsError)
 }
 
 impl core::fmt::Display for Error {

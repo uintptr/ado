@@ -1,8 +1,13 @@
 use serde::{Deserialize, Deserializer};
 use serde_json::Value;
 
+#[cfg(target_arch = "wasm32")]
+use crate::console_wasm::ConsoleUI;
+#[cfg(not(target_arch = "wasm32"))]
+use crate::console::ConsoleUI;
+
+
 use crate::{
-    console::ConsoleUI,
     error::{Error, Result},
     functions::function_handler::FunctionHandler,
 };

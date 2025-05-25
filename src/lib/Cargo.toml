@@ -1,4 +1,4 @@
-    [package]
+[package]
 name = "adolib"
 version = "0.1.0"
 edition = "2024"
@@ -6,22 +6,32 @@ edition = "2024"
 [dependencies]
 base64 = "0.22.1"
 chrono = "0.4.41"
-clap = { version = "4.5.38", features = ["derive"] }
 derive_more = { version = "2.0.1", features = ["debug", "from"] }
 fern = "0.7.1"
 glob = "0.3.2"
 log = "0.4.27"
-minreq = { version = "2.13.4", features = ["https-rustls", "urlencoding"] }
+minreq = { version = "2.13.4", features = ["urlencoding"] }
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.140"
 shell-words = "1.1.0"
 toml = "0.8.22"
 walkdir = "2.5.0"
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 which = "7.0.3"
 whois-rust = "1.6.0"
 x11rb = "0.13.1"
+
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+getrandom_0_2 = { package = "getrandom", version = "0.2.15", features = ["js"] }
+wasm-bindgen = "0.2.100"
+
 
 [profile.release]
 strip = true  # Automatically strip symbols from the binary.
 opt-level = 3 # Optimize for size.
 lto = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]

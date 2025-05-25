@@ -6,7 +6,6 @@ use std::{
 
 use crate::{
     config::file::{ConfigFile, OpenAiConfig},
-    console::ConsoleUI,
     error::{Error, Result},
     functions::{config::ConfigFunctions, function_handler::FunctionHandler},
 };
@@ -14,6 +13,12 @@ use crate::{
 use log::{error, info, warn};
 
 use super::{request::OpenAIFunctionRequest, response::OpenAIFunctionResponse};
+
+#[cfg(target_arch = "wasm32")]
+use console_wasm::ConsoleUI;
+#[cfg(not(target_arch = "wasm32"))]
+use crate::console::ConsoleUI;
+
 
 pub struct OpenAI {
     functions: ConfigFunctions,

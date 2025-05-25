@@ -6,32 +6,39 @@ use crate::{
 };
 
 use super::{
-    functions_browser::FunctionsBrowser, functions_desktop_x11::FunctionsDesktop,
     functions_files::FunctionsFiles, functions_http::FunctionsHttp,
     functions_search::FunctionsSearch, functions_shell::FunctionsShell,
-    functions_whois::FunctionsWhois,
 };
 
+#[cfg(target_arch = "wasm32")]
+use super::functions_whois_wasm::FunctionsWhois;
+#[cfg(target_arch = "wasm32")]
+use super::functions_browser_wasm::FunctionsBrowser;
+
+#[cfg(not(target_arch = "wasm32"))]
+use super::functions_browser::FunctionsBrowser;
+#[cfg(not(target_arch = "wasm32"))]
+use super::functions_whois::FunctionsWhois;
+
+
 pub struct FunctionHandler {
-    whois: FunctionsWhois,
     files: FunctionsFiles,
     http: FunctionsHttp,
-    desktop: Option<FunctionsDesktop>,
     browser: FunctionsBrowser,
     search: FunctionsSearch,
     shell: FunctionsShell,
+    whois: FunctionsWhois,
 }
 
 impl FunctionHandler {
     pub fn new() -> Result<FunctionHandler> {
         Ok(FunctionHandler {
-            whois: FunctionsWhois::new()?,
             files: FunctionsFiles::new(),
             http: FunctionsHttp::new(),
-            desktop: FunctionsDesktop::new().ok(),
             browser: FunctionsBrowser::new()?,
             search: FunctionsSearch::new()?,
             shell: FunctionsShell::new(),
+            whois: FunctionsWhois::new()?,
         })
     }
 
@@ -42,10 +49,6 @@ impl FunctionHandler {
 
         match name {
             "browse" => self.browser.browse(&args),
-            "desktop_windows" => match &self.desktop {
-                Some(d) => d.windows(),
-                None => Err(Error::FunctionNotAvailable),
-            },
             "http_get" => self.http.get(&args),
             "file_write" => self.files.write(&args),
             "file_read" => self.files.read(&args),

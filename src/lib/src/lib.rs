@@ -1,4 +1,7 @@
 pub mod config;
+#[cfg(target_arch = "wasm32")]
+pub mod console_wasm;
+#[cfg(not(target_arch = "wasm32"))]
 pub mod console;
 pub mod error;
 pub mod functions;

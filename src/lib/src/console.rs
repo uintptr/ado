@@ -5,6 +5,7 @@ use std::{
 };
 
 use log::{info, warn};
+#[cfg(not(target_arch = "wasm32"))]
 use which::which;
 
 use crate::error::Result;
