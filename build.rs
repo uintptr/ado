@@ -27,8 +27,7 @@ fn main() {
     copy(&src_config, dst_config, &options).expect("Unable to copy files");
 
     //println!("cargo:warning=----------------------");
-
-    println!("cargo:warning=manifest: src={}", src_config.display(),);
+    //println!("cargo:warning=manifest: src={}", src_config.display(),);
 
     println!("cargo:rerun-if-changed={}", src_config.display());
 }

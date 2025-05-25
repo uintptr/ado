@@ -17,6 +17,7 @@ struct UserArgs {
     /// verbose
     #[arg(short, long)]
     verbose: bool,
+
     #[arg(trailing_var_arg = true, allow_hyphen_values = true, hide = true)]
     query_parts: Vec<String>,
 }
