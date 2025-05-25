@@ -23,7 +23,6 @@ version = "0.1.0"
 dependencies = [
  "adolib",
  "clap",
- "minreq",
 ]
 
 [[package]]
@@ -879,7 +878,9 @@ checksum = "f0d2aaba477837b46ec1289588180fabfccf0c3b1d1a0c6b1866240cd6cd5ce9"
 dependencies = [
  "log",
  "rustls",
+ "rustls-webpki",
  "urlencoding",
+ "webpki-roots",
 ]
 
 [[package]]
@@ -1796,6 +1797,12 @@ checksum = "1a05d73b933a847d6cccdda8f838a22ff101ad9bf93e33684f39c1f5f0eece3d"
 dependencies = [
  "unicode-ident",
 ]
+
+[[package]]
+name = "webpki-roots"
+version = "0.25.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5f20c57d8d7db6d3b86154206ae5d8fba62dd39573114de97c2cb0578251f8e1"
 
 [[package]]
 name = "which"
