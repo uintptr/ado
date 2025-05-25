@@ -15,7 +15,7 @@ use log::{error, info, warn};
 use super::{request::OpenAIFunctionRequest, response::OpenAIFunctionResponse};
 
 #[cfg(target_arch = "wasm32")]
-use console_wasm::ConsoleUI;
+use crate::console_wasm::ConsoleUI;
 #[cfg(not(target_arch = "wasm32"))]
 use crate::console::ConsoleUI;
 

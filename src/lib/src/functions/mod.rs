@@ -1,3 +1,4 @@
+mod assets;
 pub mod config;
 mod function_args;
 pub mod function_handler;
