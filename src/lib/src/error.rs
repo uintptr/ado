@@ -18,6 +18,7 @@ pub enum Error {
     FileNotFoundError {
         file_path: PathBuf,
     },
+    HomeDirNotFound,
     InvalidInputType {
         input: String,
     },
@@ -84,7 +85,7 @@ pub enum Error {
     ShellToken(shell_words::ParseError),
     #[from]
     #[cfg(not(target_arch = "wasm32"))]
-    Whois(whois_rust::WhoIsError)
+    Whois(whois_rust::WhoIsError),
 }
 
 impl core::fmt::Display for Error {

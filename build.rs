@@ -1,33 +1,41 @@
-use std::{env, path::Path};
+use std::{env, fs, path::Path};
 
-use fs_extra::dir::{CopyOptions, copy};
+const CONFIG_FILE_NAME: &str = "config.toml";
 
 fn main() {
+    let root = env::var("CARGO_MANIFEST_DIR").unwrap();
+    let src_file = Path::new(&root).join("config").join(CONFIG_FILE_NAME);
+
+    if !src_file.exists() {
+        println!("cargo:warning={} does not exist", src_file.display());
+        return;
+    }
+
+    let dot_dir_name = env::var("CARGO_PKG_NAME").unwrap();
+    let dot_dir_name = format!(".{}", dot_dir_name);
+
     //println!("cargo:warning=----------------------");
 
-    let root = env::var("CARGO_MANIFEST_DIR").unwrap();
-    let src_config = Path::new(&root).join("config");
+    let home = env::home_dir().unwrap();
+    let dst_dir = Path::new(&home).join(dot_dir_name);
 
-    let home = env::var("HOME").unwrap();
-    let dst_config = Path::new(&home).join(".ado");
+    if !dst_dir.exists() {
+        fs::create_dir_all(&dst_dir).unwrap();
+    }
+
+    let dst_file = Path::new(&dst_dir).join(CONFIG_FILE_NAME);
 
     /*
     println!(
-        "cargo:warning=manifest: src={} dst={}",
-        src_config.display(),
-        dst_config.display()
+        "cargo:warning=copy({},{})",
+        src_file.display(),
+        dst_file.display()
     );
     */
 
-    let options = CopyOptions::new()
-        .overwrite(true)
-        .skip_exist(false)
-        .copy_inside(true);
-
-    copy(&src_config, dst_config, &options).expect("Unable to copy files");
+    fs::copy(&src_file, dst_file).unwrap();
 
     //println!("cargo:warning=----------------------");
-    //println!("cargo:warning=manifest: src={}", src_config.display(),);
 
-    println!("cargo:rerun-if-changed={}", src_config.display());
+    println!("cargo:rerun-if-changed={}", src_file.display());
 }

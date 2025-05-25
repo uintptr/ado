@@ -1,4 +1,7 @@
-use std::{env, fs, path::Path};
+use std::{
+    env, fs,
+    path::{Path, PathBuf},
+};
 
 use log::error;
 use serde::Deserialize;
@@ -8,7 +11,7 @@ use crate::{
     staples::find_file,
 };
 
-const CONFIG_FILE: &str = "config.toml";
+const CONFIG_FILE_NAME: &str = "config.toml";
 const DEF_OPENAI_URL: &str = "https://api.openai.com/v1/responses";
 const DEF_OPENAI_MODEL: &str = "gpt-4.1";
 
@@ -55,10 +58,26 @@ fn openai_default_key() -> String {
     }
 }
 
-fn from_file() -> Result<ConfigFile> {
-    let rel_config = Path::new("config").join(CONFIG_FILE);
+fn find_from_home() -> Result<PathBuf> {
+    let home = env::home_dir().ok_or(Error::HomeDirNotFound)?;
 
-    let config_file = find_file(rel_config)?;
+    let config_file = Path::new(&home).join(".ado").join(CONFIG_FILE_NAME);
+
+    match config_file.exists() {
+        true => Ok(config_file),
+        false => Err(Error::FileNotFoundError {
+            file_path: config_file,
+        }),
+    }
+}
+
+fn from_file() -> Result<ConfigFile> {
+    let rel_config = Path::new("config").join(CONFIG_FILE_NAME);
+
+    let config_file = match find_file(rel_config) {
+        Ok(v) => v,
+        Err(_) => find_from_home()?,
+    };
 
     let file_data = fs::read_to_string(config_file)?;
 

@@ -5,15 +5,13 @@ use std::{
 
 use crate::error::{Error, Result};
 
-const HOME_CONFIG_DIR: &str = ".ado";
-
-fn find_file_cwd<P>(file_name: P) -> Result<PathBuf>
+fn find_file_cwd<P>(rel_file_path: P) -> Result<PathBuf>
 where
     P: AsRef<Path>,
 {
     let cwd = env::current_dir()?;
 
-    let file_path = cwd.join(file_name);
+    let file_path = cwd.join(rel_file_path);
 
     match file_path.exists() {
         true => Ok(file_path),
@@ -21,7 +19,7 @@ where
     }
 }
 
-fn find_file_sxs<P>(file_name: P) -> Result<PathBuf>
+fn find_file_sxs<P>(rel_file_path: P) -> Result<PathBuf>
 where
     P: AsRef<Path>,
 {
@@ -29,7 +27,7 @@ where
 
     let dirname = prog_dir.parent().ok_or(Error::DirnameError)?;
 
-    let file_path = dirname.join(file_name);
+    let file_path = dirname.join(rel_file_path);
 
     match file_path.exists() {
         true => Ok(file_path),
@@ -37,30 +35,13 @@ where
     }
 }
 
-fn find_file_home<P>(file_name: P) -> Result<PathBuf>
+pub fn find_file<P>(rel_file_path: P) -> Result<PathBuf>
 where
     P: AsRef<Path>,
 {
-    let home = env::var("HOME")?;
-
-    let file_path = Path::new(&home).join(HOME_CONFIG_DIR).join(file_name);
-
-    match file_path.exists() {
-        true => Ok(file_path),
-        false => Err(Error::FileNotFoundError { file_path }),
-    }
-}
-
-pub fn find_file<P>(file_name: P) -> Result<PathBuf>
-where
-    P: AsRef<Path>,
-{
-    match find_file_sxs(&file_name) {
+    match find_file_sxs(&rel_file_path) {
         Ok(v) => Ok(v),
-        Err(_) => match find_file_cwd(&file_name) {
-            Ok(v) => Ok(v),
-            Err(_) => find_file_home(file_name),
-        },
+        Err(_) => find_file_cwd(&rel_file_path),
     }
 }
 
