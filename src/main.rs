@@ -1,6 +1,7 @@
+
 use std::{fs, path::Path};
 
-use ado::{error::Result, llm::openai::query::OpenAI, staples::setup_logger};
+use adolib::{error::Result, llm::openai::query::OpenAI, staples::setup_logger};
 use clap::Parser;
 
 #[derive(Parser, Debug)]
