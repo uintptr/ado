@@ -9,6 +9,7 @@ use which::which;
 
 use crate::error::Result;
 
+#[derive(Default)]
 pub struct ConsoleUI {
     glow: Option<PathBuf>,
 }
@@ -48,7 +49,7 @@ impl ConsoleUI {
 
     pub fn display_text(&self, text: &str) -> Result<()> {
         match &self.glow {
-            Some(v) => self.display_glow(&v, text),
+            Some(v) => self.display_glow(v, text),
             None => self.display_boring(text),
         }
     }

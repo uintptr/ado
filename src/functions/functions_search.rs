@@ -39,7 +39,7 @@ impl FunctionsSearch {
 
         let data = self.search_query(query)?;
 
-        args.to_base64_string(&data.as_bytes())
+        args.to_base64_string(data.as_bytes())
     }
 }
 

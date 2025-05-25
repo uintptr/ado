@@ -6,4 +6,5 @@ mod functions_desktop_x11;
 mod functions_files;
 mod functions_http;
 mod functions_search;
+mod functions_shell;
 mod functions_whois;

@@ -3,9 +3,6 @@ pub type Result<T> = core::result::Result<T, Error>;
 use std::{env::VarError, path::PathBuf, string::FromUtf8Error};
 
 use derive_more::From;
-use glob::PatternError;
-use whois_rust::WhoIsError;
-use x11rb::errors::{ConnectError, ReplyError};
 
 #[derive(Debug, From)]
 pub enum Error {
@@ -53,6 +50,7 @@ pub enum Error {
         name: String,
     },
     ApiKeyNotFound,
+    CommandNotFound,
     //
     // 2nd party
     //
@@ -75,19 +73,21 @@ pub enum Error {
     #[from]
     HttpError(minreq::Error),
     #[from]
-    Whois(WhoIsError),
+    Whois(whois_rust::WhoIsError),
     #[from]
     Base64Error(base64::DecodeError),
     #[from]
-    Glob(PatternError),
+    Glob(glob::PatternError),
     #[from]
-    X11(ConnectError),
+    X11(x11rb::errors::ConnectError),
     #[from]
     X11Connection(x11rb::errors::ConnectionError),
     #[from]
-    X11Reply(ReplyError),
+    X11Reply(x11rb::errors::ReplyError),
     #[from]
     Which(which::Error),
+    #[from]
+    ShellToken(shell_words::ParseError),
 }
 
 impl core::fmt::Display for Error {

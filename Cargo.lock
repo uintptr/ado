@@ -32,6 +32,7 @@ dependencies = [
  "minreq",
  "serde",
  "serde_json",
+ "shell-words",
  "toml",
  "walkdir",
  "which",
@@ -1235,6 +1236,12 @@ checksum = "87607cb1398ed59d48732e575a4c28a7a8ebf2454b964fe3f224f2afc07909e1"
 dependencies = [
  "serde",
 ]
+
+[[package]]
+name = "shell-words"
+version = "1.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "24188a676b6ae68c3b2cb3a01be17fbf7240ce009799bb56d5b1409051e78fde"
 
 [[package]]
 name = "shlex"

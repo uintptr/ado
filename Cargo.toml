@@ -14,6 +14,7 @@ log = "0.4.27"
 minreq = { version = "2.13.4", features = ["https-rustls", "urlencoding"] }
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.140"
+shell-words = "1.1.0"
 toml = "0.8.22"
 walkdir = "2.5.0"
 which = "7.0.3"

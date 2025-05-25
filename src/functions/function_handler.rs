@@ -8,7 +8,8 @@ use crate::{
 use super::{
     functions_browser::FunctionsBrowser, functions_desktop_x11::FunctionsDesktop,
     functions_files::FunctionsFiles, functions_http::FunctionsHttp,
-    functions_search::FunctionsSearch, functions_whois::FunctionsWhois,
+    functions_search::FunctionsSearch, functions_shell::FunctionsShell,
+    functions_whois::FunctionsWhois,
 };
 
 pub struct FunctionHandler {
@@ -18,6 +19,7 @@ pub struct FunctionHandler {
     desktop: Option<FunctionsDesktop>,
     browser: FunctionsBrowser,
     search: FunctionsSearch,
+    shell: FunctionsShell,
 }
 
 impl FunctionHandler {
@@ -29,6 +31,7 @@ impl FunctionHandler {
             desktop: FunctionsDesktop::new().ok(),
             browser: FunctionsBrowser::new()?,
             search: FunctionsSearch::new()?,
+            shell: FunctionsShell::new(),
         })
     }
 
@@ -48,6 +51,7 @@ impl FunctionHandler {
             "file_read" => self.files.read(&args),
             "file_find" => self.files.find(&args),
             "search" => self.search.search(&args),
+            "shell_exec" => self.shell.shell_exec(&args),
             "whois_query" => self.whois.query(&args),
             _ => {
                 error!("function {name} was not found");

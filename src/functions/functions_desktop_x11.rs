@@ -38,11 +38,11 @@ impl FunctionsDesktop {
                 AtomEnum::WM_NAME,
                 AtomEnum::STRING,
                 0,
-                std::u32::MAX,
+                u32::MAX,
             )?
             .reply()?;
 
-        if 0 == prop.value.len() {
+        if prop.value.is_empty() {
             return Err(Error::Empty);
         }
 
@@ -82,11 +82,7 @@ impl FunctionsDesktop {
                 Err(_) => continue,
             };
 
-            let pid = match self.pid_from_windows_id(window_id) {
-                Ok(v) => v,
-                Err(_) => 0,
-            };
-
+            let pid = self.pid_from_windows_id(window_id).unwrap_or(0);
             let w = Window { name, pid };
 
             windows.insert(w);

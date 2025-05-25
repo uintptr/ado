@@ -19,14 +19,16 @@ fn main() {
     );
     */
 
-    let options = CopyOptions {
-        overwrite: true,
-        skip_exist: false,
-        copy_inside: true,
-        ..Default::default()
-    };
+    let options = CopyOptions::new()
+        .overwrite(true)
+        .skip_exist(false)
+        .copy_inside(true);
 
-    copy(src_config, dst_config, &options).expect("Unable to copy files");
+    copy(&src_config, dst_config, &options).expect("Unable to copy files");
 
     //println!("cargo:warning=----------------------");
+
+    println!("cargo:warning=manifest: src={}", src_config.display(),);
+
+    println!("cargo:rerun-if-changed={}", src_config.display());
 }

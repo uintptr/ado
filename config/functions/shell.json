@@ -1,18 +1,18 @@
 [
     {
         "type": "function",
-        "name": "search",
-        "description": "submit a request to a web search engine like google",
+        "name": "shell_exec",
+        "description": "function to execute any shell command on the host",
         "parameters": {
             "type": "object",
             "properties": {
-                "query": {
+                "command_line": {
                     "type": "string",
-                    "description": "the query to send to the search engine. The output data will be json data base64 encoded"
+                    "description": "command line to execute, The output data will be json data base64 encoded"
                 }
             },
             "required": [
-                "query"
+                "command_line"
             ],
             "additionalProperties": false
         }

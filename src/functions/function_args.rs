@@ -13,6 +13,7 @@ pub struct FunctionArgsKV {
     pub value: String,
 }
 
+#[derive(Default)]
 pub struct FunctionArgs {
     inner: HashMap<String, Value>,
 }

@@ -17,7 +17,7 @@ use super::{request::OpenAIFunctionRequest, response::OpenAIFunctionResponse};
 
 pub struct OpenAI {
     functions: ConfigFunctions,
-    config: OpenAiConfig,
+    openai: OpenAiConfig,
     handler: FunctionHandler,
     console: ConsoleUI,
 }
@@ -27,15 +27,15 @@ impl OpenAI {
         let functions = ConfigFunctions::load()?;
         let config = ConfigFile::load()?;
 
-        let config = config.openai()?;
+        let openai = config.openai()?;
 
-        if config.key.is_empty() {
+        if openai.key.is_empty() {
             return Err(Error::ApiKeyNotFound);
         }
 
         Ok(OpenAI {
             functions,
-            config,
+            openai,
             handler: FunctionHandler::new()?,
             console: ConsoleUI::new(),
         })
@@ -60,9 +60,9 @@ impl OpenAI {
 
         self.write_to_tmp("openai_request.json", &post_data)?;
 
-        let res = minreq::post(&self.config.url)
+        let res = minreq::post(&self.openai.url)
             .with_header("Content-Type", "application/json")
-            .with_header("Authorization", format!("Bearer {}", self.config.key))
+            .with_header("Authorization", format!("Bearer {}", self.openai.key))
             .with_body(post_data)
             .send()?;
 
@@ -109,12 +109,16 @@ impl OpenAI {
     }
 
     pub fn ask(&self, query: Option<String>) -> Result<()> {
-        let mut req = OpenAIFunctionRequest::new(&self.config.model, &self.functions);
+        let mut req = OpenAIFunctionRequest::new(&self.openai.model, &self.functions);
 
         let query = match query {
             Some(v) => v,
             None => self.read_user_input()?,
         };
+
+        if let Some(prompt) = &self.openai.prompt {
+            req.with_input_role("user", prompt);
+        }
 
         req.with_input_role("user", query.as_ref());
 
