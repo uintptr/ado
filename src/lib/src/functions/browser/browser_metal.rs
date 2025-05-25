@@ -2,9 +2,7 @@ use std::{path::PathBuf, process::Command};
 
 use which::which;
 
-use crate::error::Result;
-
-use super::function_args::FunctionArgs;
+use crate::{error::Result, functions::function_args::FunctionArgs};
 
 pub struct FunctionsBrowser {
     xdg_open: PathBuf,

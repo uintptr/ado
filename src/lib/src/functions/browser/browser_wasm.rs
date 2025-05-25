@@ -1,7 +1,7 @@
-
-use crate::error::{Error, Result};
-
-use super::function_args::FunctionArgs;
+use crate::{
+    error::{Error, Result},
+    functions::function_args::FunctionArgs,
+};
 
 pub struct FunctionsBrowser {}
 
@@ -11,6 +11,6 @@ impl FunctionsBrowser {
     }
 
     pub fn browse(&self, _args: &FunctionArgs) -> Result<String> {
-        Err(Error::FunctionNotSupported)
+        Err(Error::NotImplemented)
     }
 }

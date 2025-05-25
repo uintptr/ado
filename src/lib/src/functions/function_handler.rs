@@ -6,20 +6,10 @@ use crate::{
 };
 
 use super::{
-    functions_files::FunctionsFiles, functions_http::FunctionsHttp,
-    functions_search::FunctionsSearch, functions_shell::FunctionsShell,
+    browser::browser::FunctionsBrowser, functions_files::FunctionsFiles,
+    functions_http::FunctionsHttp, functions_search::FunctionsSearch,
+    functions_shell::FunctionsShell, whois::whois::FunctionsWhois,
 };
-
-#[cfg(target_arch = "wasm32")]
-use super::functions_whois_wasm::FunctionsWhois;
-#[cfg(target_arch = "wasm32")]
-use super::functions_browser_wasm::FunctionsBrowser;
-
-#[cfg(not(target_arch = "wasm32"))]
-use super::functions_browser::FunctionsBrowser;
-#[cfg(not(target_arch = "wasm32"))]
-use super::functions_whois::FunctionsWhois;
-
 
 pub struct FunctionHandler {
     files: FunctionsFiles,

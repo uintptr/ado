@@ -1,9 +1,10 @@
 use log::info;
 use whois_rust::{WhoIs, WhoIsLookupOptions};
 
-use crate::error::{Error, Result};
-
-use super::{assets::WhoisAssets, function_args::FunctionArgs};
+use crate::{
+    error::{Error, Result},
+    functions::{assets::WhoisAssets, function_args::FunctionArgs},
+};
 
 pub struct FunctionsWhois {
     provider: WhoIs,

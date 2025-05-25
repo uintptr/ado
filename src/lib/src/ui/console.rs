@@ -10,6 +10,8 @@ use which::which;
 
 use crate::error::Result;
 
+use super::UiTrait;
+
 #[derive(Default)]
 pub struct ConsoleUI {
     glow: Option<PathBuf>,
@@ -47,8 +49,10 @@ impl ConsoleUI {
         print!("{text}");
         Ok(())
     }
+}
 
-    pub fn display_text(&self, text: &str) -> Result<()> {
+impl UiTrait for ConsoleUI {
+    fn display_text(&self, text: &str) -> Result<()> {
         match &self.glow {
             Some(v) => self.display_glow(v, text),
             None => self.display_boring(text),

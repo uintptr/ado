@@ -1,15 +1,10 @@
 use serde::{Deserialize, Deserializer};
 use serde_json::Value;
 
-#[cfg(target_arch = "wasm32")]
-use crate::console_wasm::ConsoleUI;
-#[cfg(not(target_arch = "wasm32"))]
-use crate::console::ConsoleUI;
-
-
 use crate::{
     error::{Error, Result},
     functions::function_handler::FunctionHandler,
+    ui::{UiTrait, ui::Console},
 };
 
 use super::request::{OpenAIFunctionInput, OpenAIFunctionOutput, OpenAIInput};
@@ -31,7 +26,7 @@ pub struct OpenAIOutputMessage {
 }
 
 impl OpenAIOutputMessage {
-    pub fn process(&self, console: &ConsoleUI) {
+    pub fn process(&self, console: &Console) {
         for c in self.content.iter() {
             if let Err(e) = console.display_text(&c.text) {
                 error!("{e}");
@@ -148,7 +143,7 @@ impl OpenAIFunctionResponse {
 
     pub fn process_output(
         &self,
-        console: &ConsoleUI,
+        console: &Console,
         func_handler: &FunctionHandler,
     ) -> Result<Vec<OpenAIInput>> {
         let mut inputs = Vec::new();

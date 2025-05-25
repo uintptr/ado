@@ -8,23 +8,18 @@ use crate::{
     config::file::{ConfigFile, OpenAiConfig},
     error::{Error, Result},
     functions::{config::ConfigFunctions, function_handler::FunctionHandler},
+    ui::ui::Console,
 };
 
 use log::{error, info, warn};
 
 use super::{request::OpenAIFunctionRequest, response::OpenAIFunctionResponse};
 
-#[cfg(target_arch = "wasm32")]
-use crate::console_wasm::ConsoleUI;
-#[cfg(not(target_arch = "wasm32"))]
-use crate::console::ConsoleUI;
-
-
 pub struct OpenAI {
     functions: ConfigFunctions,
     openai: OpenAiConfig,
     handler: FunctionHandler,
-    console: ConsoleUI,
+    console: Console,
 }
 
 impl OpenAI {
@@ -42,7 +37,7 @@ impl OpenAI {
             functions,
             openai,
             handler: FunctionHandler::new()?,
-            console: ConsoleUI::new(),
+            console: Console::new(),
         })
     }
 
