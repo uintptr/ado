@@ -10,10 +10,6 @@ struct UserArgs {
     #[arg(short, long)]
     query_file: Option<String>,
 
-    /// max loop
-    #[arg(short, long, default_value = "10")]
-    max_loop: i32,
-
     /// verbose
     #[arg(short, long)]
     verbose: bool,
