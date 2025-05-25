@@ -1,9 +1,11 @@
 pub mod config;
-#[cfg(target_arch = "wasm32")]
-pub mod console_wasm;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod console;
+#[cfg(target_arch = "wasm32")]
+pub mod console_wasm;
 pub mod error;
 pub mod functions;
 pub mod llm;
 pub mod staples;
+#[cfg(target_arch = "wasm32")]
+pub mod wasm_export;

@@ -1,9 +1,0 @@
-[openai]
-key="aaaaabbb"
-
-# using google GCSE API
-[search]
-cx = "aaaaaaaaaaaaaaaa"
-geo = "ca"
-key = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
-url = "https://www.googleapis.com/customsearch/v1"

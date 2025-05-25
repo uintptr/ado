@@ -1,11 +1,9 @@
-use std::path::Path;
-
 use log::info;
 use whois_rust::{WhoIs, WhoIsLookupOptions};
 
-use crate::{error::Result, staples::find_file};
+use crate::error::{Error, Result};
 
-use super::function_args::FunctionArgs;
+use super::{assets::WhoisAssets, function_args::FunctionArgs};
 
 pub struct FunctionsWhois {
     provider: WhoIs,
@@ -13,10 +11,14 @@ pub struct FunctionsWhois {
 
 impl FunctionsWhois {
     pub fn new() -> Result<Self> {
-        let rel_servers = Path::new("config").join("whois_servers.json");
-        let servers_file = find_file(rel_servers)?;
+        let config_file =
+            WhoisAssets::get("whois_servers.json").ok_or(Error::FileNotFoundError {
+                file_path: "whois_servers.json".into(),
+            })?;
 
-        let provider = WhoIs::from_path(servers_file)?;
+        let config_string = String::from_utf8(config_file.data.to_vec())?;
+
+        let provider = WhoIs::from_string(config_string)?;
 
         Ok(Self { provider })
     }

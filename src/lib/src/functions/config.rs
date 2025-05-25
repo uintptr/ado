@@ -6,7 +6,7 @@ use serde::{Deserialize, Deserializer, Serialize};
 
 use crate::{
     error::{Error, Result},
-    functions::assets::Assets,
+    functions::assets::FunctionAssets,
 };
 
 const PARAM_VALID_TYPES: &[&str] = &["object", "string", "integer", "boolean", "array"];
@@ -67,8 +67,8 @@ impl ConfigFunctions {
     pub fn load() -> Result<Self> {
         let mut list = Vec::new();
 
-        for name in Assets::iter() {
-            let f = match Assets::get(&name) {
+        for name in FunctionAssets::iter() {
+            let f = match FunctionAssets::get(&name) {
                 Some(v) => v,
                 None => {
                     error!("unable to read {}", name);
