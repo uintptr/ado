@@ -62,7 +62,13 @@ fn openai_default_key() -> String {
 fn find_from_home() -> Result<PathBuf> {
     let home = env::home_dir().ok_or(Error::HomeDirNotFound)?;
 
-    let config_file = Path::new(&home).join(DOT_DIRECTORY).join(CONFIG_FILE_NAME);
+    let dot_dir = Path::new(&home).join(DOT_DIRECTORY);
+
+    if !dot_dir.exists() {
+        return Err(Error::FileNotFoundError { file_path: dot_dir });
+    }
+
+    let config_file = dot_dir.join(CONFIG_FILE_NAME);
 
     match config_file.exists() {
         true => Ok(config_file),
@@ -87,29 +93,28 @@ fn from_file() -> Result<ConfigFile> {
     Ok(config)
 }
 
-fn from_default() -> ConfigFile {
-    let openai = OpenAiConfig {
-        key: openai_default_key(),
-        url: openai_default_url(),
-        model: openai_default_model(),
-        prompt: None,
-    };
-
-    ConfigFile {
-        openai: Some(openai),
-        search: None,
-    }
-}
-
 impl ConfigFile {
     pub fn load() -> Result<ConfigFile> {
         let config = match from_file() {
             Ok(v) => v,
-            Err(e) => {
-                error!("{e}. Using default values and OPENAI_API_KEY env variable");
-                from_default()
-            }
+            Err(e) => return Err(e),
         };
+
+        Ok(config)
+    }
+
+    pub fn load_with_url(url: String) -> Result<ConfigFile> {
+        //
+        // this is a bit of a hack so we still use a cookie-less browser
+        //
+        let res = minreq::get(url).send()?;
+
+        let data = match res.status_code {
+            200..299 => res.as_str()?,
+            _ => return Err(Error::HttpGetFailure),
+        };
+
+        let config: ConfigFile = toml::from_str(data)?;
 
         Ok(config)
     }

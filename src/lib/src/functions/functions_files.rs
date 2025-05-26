@@ -1,12 +1,21 @@
 use std::{
     env, fs,
     io::{Read, Write},
+    os::linux::fs::MetadataExt,
     path::{Path, PathBuf},
 };
 
 use base64::{Engine, prelude::BASE64_STANDARD};
+use glob::glob;
 use log::{error, info};
+use serde::Serialize;
 use walkdir::WalkDir;
+
+#[derive(Serialize)]
+struct FileEntry {
+    file_name: PathBuf,
+    file_size: u64,
+}
 
 use crate::error::{Error, Result};
 
@@ -109,6 +118,68 @@ impl FunctionsFiles {
         };
 
         Ok(file_path)
+    }
+
+    pub fn list(&self, args: &FunctionArgs) -> Result<String> {
+        let directory = match args.get_string("directory") {
+            Ok(v) => Path::new(v).to_path_buf(),
+            Err(_) => env::current_dir()?,
+        };
+
+        if !directory.exists() {
+            return Err(Error::FileNotFoundError {
+                file_path: directory,
+            });
+        }
+
+        // don't want to add recursive search just yet
+        let glob_patt = format!("{}/*", directory.display());
+
+        info!("search pattern: {glob_patt}");
+
+        let mut files = Vec::new();
+
+        for entry in glob(&glob_patt)? {
+            let file_path = match entry {
+                Ok(v) => v,
+                Err(e) => {
+                    error!("{e}");
+                    continue;
+                }
+            };
+
+            let file_name = match file_path.file_name() {
+                Some(v) => Path::new(v).to_path_buf(),
+                None => {
+                    continue;
+                }
+            };
+
+            let file_size = match fs::metadata(&file_path) {
+                Ok(v) => v.st_size(),
+                Err(e) => {
+                    error!("{e}");
+                    0
+                }
+            };
+
+            let file_entry = FileEntry {
+                file_name,
+                file_size,
+            };
+
+            info!("{}", file_path.display());
+
+            files.push(file_entry)
+        }
+
+        if files.is_empty() {
+            return Err(Error::Empty);
+        }
+
+        let ret_str = serde_json::to_string(&files)?;
+
+        Ok(ret_str)
     }
 }
 

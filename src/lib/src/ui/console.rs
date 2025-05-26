@@ -39,10 +39,44 @@ pub struct ConsoleUI {
     commands: UserCommands,
 }
 
-fn reset_console() -> Result<()> {
+fn clear_console() -> Result<()> {
     print!("{esc}c", esc = 27 as char);
     io::stdout().flush()?;
     Ok(())
+}
+
+fn init_readline() -> Result<Editor<MyHelper, FileHistory>> {
+    let config = Config::builder()
+        .auto_add_history(true)
+        .completion_type(CompletionType::Fuzzy)
+        .edit_mode(EditMode::Vi)
+        .build();
+
+    let mut rl = Editor::with_config(config)?;
+
+    let home = env::home_dir().ok_or(Error::HomeDirNotFound)?;
+
+    let dot_dir = Path::new(&home).join(DOT_DIRECTORY);
+
+    let history_file = Path::new(&dot_dir).join("history.txt");
+
+    if !dot_dir.exists() {
+        fs::create_dir_all(dot_dir)?;
+    }
+
+    if let Err(e) = rl.load_history(&history_file) {
+        info!("loading history error={e}");
+    }
+
+    let h = MyHelper {
+        completer: FilenameCompleter::new(),
+        hinter: HistoryHinter::new(),
+        validator: MatchingBracketValidator::new(),
+    };
+
+    rl.set_helper(Some(h));
+
+    Ok(rl)
 }
 
 impl ConsoleUI {
@@ -58,41 +92,12 @@ impl ConsoleUI {
             }
         };
 
-        let config = Config::builder()
-            .auto_add_history(true)
-            .completion_type(CompletionType::Fuzzy)
-            .edit_mode(EditMode::Vi)
-            .build();
-
-        let mut rl = Editor::with_config(config)?;
-
-        let home = env::home_dir().ok_or(Error::HomeDirNotFound)?;
-
-        let dot_dir = Path::new(&home).join(DOT_DIRECTORY);
-
-        let history_file = Path::new(&dot_dir).join("history.txt");
-
-        if !dot_dir.exists() {
-            fs::create_dir_all(dot_dir)?;
-        }
-
-        if let Err(e) = rl.load_history(&history_file) {
-            warn!("loading history error={e}");
-        }
-
-        let h = MyHelper {
-            completer: FilenameCompleter::new(),
-            hinter: HistoryHinter::new(),
-            validator: MatchingBracketValidator::new(),
-        };
-
-        rl.set_helper(Some(h));
-
-        let _ = reset_console();
+        // pretty start
+        clear_console()?;
 
         Ok(Self {
             glow,
-            rl: rl,
+            rl: init_readline()?,
             commands: UserCommands::new(),
         })
     }

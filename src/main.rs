@@ -1,6 +1,7 @@
 use std::{fs, path::Path};
 
 use adolib::{
+    config::file::ConfigFile,
     error::{Error, Result},
     llm::openai::query::OpenAI,
     staples::setup_logger,
@@ -19,6 +20,10 @@ struct UserArgs {
     /// verbose
     #[arg(short, long)]
     verbose: bool,
+
+    /// remote config url ( mainly for the wasm bits )
+    #[arg(short, long, default_value = "http://10.0.0.2/ado.toml")]
+    remote_config_url: Option<String>,
 
     #[arg(trailing_var_arg = true, allow_hyphen_values = true, hide = true)]
     query_parts: Vec<String>,
@@ -45,11 +50,19 @@ fn main() -> Result<()> {
         },
     };
 
-    let mut o = OpenAI::new()?;
+    let config = match ConfigFile::load() {
+        Ok(v) => v,
+        Err(e) => match args.remote_config_url {
+            Some(v) => ConfigFile::load_with_url(v)?,
+            None => return Err(e),
+        },
+    };
+
+    let mut o = OpenAI::new(config)?;
 
     match o.ask(query) {
         Ok(()) => Ok(()),
-        // CTRL+C or CTRL+D are ok
+        // CTRL+C or CTRL+D are ok, we still want to return success
         Err(Error::EOF) => Ok(()),
         Err(e) => {
             error!("{e}");

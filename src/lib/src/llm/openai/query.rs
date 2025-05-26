@@ -19,9 +19,8 @@ pub struct OpenAI {
 }
 
 impl OpenAI {
-    pub fn new() -> Result<Self> {
+    pub fn new(config: ConfigFile) -> Result<Self> {
         let functions = ConfigFunctions::load()?;
-        let config = ConfigFile::load()?;
 
         let openai = config.openai()?;
 

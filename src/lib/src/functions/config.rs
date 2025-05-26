@@ -25,7 +25,8 @@ pub struct Parameters {
     #[serde(rename = "type", deserialize_with = "validate_param_type")]
     t: String,
     properties: HashMap<String, Properties>,
-    required: Vec<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    required: Option<Vec<String>>,
 }
 
 #[derive(Debug, Default, Serialize, Deserialize)]

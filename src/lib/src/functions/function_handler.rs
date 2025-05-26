@@ -40,9 +40,10 @@ impl FunctionHandler {
         match name {
             "browse" => self.browser.browse(&args),
             "http_get" => self.http.get(&args),
-            "file_write" => self.files.write(&args),
-            "file_read" => self.files.read(&args),
             "file_find" => self.files.find(&args),
+            "file_read" => self.files.read(&args),
+            "file_list" => self.files.list(&args),
+            "file_write" => self.files.write(&args),
             "search" => self.search.search(&args),
             "shell_exec" => self.shell.shell_exec(&args),
             "whois_query" => self.whois.query(&args),

@@ -57,5 +57,20 @@
             ],
             "additionalProperties": false
         }
+    },
+    {
+        "type": "function",
+        "name": "file_list",
+        "description": "list all files in the directory specified",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "directory": {
+                    "type": "string",
+                    "description": "directory to list. This is optional, if not specifed the current workdir directory (CWD) will be used. The return value will be a list of files and some meta-data"
+                }
+            },
+            "additionalProperties": false
+        }
     }
 ]

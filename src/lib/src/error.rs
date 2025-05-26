@@ -15,6 +15,7 @@ pub enum Error {
     NotFound,
     InvalidFormat,
     Empty,
+    HttpGetFailure,
     QueryMissingError,
     ConfigNotFound,
     FileNotFoundError {
