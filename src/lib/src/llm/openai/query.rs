@@ -7,7 +7,7 @@ use crate::{
     ui::{UiTrait, ui::Console},
 };
 
-use log::{error, info};
+use log::{error, info, warn};
 
 use super::{request::OpenAIFunctionRequest, response::OpenAIFunctionResponse};
 
@@ -81,12 +81,12 @@ impl OpenAI {
         Ok(res)
     }
 
-    pub fn ask(&mut self, query: Option<String>) -> Result<()> {
+    fn query_loop(&mut self, query: Option<String>) -> Result<()> {
         let mut req = OpenAIFunctionRequest::new(&self.openai.model, &self.functions);
 
         let query = match query {
             Some(v) => v,
-            None => self.console.readline()?,
+            None => self.console.read_input()?,
         };
 
         if let Some(prompt) = &self.openai.prompt {
@@ -101,8 +101,12 @@ impl OpenAI {
             let inputs = res.process_output(&self.console, &self.handler)?;
 
             if inputs.is_empty() {
-                let query = match self.console.readline() {
+                let query = match self.console.read_input() {
                     Ok(v) => v,
+                    Err(Error::ResetInput) => {
+                        warn!("resetting input buffer");
+                        break;
+                    }
                     Err(e) => {
                         error!("{e}");
                         break;
@@ -116,5 +120,21 @@ impl OpenAI {
         }
 
         Ok(())
+    }
+
+    pub fn ask(&mut self, query: Option<String>) -> Result<()> {
+        let mut local_query = query;
+
+        loop {
+            let ret = self.query_loop(local_query);
+
+            local_query = None;
+
+            if let Err(Error::ResetInput) = ret {
+                continue;
+            }
+
+            break ret;
+        }
     }
 }

@@ -16,7 +16,7 @@ impl UiTrait for WasmUI {
         Err(Error::NotImplemented)
     }
 
-    fn readline(&mut self) -> Result<String> {
+    fn read_input(&mut self) -> Result<String> {
         Err(Error::NotImplemented)
     }
 }

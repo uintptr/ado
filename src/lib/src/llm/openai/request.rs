@@ -63,6 +63,10 @@ impl<'a> OpenAIFunctionRequest<'a> {
         self.input.push(OpenAIInput::Content(content))
     }
 
+    pub fn reset_input(&mut self) {
+        self.input = vec![];
+    }
+
     pub fn with_inputs(&mut self, inputs: Vec<OpenAIInput>) {
         self.input.extend(inputs)
     }

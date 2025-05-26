@@ -10,6 +10,7 @@ pub enum Error {
     // 1st party
     //
     EOF,
+    ResetInput,
     DirnameError,
     NotFound,
     InvalidFormat,

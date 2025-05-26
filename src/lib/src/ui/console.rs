@@ -1,21 +1,42 @@
 use std::{
+    env, fs,
     io::Write,
     path::{Path, PathBuf},
     process::{Command, Stdio},
 };
 
 use log::{error, info, warn};
-use rustyline::{DefaultEditor, error::ReadlineError};
-#[cfg(not(target_arch = "wasm32"))]
 use which::which;
 
-use crate::error::{Error, Result};
+use crate::{
+    const_vars::DOT_DIRECTORY,
+    error::{Error, Result},
+};
 
-use super::UiTrait;
+use rustyline::completion::FilenameCompleter;
+use rustyline::error::ReadlineError;
+use rustyline::history::FileHistory;
+use rustyline::validate::MatchingBracketValidator;
+use rustyline::{Completer, Helper, Hinter, Validator};
+use rustyline::{CompletionType, Config, EditMode, Editor};
+use rustyline::{Highlighter, hint::HistoryHinter};
+
+use super::{UiTrait, user_commands::UserCommands};
+
+#[derive(Helper, Completer, Highlighter, Hinter, Validator)]
+struct MyHelper {
+    #[rustyline(Completer)]
+    completer: FilenameCompleter,
+    #[rustyline(Validator)]
+    validator: MatchingBracketValidator,
+    #[rustyline(Hinter)]
+    hinter: HistoryHinter,
+}
 
 pub struct ConsoleUI {
     glow: Option<PathBuf>,
-    rl: DefaultEditor,
+    rl: Editor<MyHelper, FileHistory>,
+    commands: UserCommands,
 }
 
 impl ConsoleUI {
@@ -31,9 +52,41 @@ impl ConsoleUI {
             }
         };
 
-        let rl = DefaultEditor::new()?;
+        let config = Config::builder()
+            .auto_add_history(true)
+            .completion_type(CompletionType::Fuzzy)
+            .edit_mode(EditMode::Vi)
+            .build();
 
-        Ok(Self { glow, rl })
+        let mut rl = Editor::with_config(config)?;
+
+        let home = env::home_dir().ok_or(Error::HomeDirNotFound)?;
+
+        let dot_dir = Path::new(&home).join(DOT_DIRECTORY);
+
+        let history_file = Path::new(&dot_dir).join("history.txt");
+
+        if !dot_dir.exists() {
+            fs::create_dir_all(dot_dir)?;
+        }
+
+        if let Err(e) = rl.load_history(&history_file) {
+            warn!("loading history error={e}");
+        }
+
+        let h = MyHelper {
+            completer: FilenameCompleter::new(),
+            hinter: HistoryHinter::new(),
+            validator: MatchingBracketValidator::new(),
+        };
+
+        rl.set_helper(Some(h));
+
+        Ok(Self {
+            glow,
+            rl: rl,
+            commands: UserCommands::new(),
+        })
     }
 
     fn display_glow(&self, glow: &Path, text: &str) -> Result<()> {
@@ -52,20 +105,14 @@ impl ConsoleUI {
         print!("{text}");
         Ok(())
     }
-}
-
-impl UiTrait for ConsoleUI {
-    fn display(&self, text: &str) -> Result<()> {
-        match &self.glow {
-            Some(v) => self.display_glow(v, text),
-            None => self.display_boring(text),
-        }
-    }
 
     fn readline(&mut self) -> Result<String> {
         loop {
             let res = match self.rl.readline("> ") {
-                Ok(line) => Ok(line),
+                Ok(line) => {
+                    self.rl.add_history_entry(&line)?;
+                    Ok(line)
+                }
                 // CTRL+D
                 Err(ReadlineError::Eof) => Err(Error::EOF),
                 // CTRL+C
@@ -87,33 +134,33 @@ impl UiTrait for ConsoleUI {
             }
         }
     }
+}
 
-    /*
-    fn readline(&self) -> Result<String> {
-        let readline = self.readline(">>")?;
-
-        let mut query = String::new();
-
-        loop {
-            print!("> ");
-            io::stdout().flush()?;
-            //
-            // use readline or something so we can use CTRL+ENTER to return
-            //
-            io::stdin().read_line(&mut query)?;
-
-            let query = query.trim_end_matches('\n');
-
-            if query.is_empty() {
-                warn!("empty input...");
-                continue;
-            }
-            break;
+impl UiTrait for ConsoleUI {
+    fn display(&self, text: &str) -> Result<()> {
+        match &self.glow {
+            Some(v) => self.display_glow(v, text),
+            None => self.display_boring(text),
         }
-
-        Ok(query.trim_end_matches('\n').to_string())
     }
-    */
+
+    fn read_input(&mut self) -> Result<String> {
+        loop {
+            let line = self.readline()?;
+
+            // remove leading / trailing white spaces
+            let line = line.trim().to_string();
+
+            match self.commands.process(&line) {
+                Ok(r) => {
+                    self.display(&r)?;
+                    continue;
+                }
+                Err(Error::CommandNotFound) => break Ok(line),
+                Err(e) => break Err(e.into()),
+            }
+        }
+    }
 }
 
 #[cfg(test)]

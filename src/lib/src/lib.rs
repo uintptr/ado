@@ -1,4 +1,5 @@
 pub mod config;
+pub mod const_vars;
 pub mod error;
 pub mod functions;
 pub mod llm;

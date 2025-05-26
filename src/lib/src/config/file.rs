@@ -7,6 +7,7 @@ use log::error;
 use serde::Deserialize;
 
 use crate::{
+    const_vars::DOT_DIRECTORY,
     error::{Error, Result},
     staples::find_file,
 };
@@ -61,7 +62,7 @@ fn openai_default_key() -> String {
 fn find_from_home() -> Result<PathBuf> {
     let home = env::home_dir().ok_or(Error::HomeDirNotFound)?;
 
-    let config_file = Path::new(&home).join(".ado").join(CONFIG_FILE_NAME);
+    let config_file = Path::new(&home).join(DOT_DIRECTORY).join(CONFIG_FILE_NAME);
 
     match config_file.exists() {
         true => Ok(config_file),
