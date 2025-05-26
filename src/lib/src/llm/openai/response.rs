@@ -28,7 +28,7 @@ pub struct OpenAIOutputMessage {
 impl OpenAIOutputMessage {
     pub fn process(&self, console: &Console) {
         for c in self.content.iter() {
-            if let Err(e) = console.display_text(&c.text) {
+            if let Err(e) = console.display(&c.text) {
                 error!("{e}");
             }
         }

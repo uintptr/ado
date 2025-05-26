@@ -1,8 +1,13 @@
-
 use std::{fs, path::Path};
 
-use adolib::{error::Result, llm::openai::query::OpenAI, staples::setup_logger};
+use adolib::{
+    error::{Error, Result},
+    llm::openai::query::OpenAI,
+    staples::setup_logger,
+};
 use clap::Parser;
+
+use log::error;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -40,7 +45,15 @@ fn main() -> Result<()> {
         },
     };
 
-    let o = OpenAI::new()?;
+    let mut o = OpenAI::new()?;
 
-    o.ask(query)
+    match o.ask(query) {
+        Ok(()) => Ok(()),
+        // CTRL+C or CTRL+D are ok
+        Err(Error::EOF) => Ok(()),
+        Err(e) => {
+            error!("{e}");
+            Err(e)
+        }
+    }
 }

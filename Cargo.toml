@@ -5,7 +5,8 @@ edition = "2024"
 
 [dependencies]
 clap = { version = "4.5.38", features = ["derive"] }
-adolib = { path="./src/lib" }
+adolib = { path = "./src/lib" }
+log = "0.4.27"
 
 
 [profile.release]

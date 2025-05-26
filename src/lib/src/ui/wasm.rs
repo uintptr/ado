@@ -1,4 +1,4 @@
-use crate::error::Result;
+use crate::error::{Error, Result};
 
 use super::UiTrait;
 
@@ -6,13 +6,17 @@ use super::UiTrait;
 pub struct WasmUI {}
 
 impl WasmUI {
-    pub fn new() -> Self {
-        Self {}
+    pub fn new() -> Result<Self> {
+        Ok(Self {})
     }
 }
 
 impl UiTrait for WasmUI {
-    fn display_text(&self, _text: &str) -> Result<()> {
-        Ok(())
+    fn display(&self, _text: &str) -> Result<()> {
+        Err(Error::NotImplemented)
+    }
+
+    fn readline(&mut self) -> Result<String> {
+        Err(Error::NotImplemented)
     }
 }

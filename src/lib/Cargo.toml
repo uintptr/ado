@@ -22,6 +22,7 @@ walkdir = "2.5.0"
 which = "7.0.3"
 whois-rust = "1.6.0"
 x11rb = "0.13.1"
+rustyline = "15.0.0"
 
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]

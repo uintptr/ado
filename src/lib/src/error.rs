@@ -9,6 +9,7 @@ pub enum Error {
     //
     // 1st party
     //
+    EOF,
     DirnameError,
     NotFound,
     InvalidFormat,
@@ -86,6 +87,9 @@ pub enum Error {
     #[from]
     #[cfg(not(target_arch = "wasm32"))]
     Whois(whois_rust::WhoIsError),
+    #[from]
+    #[cfg(not(target_arch = "wasm32"))]
+    Readline(rustyline::error::ReadlineError),
 }
 
 impl core::fmt::Display for Error {

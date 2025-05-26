@@ -1,7 +1,8 @@
 use crate::error::Result;
 
 pub trait UiTrait {
-    fn display_text(&self, _text: &str) -> Result<()>;
+    fn display(&self, _text: &str) -> Result<()>;
+    fn readline(&mut self) -> Result<String>;
 }
 
 #[cfg(target_arch = "wasm32")]

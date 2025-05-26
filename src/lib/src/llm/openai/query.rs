@@ -1,17 +1,13 @@
-use std::{
-    fs,
-    io::{self, Write},
-    path::Path,
-};
+use std::{fs, io::Write, path::Path};
 
 use crate::{
     config::file::{ConfigFile, OpenAiConfig},
     error::{Error, Result},
     functions::{config::ConfigFunctions, function_handler::FunctionHandler},
-    ui::ui::Console,
+    ui::{UiTrait, ui::Console},
 };
 
-use log::{error, info, warn};
+use log::{error, info};
 
 use super::{request::OpenAIFunctionRequest, response::OpenAIFunctionResponse};
 
@@ -37,7 +33,7 @@ impl OpenAI {
             functions,
             openai,
             handler: FunctionHandler::new()?,
-            console: Console::new(),
+            console: Console::new()?,
         })
     }
 
@@ -85,35 +81,12 @@ impl OpenAI {
         Ok(res)
     }
 
-    fn read_user_input(&self) -> Result<String> {
-        let mut query = String::new();
-
-        loop {
-            print!("Q: ");
-            io::stdout().flush()?;
-            //
-            // use readline or something so we can use CTRL+ENTER to return
-            //
-            io::stdin().read_line(&mut query)?;
-
-            let query = query.trim_end_matches('\n');
-
-            if query.is_empty() {
-                warn!("empty input...");
-                continue;
-            }
-            break;
-        }
-
-        Ok(query.trim_end_matches('\n').to_string())
-    }
-
-    pub fn ask(&self, query: Option<String>) -> Result<()> {
+    pub fn ask(&mut self, query: Option<String>) -> Result<()> {
         let mut req = OpenAIFunctionRequest::new(&self.openai.model, &self.functions);
 
         let query = match query {
             Some(v) => v,
-            None => self.read_user_input()?,
+            None => self.console.readline()?,
         };
 
         if let Some(prompt) = &self.openai.prompt {
@@ -128,7 +101,7 @@ impl OpenAI {
             let inputs = res.process_output(&self.console, &self.handler)?;
 
             if inputs.is_empty() {
-                let query = match self.read_user_input() {
+                let query = match self.console.readline() {
                     Ok(v) => v,
                     Err(e) => {
                         error!("{e}");
