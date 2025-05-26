@@ -1,7 +1,6 @@
 use std::{
     env, fs,
     io::{Read, Write},
-    os::linux::fs::MetadataExt,
     path::{Path, PathBuf},
 };
 
@@ -156,7 +155,7 @@ impl FunctionsFiles {
             };
 
             let file_size = match fs::metadata(&file_path) {
-                Ok(v) => v.st_size(),
+                Ok(v) => v.len(),
                 Err(e) => {
                     error!("{e}");
                     0

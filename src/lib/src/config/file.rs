@@ -103,7 +103,7 @@ impl ConfigFile {
         Ok(config)
     }
 
-    pub fn load_with_url(url: String) -> Result<ConfigFile> {
+    pub fn load_with_url(url: &str) -> Result<ConfigFile> {
         //
         // this is a bit of a hack so we still use a cookie-less browser
         //
