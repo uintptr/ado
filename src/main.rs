@@ -53,7 +53,7 @@ fn main() -> Result<()> {
     let config = match ConfigFile::load() {
         Ok(v) => v,
         Err(e) => match args.remote_config_url {
-            Some(v) => ConfigFile::load_with_url(v)?,
+            Some(v) => ConfigFile::load_with_url(&v)?,
             None => return Err(e),
         },
     };
