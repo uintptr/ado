@@ -103,11 +103,14 @@ impl ConfigFile {
         Ok(config)
     }
 
-    pub fn load_with_url(url: &str) -> Result<ConfigFile> {
+    pub fn load_with_url<S>(url: S) -> Result<ConfigFile>
+    where
+        S: AsRef<str>,
+    {
         //
         // this is a bit of a hack so we still use a cookie-less browser
         //
-        let res = minreq::get(url).send()?;
+        let res = minreq::get(url.as_ref()).send()?;
 
         let data = match res.status_code {
             200..299 => res.as_str()?,
