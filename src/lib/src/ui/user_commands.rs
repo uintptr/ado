@@ -26,7 +26,7 @@ impl UserCommands {
         Err(Error::ResetInput)
     }
 
-    pub fn process(&self, line: &str) -> Result<String> {
+    pub fn handler(&self, line: &str) -> Result<String> {
         match line {
             "help" => self.help(),
             "reset" => self.reset(),

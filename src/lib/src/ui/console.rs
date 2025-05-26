@@ -1,6 +1,6 @@
 use std::{
     env, fs,
-    io::Write,
+    io::{self, Write},
     path::{Path, PathBuf},
     process::{Command, Stdio},
 };
@@ -37,6 +37,12 @@ pub struct ConsoleUI {
     glow: Option<PathBuf>,
     rl: Editor<MyHelper, FileHistory>,
     commands: UserCommands,
+}
+
+fn reset_console() -> Result<()> {
+    print!("{esc}c", esc = 27 as char);
+    io::stdout().flush()?;
+    Ok(())
 }
 
 impl ConsoleUI {
@@ -81,6 +87,8 @@ impl ConsoleUI {
         };
 
         rl.set_helper(Some(h));
+
+        let _ = reset_console();
 
         Ok(Self {
             glow,
@@ -151,7 +159,7 @@ impl UiTrait for ConsoleUI {
             // remove leading / trailing white spaces
             let line = line.trim().to_string();
 
-            match self.commands.process(&line) {
+            match self.commands.handler(&line) {
                 Ok(r) => {
                     self.display(&r)?;
                     continue;
