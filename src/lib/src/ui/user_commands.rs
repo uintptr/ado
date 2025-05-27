@@ -30,6 +30,7 @@ impl UserCommands {
         match line {
             "help" => self.help(),
             "reset" => self.reset(),
+            "r" => self.reset(),
             "quit" => Err(Error::EOF),
             "history" => Err(Error::NotImplemented),
             _ => Err(Error::CommandNotFound),
