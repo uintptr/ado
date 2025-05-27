@@ -15,7 +15,7 @@ use super::{
 pub struct FunctionHandler<'a> {
     files: FunctionsFiles,
     http: FunctionsHttp,
-    browser: FunctionsBrowser,
+    browser: Option<FunctionsBrowser>,
     search: FunctionsSearch<'a>,
     shell: FunctionsShell,
     whois: FunctionsWhois,
@@ -26,7 +26,7 @@ impl<'a> FunctionHandler<'a> {
         Ok(FunctionHandler {
             files: FunctionsFiles::new(),
             http: FunctionsHttp::new(),
-            browser: FunctionsBrowser::new()?,
+            browser: FunctionsBrowser::new().ok(),
             search: FunctionsSearch::new(config)?,
             shell: FunctionsShell::new(),
             whois: FunctionsWhois::new()?,
@@ -39,7 +39,10 @@ impl<'a> FunctionHandler<'a> {
         let args = FunctionArgs::new(args)?;
 
         match name {
-            "browse" => self.browser.browse(&args),
+            "browse" => match &self.browser {
+                Some(browser) => browser.browse(&args),
+                None => Err(Error::FunctionNotSupported),
+            },
             "http_get" => self.http.get(&args),
             "file_find" => self.files.find(&args),
             "file_read" => self.files.read(&args),
