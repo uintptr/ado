@@ -1,5 +1,5 @@
 use std::{
-    env, fs,
+    fs,
     io::{self, Write},
     path::{Path, PathBuf},
     process::{Command, Stdio},
@@ -48,13 +48,13 @@ fn clear_console() -> Result<()> {
 fn init_readline() -> Result<Editor<MyHelper, FileHistory>> {
     let config = Config::builder()
         .auto_add_history(true)
-        .completion_type(CompletionType::Fuzzy)
+        .completion_type(CompletionType::List)
         .edit_mode(EditMode::Vi)
         .build();
 
     let mut rl = Editor::with_config(config)?;
 
-    let home = env::home_dir().ok_or(Error::HomeDirNotFound)?;
+    let home = home::home_dir().ok_or(Error::HomeDirNotFound)?;
 
     let dot_dir = Path::new(&home).join(DOT_DIRECTORY);
 

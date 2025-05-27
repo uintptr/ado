@@ -23,6 +23,7 @@ version = "0.1.0"
 dependencies = [
  "adolib",
  "clap",
+ "home",
  "log",
 ]
 
@@ -36,6 +37,7 @@ dependencies = [
  "fern",
  "getrandom",
  "glob",
+ "home",
  "log",
  "minreq",
  "ring",

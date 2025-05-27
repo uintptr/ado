@@ -60,7 +60,7 @@ fn openai_default_key() -> String {
 }
 
 fn find_from_home() -> Result<PathBuf> {
-    let home = env::home_dir().ok_or(Error::HomeDirNotFound)?;
+    let home = home::home_dir().ok_or(Error::HomeDirNotFound)?;
 
     let dot_dir = Path::new(&home).join(DOT_DIRECTORY);
 

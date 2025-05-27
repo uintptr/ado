@@ -1,4 +1,8 @@
-use std::{env, fs, path::Path};
+use std::{
+    env::{self},
+    fs,
+    path::Path,
+};
 
 const CONFIG_FILE_NAME: &str = "config.toml";
 
@@ -16,7 +20,7 @@ fn main() {
 
     //println!("cargo:warning=----------------------");
 
-    let home = env::home_dir().unwrap();
+    let home = home::home_dir().unwrap();
     let dst_dir = Path::new(&home).join(dot_dir_name);
 
     if !dst_dir.exists() {

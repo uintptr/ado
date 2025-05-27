@@ -28,6 +28,7 @@ rustyline = { version = "15.0.0", features = [
     "termios",
     "with-fuzzy",
 ] }
+home = "0.5.11"
 
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
