@@ -25,6 +25,10 @@ struct UserArgs {
     #[arg(short, long, default_value = "http://10.0.0.2/ado.toml")]
     remote_config_url: Option<String>,
 
+    /// bash command_not_found_handle
+    #[arg(short, long)]
+    shell_handler: Option<String>,
+
     #[arg(trailing_var_arg = true, allow_hyphen_values = true, hide = true)]
     query_parts: Vec<String>,
 }
@@ -37,16 +41,50 @@ where
     Ok(data)
 }
 
+fn is_it_a_question(query: &str) -> bool {
+    if query.starts_with("how ")
+        || query.starts_with("how's ")
+        || query.starts_with("does ")
+        || query.starts_with("is ")
+        || query.starts_with("what ")
+        || query.starts_with("what's")
+        || query.starts_with("whats")
+        || query.starts_with("is it")
+        || query.starts_with("why ")
+        || query.starts_with("which ")
+        || query.starts_with("can ")
+        || query.starts_with("if ")
+        || query.starts_with("are there")
+        || query.starts_with("where ")
+        || query.starts_with("when ")
+        || query.contains(" is it ")
+        || query.contains(" how to ")
+    {
+        return true;
+    }
+
+    false
+}
+
 fn main() -> Result<()> {
     let args = UserArgs::parse();
 
     setup_logger(args.verbose)?;
 
-    let query = match args.query_file {
-        Some(v) => Some(file_to_string(v)?),
-        None => match args.query_parts.is_empty() {
-            true => None,
-            false => Some(args.query_parts.join(" ")),
+    let query = match args.shell_handler {
+        Some(v) => match is_it_a_question(&v) {
+            true => Some(v),
+            false => {
+                println!("ado: {}: command not found", v);
+                return Ok(());
+            }
+        },
+        None => match args.query_file {
+            Some(v) => Some(file_to_string(v)?),
+            None => match args.query_parts.is_empty() {
+                true => None,
+                false => Some(args.query_parts.join(" ")),
+            },
         },
     };
 

@@ -11,5 +11,5 @@ log = "0.4.27"
 
 [profile.release]
 strip = true  # Automatically strip symbols from the binary.
-opt-level = 3 # Optimize for size.
+opt-level = "s" # Optimize for size.
 lto = true

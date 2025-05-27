@@ -7,7 +7,7 @@ use crate::{
     ui::{UiTrait, ui::Console},
 };
 
-use log::{error, info, warn};
+use log::{error, info};
 
 use super::{request::OpenAIFunctionRequest, response::OpenAIFunctionResponse};
 
@@ -102,14 +102,7 @@ impl<'a> OpenAI<'a> {
             if inputs.is_empty() {
                 let query = match self.console.read_input() {
                     Ok(v) => v,
-                    Err(Error::ResetInput) => {
-                        warn!("resetting input buffer");
-                        break;
-                    }
-                    Err(e) => {
-                        error!("{e}");
-                        break;
-                    }
+                    Err(e) => break Err(e),
                 };
 
                 req.with_input_role("user", query.as_ref());
@@ -117,8 +110,6 @@ impl<'a> OpenAI<'a> {
                 req.with_inputs(inputs);
             }
         }
-
-        Ok(())
     }
 
     pub fn ask(&mut self, query: Option<String>) -> Result<()> {
