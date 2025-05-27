@@ -184,7 +184,7 @@ impl OpenAIFunctionResponse {
 mod tests {
     use std::{fs, path::Path};
 
-    use crate::staples::find_file;
+    use crate::{config::file::ConfigFile, staples::find_file};
 
     use super::*;
 
@@ -198,7 +198,9 @@ mod tests {
 
         let res = OpenAIFunctionResponse::from_string(&resp_json).unwrap();
 
-        let handler = FunctionHandler::new().unwrap();
+        let config = ConfigFile::load().unwrap();
+
+        let handler = FunctionHandler::new(&config).unwrap();
         let console = ConsoleUI::new();
 
         let inputs = res.process_output(&console, &handler).unwrap();

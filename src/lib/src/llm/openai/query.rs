@@ -1,4 +1,4 @@
-use std::{fs, io::Write, path::Path};
+use std::{fs, io::{self, Write}, path::Path};
 
 use crate::{
     config::file::{ConfigFile, OpenAiConfig},
@@ -8,6 +8,7 @@ use crate::{
 };
 
 use log::{error, info};
+use spinner::SpinnerBuilder;
 
 use super::{request::OpenAIFunctionRequest, response::OpenAIFunctionResponse};
 
@@ -95,7 +96,11 @@ impl<'a> OpenAI<'a> {
         req.with_input_role("user", query.as_ref());
 
         loop {
+            let spinner = SpinnerBuilder::new("".into()).start();
             let res = self.post_contents(&req)?;
+            spinner.close();
+            print!("\r ");
+            io::stdout().flush().unwrap();
 
             let inputs = res.process_output(&self.console, &self.handler)?;
 

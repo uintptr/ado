@@ -18,4 +18,5 @@ pub mod ui {
     pub use super::wasm::WasmUI as Console;
 }
 
+//pub mod spinner;
 mod user_commands;
