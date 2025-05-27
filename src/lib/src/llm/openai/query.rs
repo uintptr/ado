@@ -11,15 +11,15 @@ use log::{error, info, warn};
 
 use super::{request::OpenAIFunctionRequest, response::OpenAIFunctionResponse};
 
-pub struct OpenAI {
+pub struct OpenAI<'a> {
     functions: ConfigFunctions,
-    openai: OpenAiConfig,
-    handler: FunctionHandler,
+    openai: &'a OpenAiConfig,
+    handler: FunctionHandler<'a>,
     console: Console,
 }
 
-impl OpenAI {
-    pub fn new(config: ConfigFile) -> Result<Self> {
+impl<'a> OpenAI<'a> {
+    pub fn new(config: &'a ConfigFile) -> Result<OpenAI<'a>> {
         let functions = ConfigFunctions::load()?;
 
         let openai = config.openai()?;
@@ -31,7 +31,7 @@ impl OpenAI {
         Ok(OpenAI {
             functions,
             openai,
-            handler: FunctionHandler::new()?,
+            handler: FunctionHandler::new(config)?,
             console: Console::new()?,
         })
     }

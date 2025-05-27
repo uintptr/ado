@@ -7,13 +7,12 @@ use crate::{
 
 use super::function_args::FunctionArgs;
 
-pub struct FunctionsSearch {
-    google: GoogleConfig,
+pub struct FunctionsSearch<'a> {
+    google: &'a GoogleConfig,
 }
 
-impl FunctionsSearch {
-    pub fn new() -> Result<Self> {
-        let config = ConfigFile::load()?;
+impl<'a> FunctionsSearch<'a> {
+    pub fn new(config: &'a ConfigFile) -> Result<Self> {
         let google = config.search()?;
 
         Ok(Self { google })

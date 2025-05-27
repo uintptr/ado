@@ -58,7 +58,7 @@ fn main() -> Result<()> {
         },
     };
 
-    let mut o = OpenAI::new(config)?;
+    let mut o = OpenAI::new(&config)?;
 
     match o.ask(query) {
         Ok(()) => Ok(()),

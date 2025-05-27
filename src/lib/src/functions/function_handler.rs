@@ -1,6 +1,7 @@
 use log::{error, info};
 
 use crate::{
+    config::file::ConfigFile,
     error::{Error, Result},
     functions::function_args::FunctionArgs,
 };
@@ -11,22 +12,22 @@ use super::{
     functions_shell::FunctionsShell, whois::whois::FunctionsWhois,
 };
 
-pub struct FunctionHandler {
+pub struct FunctionHandler<'a> {
     files: FunctionsFiles,
     http: FunctionsHttp,
     browser: FunctionsBrowser,
-    search: FunctionsSearch,
+    search: FunctionsSearch<'a>,
     shell: FunctionsShell,
     whois: FunctionsWhois,
 }
 
-impl FunctionHandler {
-    pub fn new() -> Result<FunctionHandler> {
+impl<'a> FunctionHandler<'a> {
+    pub fn new(config: &ConfigFile) -> Result<FunctionHandler> {
         Ok(FunctionHandler {
             files: FunctionsFiles::new(),
             http: FunctionsHttp::new(),
             browser: FunctionsBrowser::new()?,
-            search: FunctionsSearch::new()?,
+            search: FunctionsSearch::new(config)?,
             shell: FunctionsShell::new(),
             whois: FunctionsWhois::new()?,
         })

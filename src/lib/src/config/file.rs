@@ -122,11 +122,17 @@ impl ConfigFile {
         Ok(config)
     }
 
-    pub fn openai(self) -> Result<OpenAiConfig> {
-        self.openai.ok_or(Error::ConfigNotFound)
+    pub fn openai(&self) -> Result<&OpenAiConfig> {
+        match &self.openai {
+            Some(v) => Ok(v),
+            None => Err(Error::ConfigNotFound),
+        }
     }
 
-    pub fn search(self) -> Result<GoogleConfig> {
-        self.search.ok_or(Error::ConfigNotFound)
+    pub fn search(&self) -> Result<&GoogleConfig> {
+        match &self.search {
+            Some(v) => Ok(v),
+            None => Err(Error::ConfigNotFound),
+        }
     }
 }
