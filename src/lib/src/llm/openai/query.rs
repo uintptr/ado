@@ -1,4 +1,8 @@
-use std::{fs, io::{self, Write}, path::Path};
+use std::{
+    fs,
+    io::{self, Write},
+    path::Path,
+};
 
 use crate::{
     config::file::{ConfigFile, OpenAiConfig},
