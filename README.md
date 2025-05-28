@@ -1,4 +1,4 @@
-# Ado ( AI DO ? )
+# Ado
 
 
 ## Install from source
