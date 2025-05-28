@@ -57,6 +57,7 @@ fn is_it_a_question(query: &str) -> bool {
         || query.starts_with("are there")
         || query.starts_with("where ")
         || query.starts_with("when ")
+        || query.starts_with("are ")
         || query.contains(" is it ")
         || query.contains(" how to ")
     {
