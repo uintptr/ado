@@ -23,7 +23,7 @@ walkdir = "2.5.0"
 which = "7.0.3"
 whois-rust = "1.6.0"
 x11rb = "0.13.1"
-rustyline = { version = "15.0.0", features = [
+rustyline = { version = "16.0.0", features = [
     "derive",
     "rustyline-derive",
     "termios",
