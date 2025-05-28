@@ -5,11 +5,12 @@ use std::{
     process::{Command, Stdio},
 };
 
+use colored::Colorize;
 use log::{error, info, warn};
 use which::which;
 
 use crate::{
-    const_vars::DOT_DIRECTORY,
+    const_vars::{DOT_DIRECTORY, PKG_NAME, PKG_VERSION},
     error::{Error, Result},
 };
 
@@ -94,6 +95,8 @@ impl ConsoleUI {
 
         // pretty start
         clear_console()?;
+        let banner = format!("{} {}", PKG_NAME, PKG_VERSION);
+        println!("{}", banner.bold().yellow());
 
         Ok(Self {
             glow,
