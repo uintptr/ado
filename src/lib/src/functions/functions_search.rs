@@ -1,4 +1,5 @@
 use log::info;
+use reqwest::Client;
 
 use crate::{
     config::file::{ConfigFile, GoogleConfig},
@@ -8,6 +9,7 @@ use crate::{
 use super::function_args::FunctionArgs;
 
 pub struct FunctionsSearch<'a> {
+    client: Client,
     google: &'a GoogleConfig,
 }
 
@@ -15,28 +17,39 @@ impl<'a> FunctionsSearch<'a> {
     pub fn new(config: &'a ConfigFile) -> Result<Self> {
         let google = config.search()?;
 
-        Ok(Self { google })
+        Ok(Self {
+            client: Client::new(),
+            google,
+        })
     }
 
-    pub fn search_query(&self, query: &str) -> Result<String> {
-        let res = minreq::get(&self.google.url)
-            .with_param("key", &self.google.key)
-            .with_param("cx", &self.google.cx)
-            .with_param("q", query)
-            .with_param("gl", &self.google.geo)
-            .send()?;
+    pub async fn search_query<S>(&self, query: S) -> Result<String>
+    where
+        S: AsRef<str>,
+    {
+        let res = self
+            .client
+            .get(&self.google.url)
+            .query(&[
+                ("key", self.google.key.as_str()),
+                ("cx", self.google.cx.as_str()),
+                ("q", query.as_ref()),
+                ("gl", self.google.geo.as_str()),
+            ])
+            .send()
+            .await?;
 
-        let result_string = res.as_str()?;
+        let body = res.text().await?;
 
-        Ok(result_string.to_string())
+        Ok(body)
     }
 
-    pub fn search(&self, args: &FunctionArgs) -> Result<String> {
+    pub async fn search(&self, args: &FunctionArgs) -> Result<String> {
         let query = args.get_string("query")?;
 
         info!("search term: {query}");
 
-        let data = self.search_query(query)?;
+        let data = self.search_query(query).await?;
 
         args.to_base64_string(data.as_bytes())
     }

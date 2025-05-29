@@ -33,7 +33,7 @@ impl<'a> FunctionHandler<'a> {
         })
     }
 
-    pub fn call(&self, name: &str, args: &str) -> Result<String> {
+    pub async fn call(&self, name: &str, args: &str) -> Result<String> {
         info!("executing {name}");
 
         let args = FunctionArgs::new(args)?;
@@ -43,12 +43,12 @@ impl<'a> FunctionHandler<'a> {
                 Some(browser) => browser.browse(&args),
                 None => Err(Error::FunctionNotSupported),
             },
-            "http_get" => self.http.get(&args),
+            "http_get" => self.http.get(&args).await,
             "file_find" => self.files.find(&args),
             "file_read" => self.files.read(&args),
             "file_list" => self.files.list(&args),
             "file_write" => self.files.write(&args),
-            "search" => self.search.search(&args),
+            "search" => self.search.search(&args).await,
             "shell_exec" => self.shell.shell_exec(&args),
             "whois_query" => self.whois.query(&args),
             _ => {

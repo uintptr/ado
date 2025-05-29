@@ -12,6 +12,7 @@ use crate::{
 };
 
 use log::{error, info};
+use reqwest::Client;
 use spinner::SpinnerBuilder;
 
 const FUNC_PROMPT_PRE: &str = r#"Dont forget that you have access series of
@@ -21,6 +22,7 @@ the list of functions"#;
 use super::{request::OpenAIFunctionRequest, response::OpenAIFunctionResponse};
 
 pub struct OpenAI<'a> {
+    client: Client,
     functions: ConfigFunctions,
     openai: &'a OpenAiConfig,
     handler: FunctionHandler<'a>,
@@ -38,6 +40,7 @@ impl<'a> OpenAI<'a> {
         }
 
         Ok(OpenAI {
+            client: Client::new(),
             functions,
             openai,
             handler: FunctionHandler::new(config)?,
@@ -59,32 +62,39 @@ impl<'a> OpenAI<'a> {
         Ok(())
     }
 
-    pub fn post_contents(&self, request: &OpenAIFunctionRequest) -> Result<OpenAIFunctionResponse> {
+    pub async fn post_contents(
+        &self,
+        request: &OpenAIFunctionRequest<'_>,
+    ) -> Result<OpenAIFunctionResponse> {
         let post_data = request.to_json()?;
 
         self.write_to_tmp("openai_request.json", &post_data)?;
 
-        let res = minreq::post(&self.openai.url)
-            .with_header("Content-Type", "application/json")
-            .with_header("Authorization", format!("Bearer {}", self.openai.key))
-            .with_body(post_data)
-            .send()?;
+        let res = self
+            .client
+            .post(&self.openai.url)
+            .header("Content-Type", "application/json")
+            .header("Authorization", format!("Bearer {}", self.openai.key))
+            .body(post_data)
+            .send()
+            .await?;
 
         let log_msg = format!(
             "post -> code={} reason={}",
-            res.status_code, res.reason_phrase
+            res.status().as_u16(),
+            res.status().as_str()
         );
 
-        match res.status_code {
-            200..299 => info!("{log_msg}"),
-            _ => error!("{log_msg}"),
+        match res.status().is_success() {
+            true => info!("{log_msg}"),
+            false => error!("{log_msg}"),
         }
 
-        let response_json = res.as_str()?;
+        let response_json = res.text().await?;
 
-        self.write_to_tmp("openai_response.json", response_json)?;
+        self.write_to_tmp("openai_response.json", &response_json)?;
 
-        let res = OpenAIFunctionResponse::from_string(response_json)?;
+        let res = OpenAIFunctionResponse::from_string(&response_json)?;
 
         Ok(res)
     }
@@ -101,7 +111,7 @@ impl<'a> OpenAI<'a> {
         format!("{}: {}", FUNC_PROMPT_PRE, func_names_str)
     }
 
-    fn query_loop(&mut self, query: Option<String>) -> Result<()> {
+    async fn query_loop(&mut self, query: Option<String>) -> Result<()> {
         let mut req = OpenAIFunctionRequest::new(&self.openai.model, &self.functions);
 
         let query = match query {
@@ -123,12 +133,12 @@ impl<'a> OpenAI<'a> {
 
         loop {
             let spinner = SpinnerBuilder::new("".into()).start();
-            let res = self.post_contents(&req)?;
+            let res = self.post_contents(&req).await?;
             spinner.close();
             print!("\r ");
             io::stdout().flush().unwrap();
 
-            let inputs = res.process_output(&self.console, &self.handler)?;
+            let inputs = res.process_output(&self.console, &self.handler).await?;
 
             if inputs.is_empty() {
                 let query = match self.console.read_input() {
@@ -143,11 +153,11 @@ impl<'a> OpenAI<'a> {
         }
     }
 
-    pub fn ask(&mut self, query: Option<String>) -> Result<()> {
+    pub async fn ask(&mut self, query: Option<String>) -> Result<()> {
         let mut local_query = query;
 
         loop {
-            let ret = self.query_loop(local_query);
+            let ret = self.query_loop(local_query).await;
 
             local_query = None;
 

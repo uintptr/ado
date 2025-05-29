@@ -191,6 +191,6 @@ mod tests {
 
         let console = ConsoleUI::new();
 
-        console.display_text("hello world").unwrap();
+        console.display("hello world").unwrap();
     }
 }

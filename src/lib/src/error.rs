@@ -76,8 +76,6 @@ pub enum Error {
     #[from]
     LoggingError(log::SetLoggerError),
     #[from]
-    HttpError(minreq::Error),
-    #[from]
     Base64Error(base64::DecodeError),
     #[from]
     Glob(glob::PatternError),
@@ -92,6 +90,8 @@ pub enum Error {
     #[from]
     #[cfg(not(target_arch = "wasm32"))]
     Readline(rustyline::error::ReadlineError),
+    #[from]
+    Http(reqwest::Error),
 }
 
 impl core::fmt::Display for Error {

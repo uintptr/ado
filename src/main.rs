@@ -41,8 +41,9 @@ where
     let data = fs::read_to_string(file_path)?;
     Ok(data)
 }
+#[tokio::main]
 
-fn main() -> Result<()> {
+async fn main() -> Result<()> {
     let args = UserArgs::parse();
 
     setup_logger(args.verbose)?;
@@ -67,14 +68,14 @@ fn main() -> Result<()> {
     let config = match ConfigFile::load() {
         Ok(v) => v,
         Err(e) => match args.remote_config_url {
-            Some(v) => ConfigFile::load_with_url(&v)?,
+            Some(v) => ConfigFile::load_with_url(&v).await?,
             None => return Err(e),
         },
     };
 
     let mut o = OpenAI::new(&config)?;
 
-    match o.ask(query) {
+    match o.ask(query).await {
         Ok(()) => Ok(()),
         // CTRL+C or CTRL+D are ok, we still want to return success
         Err(Error::EOF) => Ok(()),

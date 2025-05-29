@@ -1,18 +1,16 @@
-use std::{
-    env, fs,
-    path::{Path, PathBuf},
-};
+use std::env;
 
 use log::error;
+use reqwest::Client;
 use serde::Deserialize;
 
-use crate::{
-    const_vars::DOT_DIRECTORY,
-    error::{Error, Result},
-    staples::find_file,
-};
+use crate::error::{Error, Result};
 
-const CONFIG_FILE_NAME: &str = "config.toml";
+#[cfg(not(target_arch = "wasm32"))]
+use super::disk::from_file;
+#[cfg(target_arch = "wasm32")]
+use super::wasm::from_file;
+
 const DEF_OPENAI_URL: &str = "https://api.openai.com/v1/responses";
 const DEF_OPENAI_MODEL: &str = "gpt-4.1";
 
@@ -59,40 +57,6 @@ fn openai_default_key() -> String {
     }
 }
 
-fn find_from_home() -> Result<PathBuf> {
-    let home = home::home_dir().ok_or(Error::HomeDirNotFound)?;
-
-    let dot_dir = Path::new(&home).join(DOT_DIRECTORY);
-
-    if !dot_dir.exists() {
-        return Err(Error::FileNotFoundError { file_path: dot_dir });
-    }
-
-    let config_file = dot_dir.join(CONFIG_FILE_NAME);
-
-    match config_file.exists() {
-        true => Ok(config_file),
-        false => Err(Error::FileNotFoundError {
-            file_path: config_file,
-        }),
-    }
-}
-
-fn from_file() -> Result<ConfigFile> {
-    let rel_config = Path::new("config").join(CONFIG_FILE_NAME);
-
-    let config_file = match find_file(rel_config) {
-        Ok(v) => v,
-        Err(_) => find_from_home()?,
-    };
-
-    let file_data = fs::read_to_string(config_file)?;
-
-    let config: ConfigFile = toml::from_str(&file_data)?;
-
-    Ok(config)
-}
-
 impl ConfigFile {
     pub fn load() -> Result<ConfigFile> {
         let config = match from_file() {
@@ -103,21 +67,21 @@ impl ConfigFile {
         Ok(config)
     }
 
-    pub fn load_with_url<S>(url: S) -> Result<ConfigFile>
+    pub async fn load_with_url<S>(url: S) -> Result<ConfigFile>
     where
         S: AsRef<str>,
     {
         //
         // this is a bit of a hack so we still use a cookie-less browser
         //
-        let res = minreq::get(url.as_ref()).send()?;
+        let res = Client::new().get(url.as_ref()).send().await?;
 
-        let data = match res.status_code {
-            200..299 => res.as_str()?,
-            _ => return Err(Error::HttpGetFailure),
+        let data = match res.status().is_success() {
+            true => res.text().await?,
+            false => return Err(Error::HttpGetFailure),
         };
 
-        let config: ConfigFile = toml::from_str(data)?;
+        let config: ConfigFile = toml::from_str(&data)?;
 
         Ok(config)
     }
