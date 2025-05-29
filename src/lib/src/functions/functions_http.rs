@@ -83,8 +83,6 @@ impl FunctionsHttp {
         //
         let res_json = serde_json::to_string_pretty(&local_res)?;
 
-        fs::write("/tmp/bleh.json", &res_json).await?;
-
         Ok(res_json)
     }
 
