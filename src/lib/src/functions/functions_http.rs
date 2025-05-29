@@ -3,7 +3,6 @@ use std::collections::HashMap;
 use base64::{Engine, prelude::BASE64_STANDARD};
 use reqwest::Client;
 use serde::{Serialize, Serializer};
-use tokio::fs;
 
 use crate::error::Result;
 use log::info;
