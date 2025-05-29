@@ -63,7 +63,7 @@ pub fn setup_logger(verbose: bool) -> Result<()> {
             };
 
             out.finish(format_args!(
-                "{}.{:03} :: {:<5} :: {:<35} {}",
+                "{}.{:03} :: {:<5} :: {:<45} {}",
                 now_sec,
                 now_ms,
                 record.level(),

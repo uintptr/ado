@@ -14,6 +14,10 @@ use crate::{
 use log::{error, info};
 use spinner::SpinnerBuilder;
 
+const FUNC_PROMPT_PRE: &str = r#"Dont forget that you have access series of
+tools and functions to call to give the user the best possible answer. Here's
+the list of functions"#;
+
 use super::{request::OpenAIFunctionRequest, response::OpenAIFunctionResponse};
 
 pub struct OpenAI<'a> {
@@ -85,6 +89,18 @@ impl<'a> OpenAI<'a> {
         Ok(res)
     }
 
+    fn build_functions_prompt(&self) -> String {
+        let mut func_names: Vec<&str> = Vec::new();
+
+        for f in &self.functions.list {
+            func_names.push(&f.name);
+        }
+
+        let func_names_str = func_names.join(",");
+
+        format!("{}: {}", FUNC_PROMPT_PRE, func_names_str)
+    }
+
     fn query_loop(&mut self, query: Option<String>) -> Result<()> {
         let mut req = OpenAIFunctionRequest::new(&self.openai.model, &self.functions);
 
@@ -97,7 +113,13 @@ impl<'a> OpenAI<'a> {
             req.with_input_role("user", prompt);
         }
 
-        req.with_input_role("user", query.as_ref());
+        //
+        // also tell the AI to make sure of functions
+        //
+        let functions_prompt = self.build_functions_prompt();
+        info!("functions prompt: {functions_prompt}");
+        req.with_input_role("user", functions_prompt);
+        req.with_input_role("user", query);
 
         loop {
             let spinner = SpinnerBuilder::new("".into()).start();
@@ -114,7 +136,7 @@ impl<'a> OpenAI<'a> {
                     Err(e) => break Err(e),
                 };
 
-                req.with_input_role("user", query.as_ref());
+                req.with_input_role("user", query);
             } else {
                 req.with_inputs(inputs);
             }

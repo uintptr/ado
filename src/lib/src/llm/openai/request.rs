@@ -54,10 +54,14 @@ impl<'a> OpenAIFunctionRequest<'a> {
         }
     }
 
-    pub fn with_input_role(&mut self, role: &str, content: &str) {
+    pub fn with_input_role<S1, S2>(&mut self, role: S1, content: S2)
+    where
+        S1: AsRef<str>,
+        S2: AsRef<str>,
+    {
         let content = OpenAIContent {
-            content: content.to_string(),
-            role: role.to_string(),
+            content: content.as_ref().to_string(),
+            role: role.as_ref().to_string(),
         };
 
         self.input.push(OpenAIInput::Content(content))

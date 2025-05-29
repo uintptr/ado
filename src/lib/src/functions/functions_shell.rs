@@ -37,6 +37,8 @@ impl FunctionsShell {
     pub fn shell(&self, command_line: &str) -> Result<String> {
         let comp = shell_words::split(command_line)?;
 
+        info!("executing: {}", command_line);
+
         let program = comp.first().ok_or(Error::CommandNotFound)?;
 
         let mut child = Command::new(program)

@@ -39,7 +39,7 @@ pub struct ConfigFunctionCall {
 pub struct ConfigFunction {
     #[serde(rename = "type")]
     t: String,
-    name: String,
+    pub name: String,
     description: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     parameters: Option<Parameters>,
