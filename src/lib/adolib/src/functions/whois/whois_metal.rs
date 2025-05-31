@@ -12,10 +12,9 @@ pub struct FunctionsWhois {
 
 impl FunctionsWhois {
     pub fn new() -> Result<Self> {
-        let config_file =
-            WhoisAssets::get("whois_servers.json").ok_or(Error::FileNotFoundError {
-                file_path: "whois_servers.json".into(),
-            })?;
+        let config_file = WhoisAssets::get("whois_servers.json").ok_or(Error::FileNotFoundError {
+            file_path: "whois_servers.json".into(),
+        })?;
 
         let config_string = String::from_utf8(config_file.data.to_vec())?;
 

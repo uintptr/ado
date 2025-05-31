@@ -36,9 +36,7 @@ impl FunctionArgs {
     }
 
     pub fn get_string(&self, key: &str) -> Result<&str> {
-        let v = self.inner.get(key).ok_or(Error::MissingArgument {
-            name: key.to_string(),
-        })?;
+        let v = self.inner.get(key).ok_or(Error::MissingArgument { name: key.to_string() })?;
 
         v.as_str().ok_or(Error::TypeError {
             error: format!("{key} is not a string"),
@@ -46,9 +44,7 @@ impl FunctionArgs {
     }
 
     pub fn get_kv_list(&self, key: &str) -> Result<Vec<FunctionArgsKV>> {
-        let v = self.inner.get(key).ok_or(Error::MissingArgument {
-            name: key.to_string(),
-        })?;
+        let v = self.inner.get(key).ok_or(Error::MissingArgument { name: key.to_string() })?;
 
         let list: Vec<FunctionArgsKV> = serde_json::from_value(v.clone())?;
 

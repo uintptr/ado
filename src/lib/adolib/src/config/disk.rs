@@ -26,9 +26,7 @@ pub fn find_from_home() -> Result<PathBuf> {
 
     match config_file.exists() {
         true => Ok(config_file),
-        false => Err(Error::FileNotFoundError {
-            file_path: config_file,
-        }),
+        false => Err(Error::FileNotFoundError { file_path: config_file }),
     }
 }
 

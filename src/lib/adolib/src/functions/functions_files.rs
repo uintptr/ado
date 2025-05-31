@@ -33,11 +33,7 @@ impl FunctionsFiles {
 
         let file_data = BASE64_STANDARD.decode(file_data.as_bytes())?;
 
-        let mut f = fs::OpenOptions::new()
-            .write(true)
-            .truncate(true)
-            .create(true)
-            .open(file_name)?;
+        let mut f = fs::OpenOptions::new().write(true).truncate(true).create(true).open(file_name)?;
 
         f.write_all(&file_data)?;
 
@@ -65,11 +61,7 @@ impl FunctionsFiles {
     {
         let file_name = Path::new(file_name.as_ref());
 
-        info!(
-            "looking for {} in {}",
-            file_name.display(),
-            root.as_ref().display()
-        );
+        info!("looking for {} in {}", file_name.display(), root.as_ref().display());
 
         let walker = WalkDir::new(root).follow_links(false);
 
@@ -126,9 +118,7 @@ impl FunctionsFiles {
         };
 
         if !directory.exists() {
-            return Err(Error::FileNotFoundError {
-                file_path: directory,
-            });
+            return Err(Error::FileNotFoundError { file_path: directory });
         }
 
         // don't want to add recursive search just yet
@@ -162,10 +152,7 @@ impl FunctionsFiles {
                 }
             };
 
-            let file_entry = FileEntry {
-                file_name,
-                file_size,
-            };
+            let file_entry = FileEntry { file_name, file_size };
 
             info!("{}", file_path.display());
 
