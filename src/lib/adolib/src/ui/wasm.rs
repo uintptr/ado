@@ -16,6 +16,10 @@ impl UiTrait for WasmUI {
         Err(Error::NotImplemented)
     }
 
+    fn display_error(&self, _err: Error) -> Result<()> {
+        Err(Error::NotImplemented)
+    }
+
     fn read_input(&mut self) -> Result<String> {
         Err(Error::NotImplemented)
     }
