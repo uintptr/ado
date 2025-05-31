@@ -2,38 +2,95 @@ use std::io::{self, Write};
 
 use crate::error::{Error, Result};
 
-pub struct UserCommands {}
+trait Command {
+    fn name(&self) -> &'static str;
+    fn desc(&self) -> &'static str;
+    fn handler(&self) -> Result<String>;
+}
 
-impl UserCommands {
-    pub fn new() -> Self {
-        Self {}
+struct CommandReset;
+impl Command for CommandReset {
+    fn name(&self) -> &'static str {
+        "/reset"
+    }
+    fn desc(&self) -> &'static str {
+        "Reset console and inputs"
     }
 
-    fn help(&self) -> Result<String> {
-        let help = r#"# Commands:
-        * help
-        * reset
-        * history
-        * quit
-        "#;
-
-        Ok(help.to_string())
-    }
-
-    fn reset(&self) -> Result<String> {
+    fn handler(&self) -> Result<String> {
         print!("{esc}c", esc = 27 as char);
         io::stdout().flush()?;
         Err(Error::ResetInput)
     }
+}
+
+struct CommandQuit;
+impl Command for CommandQuit {
+    fn name(&self) -> &'static str {
+        "/quit"
+    }
+    fn desc(&self) -> &'static str {
+        "Deuces ☮"
+    }
+
+    fn handler(&self) -> Result<String> {
+        Err(Error::EOF)
+    }
+}
+
+pub struct UserCommands {
+    commands: Vec<Box<dyn Command>>,
+}
+
+impl UserCommands {
+    pub fn new() -> Self {
+        let mut commands: Vec<Box<dyn Command>> = Vec::new();
+
+        commands.push(Box::new(CommandReset));
+        commands.push(Box::new(CommandQuit));
+
+        Self { commands }
+    }
+
+    fn display_help(&self) -> String {
+        let mut help = Vec::new();
+
+        help.push(format!("# Help"));
+
+        help.push(format!("* `{:<9}` This help", "/help"));
+
+        for c in self.commands.iter() {
+            help.push(format!("* `{:<9}` {}", c.name(), c.desc()));
+        }
+
+        help.join("\n")
+    }
 
     pub fn handler(&self, line: &str) -> Result<String> {
-        match line {
-            "help" => self.help(),
-            "reset" => self.reset(),
-            "r" => self.reset(),
-            "quit" => Err(Error::EOF),
-            "history" => Err(Error::NotImplemented),
-            _ => Err(Error::CommandNotFound),
+        if line.eq("/help") {
+            return Ok(self.display_help());
         }
+
+        for c in self.commands.iter() {
+            if c.name() == line {
+                return c.handler();
+            }
+        }
+
+        Err(Error::CommandNotFound {
+            command: line.to_string(),
+        })
+    }
+
+    pub fn list_commands(&self) -> Vec<&'static str> {
+        let mut command_names = Vec::new();
+
+        command_names.push("/help");
+
+        for c in self.commands.iter() {
+            command_names.push(c.name());
+        }
+
+        command_names
     }
 }

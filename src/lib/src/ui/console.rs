@@ -5,6 +5,7 @@ use std::{
     process::{Command, Stdio},
 };
 
+use colored;
 use colored::Colorize;
 use log::{error, info, warn};
 use which::which;
@@ -19,7 +20,7 @@ use rustyline::error::ReadlineError;
 use rustyline::history::FileHistory;
 use rustyline::validate::MatchingBracketValidator;
 use rustyline::{Completer, Helper, Hinter, Validator};
-use rustyline::{CompletionType, Config, EditMode, Editor};
+use rustyline::{CompletionType, Config, Editor};
 use rustyline::{Highlighter, hint::HistoryHinter};
 
 use super::{UiTrait, user_commands::UserCommands};
@@ -46,11 +47,10 @@ fn clear_console() -> Result<()> {
     Ok(())
 }
 
-fn init_readline() -> Result<Editor<MyHelper, FileHistory>> {
+fn init_readline(commands: &UserCommands) -> Result<Editor<MyHelper, FileHistory>> {
     let config = Config::builder()
         .auto_add_history(true)
         .completion_type(CompletionType::List)
-        .edit_mode(EditMode::Vi)
         .build();
 
     let mut rl = Editor::with_config(config)?;
@@ -75,6 +75,12 @@ fn init_readline() -> Result<Editor<MyHelper, FileHistory>> {
         validator: MatchingBracketValidator::new(),
     };
 
+    for c in commands.list_commands() {
+        if let Err(e) = rl.add_history_entry(c) {
+            warn!("{e}");
+        }
+    }
+
     rl.set_helper(Some(h));
 
     Ok(rl)
@@ -93,6 +99,8 @@ impl ConsoleUI {
             }
         };
 
+        let commands = UserCommands::new();
+
         // pretty start
         clear_console()?;
         let banner = format!("{} {}", PKG_NAME, PKG_VERSION);
@@ -100,8 +108,8 @@ impl ConsoleUI {
 
         Ok(Self {
             glow,
-            rl: init_readline()?,
-            commands: UserCommands::new(),
+            rl: init_readline(&commands)?,
+            commands,
         })
     }
 
@@ -160,6 +168,12 @@ impl UiTrait for ConsoleUI {
         }
     }
 
+    fn display_error(&self, err: Error) -> Result<()> {
+        let err_str = format!("Error: {err}");
+        println!("{}", err_str.red());
+        Ok(())
+    }
+
     fn read_input(&mut self) -> Result<String> {
         loop {
             let line = self.readline()?;
@@ -167,14 +181,18 @@ impl UiTrait for ConsoleUI {
             // remove leading / trailing white spaces
             let line = line.trim().to_string();
 
-            match self.commands.handler(&line) {
-                Ok(r) => {
-                    self.display(&r)?;
-                    continue;
+            if line.starts_with("/") {
+                match self.commands.handler(&line) {
+                    Ok(v) => self.display(&v)?,
+                    Err(e @ Error::EOF) => return Err(e),
+                    Err(e @ Error::ResetInput) => return Err(e),
+                    Err(e) => self.display_error(e)?,
                 }
-                Err(Error::CommandNotFound) => break Ok(line),
-                Err(e) => break Err(e.into()),
+
+                continue;
             }
+
+            break Ok(line);
         }
     }
 }

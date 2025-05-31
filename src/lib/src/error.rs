@@ -55,7 +55,9 @@ pub enum Error {
         name: String,
     },
     ApiKeyNotFound,
-    CommandNotFound,
+    CommandNotFound {
+        command: String,
+    },
     //
     // 2nd party
     //

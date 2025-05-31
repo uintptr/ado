@@ -39,7 +39,9 @@ impl FunctionsShell {
 
         info!("executing: {}", command_line);
 
-        let program = comp.first().ok_or(Error::CommandNotFound)?;
+        let program = comp.first().ok_or(Error::CommandNotFound {
+            command: command_line.to_string(),
+        })?;
 
         let mut child = Command::new(program)
             .stdout(Stdio::piped())

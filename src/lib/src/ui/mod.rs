@@ -1,7 +1,8 @@
-use crate::error::Result;
+use crate::error::{Error, Result};
 
 pub trait UiTrait {
     fn display(&self, _text: &str) -> Result<()>;
+    fn display_error(&self, err: Error) -> Result<()>;
     fn read_input(&mut self) -> Result<String>;
 }
 
