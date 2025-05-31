@@ -44,10 +44,7 @@ pub struct UserCommands {
 
 impl UserCommands {
     pub fn new() -> Self {
-        let mut commands: Vec<Box<dyn Command>> = Vec::new();
-
-        commands.push(Box::new(CommandReset));
-        commands.push(Box::new(CommandQuit));
+        let commands: Vec<Box<dyn Command>> = vec![Box::new(CommandReset), Box::new(CommandQuit)];
 
         Self { commands }
     }
@@ -55,7 +52,7 @@ impl UserCommands {
     fn display_help(&self) -> String {
         let mut help = Vec::new();
 
-        help.push(format!("# Help"));
+        help.push("# Help".to_string());
 
         help.push(format!("* `{:<9}` This help", "/help"));
 

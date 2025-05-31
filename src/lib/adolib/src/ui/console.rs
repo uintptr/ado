@@ -199,16 +199,17 @@ impl UiTrait for ConsoleUI {
 
 #[cfg(test)]
 mod tests {
-    use crate::staples::setup_logger;
-
-    use super::ConsoleUI;
+    use crate::{
+        staples::setup_logger,
+        ui::{UiTrait, ux::Console},
+    };
 
     #[test]
     fn display_text() {
         setup_logger(true).unwrap();
 
-        let console = ConsoleUI::new();
+        let console = Console::new().unwrap();
 
-        console.display("hello world").unwrap();
+        console.display("Hello, World!").unwrap();
     }
 }

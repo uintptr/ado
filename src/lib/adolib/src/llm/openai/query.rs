@@ -8,7 +8,7 @@ use crate::{
     config::file::{ConfigFile, OpenAiConfig},
     error::{Error, Result},
     functions::{config::ConfigFunctions, function_handler::FunctionHandler},
-    ui::{UiTrait, ui::Console},
+    ui::{UiTrait, ux::Console},
 };
 
 use log::{error, info};
@@ -51,21 +51,14 @@ impl<'a> OpenAI<'a> {
     fn write_to_tmp(&self, file_name: &str, input: &str) -> Result<()> {
         let file_path = Path::new("/tmp").join(file_name);
 
-        let mut f = fs::OpenOptions::new()
-            .write(true)
-            .truncate(true)
-            .create(true)
-            .open(file_path)?;
+        let mut f = fs::OpenOptions::new().write(true).truncate(true).create(true).open(file_path)?;
 
         f.write_all(input.as_bytes())?;
 
         Ok(())
     }
 
-    pub async fn post_contents(
-        &self,
-        request: &OpenAIFunctionRequest<'_>,
-    ) -> Result<OpenAIFunctionResponse> {
+    pub async fn post_contents(&self, request: &OpenAIFunctionRequest<'_>) -> Result<OpenAIFunctionResponse> {
         let post_data = request.to_json()?;
 
         self.write_to_tmp("openai_request.json", &post_data)?;

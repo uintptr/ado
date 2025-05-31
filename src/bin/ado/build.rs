@@ -11,7 +11,7 @@ fn main() {
     let src_file = Path::new(&root).join("config").join(CONFIG_FILE_NAME);
 
     if !src_file.exists() {
-        println!("cargo:warning={} does not exist", src_file.display());
+        //println!("cargo:warning={} does not exist", src_file.display());
         return;
     }
 

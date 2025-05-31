@@ -57,15 +57,18 @@ impl<'a> FunctionsSearch<'a> {
 
 #[cfg(test)]
 mod tests {
-    use crate::staples::setup_logger;
+    use crate::{config::file::ConfigFile, staples::setup_logger};
 
     use super::FunctionsSearch;
 
-    #[test]
-    fn search_test() {
+    #[tokio::test]
+    async fn search_test() {
         setup_logger(true).unwrap();
-        let search = FunctionsSearch::new().unwrap();
 
-        search.search_query("Hello World").unwrap();
+        let config = ConfigFile::load().unwrap();
+
+        let search = FunctionsSearch::new(&config).unwrap();
+
+        search.search_query("Hello World").await.unwrap();
     }
 }

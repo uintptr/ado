@@ -12,7 +12,7 @@ mod wasm;
 #[cfg(not(target_arch = "wasm32"))]
 mod console;
 
-pub mod ui {
+pub mod ux {
     #[cfg(not(target_arch = "wasm32"))]
     pub use super::console::ConsoleUI as Console;
     #[cfg(target_arch = "wasm32")]

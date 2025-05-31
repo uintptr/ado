@@ -32,16 +32,10 @@ pub struct FunctionsHttp {
 
 impl FunctionsHttp {
     pub fn new() -> FunctionsHttp {
-        FunctionsHttp {
-            client: Client::new(),
-        }
+        FunctionsHttp { client: Client::new() }
     }
 
-    pub async fn http_get(
-        &self,
-        url: &str,
-        headers: Option<HashMap<&str, &str>>,
-    ) -> Result<String> {
+    pub async fn http_get(&self, url: &str, headers: Option<HashMap<&str, &str>>) -> Result<String> {
         let mut req = self.client.get(url);
 
         if let Some(h) = headers {
@@ -64,9 +58,9 @@ impl FunctionsHttp {
         let data = res.bytes().await?;
 
         let local_res = HttpResponse {
-            url: url,
+            url,
             code: status_code,
-            headers: headers,
+            headers,
             base64_data: &data,
         };
 

@@ -7,9 +7,8 @@ use crate::{
 };
 
 use super::{
-    browser::browser::FunctionsBrowser, functions_files::FunctionsFiles,
-    functions_http::FunctionsHttp, functions_search::FunctionsSearch,
-    functions_shell::FunctionsShell, whois::whois::FunctionsWhois,
+    browser::functions::FunctionsBrowser, functions_files::FunctionsFiles, functions_http::FunctionsHttp,
+    functions_search::FunctionsSearch, functions_shell::FunctionsShell, whois::functions::FunctionsWhois,
 };
 
 pub struct FunctionHandler<'a> {
@@ -54,9 +53,7 @@ impl<'a> FunctionHandler<'a> {
             _ => {
                 error!("function {name} was not found");
 
-                Err(Error::FunctionNotImplemented {
-                    name: name.to_string(),
-                })
+                Err(Error::FunctionNotImplemented { name: name.to_string() })
             }
         }
     }

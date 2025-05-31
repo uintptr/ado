@@ -4,7 +4,7 @@ use serde_json::Value;
 use crate::{
     error::{Error, Result},
     functions::function_handler::FunctionHandler,
-    ui::{UiTrait, ui::Console},
+    ui::{UiTrait, ux::Console},
 };
 
 use super::request::{OpenAIFunctionInput, OpenAIFunctionOutput, OpenAIInput};
@@ -74,9 +74,7 @@ pub struct OpenAIFunctionResponse {
     pub temperature: f64,
 }
 
-fn deserialized_openai_output<'de, D>(
-    deserializer: D,
-) -> std::result::Result<Vec<OpenAIOutput>, D::Error>
+fn deserialized_openai_output<'de, D>(deserializer: D) -> std::result::Result<Vec<OpenAIOutput>, D::Error>
 where
     D: Deserializer<'de>,
 {
@@ -188,8 +186,8 @@ mod tests {
 
     use super::*;
 
-    #[test]
-    fn test_resp_1() {
+    #[tokio::test]
+    async fn test_resp_1() {
         let rel_test = Path::new("test").join("openai_response.json");
 
         let test_file = find_file(rel_test).unwrap();
@@ -201,9 +199,9 @@ mod tests {
         let config = ConfigFile::load().unwrap();
 
         let handler = FunctionHandler::new(&config).unwrap();
-        let console = ConsoleUI::new();
+        let console = Console::new().unwrap();
 
-        let inputs = res.process_output(&console, &handler).unwrap();
+        let inputs = res.process_output(&console, &handler).await.unwrap();
 
         let res_json = serde_json::to_string_pretty(&inputs).unwrap();
 

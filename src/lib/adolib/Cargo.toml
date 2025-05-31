@@ -1,0 +1,41 @@
+[package]
+name = "adolib"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+base64 = { workspace = true }
+bytes = { workspace = true }
+chrono = { workspace = true }
+colored = { workspace = true }
+derive_more = { workspace = true }
+fern = { workspace = true }
+glob = { workspace = true }
+log = { workspace = true }
+reqwest = { workspace = true }
+rust-embed = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+shell-words = { workspace = true }
+spinner = { workspace = true }
+tokio = { workspace = true }
+toml = { workspace = true }
+walkdir = { workspace = true }
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+which = { workspace = true }
+whois-rust = { workspace = true }
+x11rb = { workspace = true }
+rustyline = { workspace = true }
+home = { workspace = true }
+
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+getrandom_0_2 = { workspace = true }
+wasm-bindgen = { workspace = true }
+ring = { workspace = true }
+wasm-bindgen-futures = { workspace = true }
+
+
+[lib]
+crate-type = ["cdylib", "rlib"]

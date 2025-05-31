@@ -1,18 +1,39 @@
-[package]
-name = "ado"
-version = "0.1.0"
-edition = "2024"
+[workspace]
+members = ["src/bin/ado", "src/lib/adolib"]
+resolver = "2"
 
-[dependencies]
+
+[workspace.dependencies]
 clap = { version = "4.5.39", features = ["derive"] }
-adolib = { path = "./src/lib" }
 log = "0.4.27"
-tokio = { version = "1.45.1", features = ["macros"] }
-
-[build-dependencies]
+base64 = "0.22.1"
+bytes = "1.10.1"
+chrono = "0.4.41"
+colored = "3.0.0"
+derive_more = { version = "2.0.1", features = ["debug", "from"] }
+fern = "0.7.1"
+glob = "0.3.2"
+reqwest = "0.12.18"
+rust-embed = "8.7.2"
+serde = { version = "1.0.219", features = ["derive"] }
+serde_json = "1.0.140"
+shell-words = "1.1.0"
+spinner = "0.5.0"
+tokio = { version = "1.45.1", features = ["full"] }
+toml = "0.8.22"
+walkdir = "2.5.0"
+which = "7.0.3"
+whois-rust = "1.6.0"
+x11rb = "0.13.1"
+rustyline = { version = "16.0.0", features = [
+    "derive",
+    "rustyline-derive",
+    "termios",
+    "with-fuzzy",
+] }
 home = "0.5.11"
-
-[profile.release]
-strip = true    # Automatically strip symbols from the binary.
-opt-level = "s" # Optimize for size.
-lto = true
+getrandom_0_2 = { package = "getrandom", version = "0.2.16", features = ["js"] }
+wasm-bindgen = "0.2.100"
+ring = { version = "0.17.14", features = ["wasm32_unknown_unknown_js"] }
+wasm-bindgen-futures = "0.4.50"
+adolib = { path = "src/lib/adolib" }

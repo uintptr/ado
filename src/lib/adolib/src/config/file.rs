@@ -59,10 +59,7 @@ fn openai_default_key() -> String {
 
 impl ConfigFile {
     pub fn load() -> Result<ConfigFile> {
-        let config = match from_file() {
-            Ok(v) => v,
-            Err(e) => return Err(e),
-        };
+        let config = from_file()?;
 
         Ok(config)
     }
