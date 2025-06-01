@@ -4,7 +4,7 @@ use serde_json::Value;
 use crate::{
     error::{Error, Result},
     functions::function_handler::FunctionHandler,
-    ui::{UiTrait, ux::Console},
+    ui::UiTrait,
 };
 
 use super::request::{OpenAIFunctionInput, OpenAIFunctionOutput, OpenAIInput};
@@ -26,7 +26,10 @@ pub struct OpenAIOutputMessage {
 }
 
 impl OpenAIOutputMessage {
-    pub fn process(&self, console: &Console) {
+    pub fn process<C>(&self, console: &C)
+    where
+        C: UiTrait,
+    {
         for c in self.content.iter() {
             if let Err(e) = console.display(&c.text) {
                 error!("{e}");
@@ -139,11 +142,10 @@ impl OpenAIFunctionResponse {
         Ok(res)
     }
 
-    pub async fn process_output(
-        &self,
-        console: &Console,
-        func_handler: &FunctionHandler<'_>,
-    ) -> Result<Vec<OpenAIInput>> {
+    pub async fn process_output<C>(&self, console: &C, func_handler: &FunctionHandler<'_>) -> Result<Vec<OpenAIInput>>
+    where
+        C: UiTrait,
+    {
         let mut inputs = Vec::new();
 
         for output in self.output.iter() {
@@ -178,11 +180,12 @@ impl OpenAIFunctionResponse {
     }
 }
 
+#[cfg(not(target_arch = "wasm32"))]
 #[cfg(test)]
 mod tests {
     use std::{fs, path::Path};
 
-    use crate::{config::file::ConfigFile, staples::find_file};
+    use crate::{config::file::ConfigFile, staples::find_file, ui::ux::Console};
 
     use super::*;
 

@@ -1,13 +1,16 @@
 use crate::error::{Error, Result};
 
 use super::UiTrait;
+use wasm_bindgen::prelude::*;
 
-#[derive(Default)]
+#[wasm_bindgen]
 pub struct WasmUI {}
 
+#[wasm_bindgen]
 impl WasmUI {
-    pub fn new() -> Result<Self> {
-        Ok(Self {})
+    #[wasm_bindgen(constructor)]
+    pub fn new() -> Self {
+        Self {}
     }
 }
 
@@ -20,7 +23,7 @@ impl UiTrait for WasmUI {
         Err(Error::NotImplemented)
     }
 
-    fn read_input(&mut self) -> Result<String> {
+    async fn read_input(&mut self) -> Result<String> {
         Err(Error::NotImplemented)
     }
 }

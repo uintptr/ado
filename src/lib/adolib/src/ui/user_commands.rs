@@ -1,3 +1,5 @@
+#![allow(unused)] // while working on the wasm build
+
 use std::io::{self, Write};
 
 use crate::error::{Error, Result};

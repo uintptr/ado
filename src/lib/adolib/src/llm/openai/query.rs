@@ -8,7 +8,7 @@ use crate::{
     config::file::{ConfigFile, OpenAiConfig},
     error::{Error, Result},
     functions::{config::ConfigFunctions, function_handler::FunctionHandler},
-    ui::{UiTrait, ux::Console},
+    ui::UiTrait,
 };
 
 use log::{error, info};
@@ -26,7 +26,6 @@ pub struct OpenAI<'a> {
     functions: ConfigFunctions,
     openai: &'a OpenAiConfig,
     handler: FunctionHandler<'a>,
-    console: Console,
 }
 
 impl<'a> OpenAI<'a> {
@@ -44,7 +43,6 @@ impl<'a> OpenAI<'a> {
             functions,
             openai,
             handler: FunctionHandler::new(config)?,
-            console: Console::new()?,
         })
     }
 
@@ -104,12 +102,15 @@ impl<'a> OpenAI<'a> {
         format!("{}: {}", FUNC_PROMPT_PRE, func_names_str)
     }
 
-    async fn query_loop(&mut self, query: Option<String>) -> Result<()> {
+    async fn query_loop<C>(&mut self, console: &mut C, query: Option<String>) -> Result<()>
+    where
+        C: UiTrait,
+    {
         let mut req = OpenAIFunctionRequest::new(&self.openai.model, &self.functions);
 
         let query = match query {
             Some(v) => v,
-            None => self.console.read_input()?,
+            None => console.read_input()?,
         };
 
         if let Some(prompt) = &self.openai.prompt {
@@ -131,10 +132,10 @@ impl<'a> OpenAI<'a> {
             print!("\r ");
             io::stdout().flush().unwrap();
 
-            let inputs = res.process_output(&self.console, &self.handler).await?;
+            let inputs = res.process_output(console, &self.handler).await?;
 
             if inputs.is_empty() {
-                let query = match self.console.read_input() {
+                let query = match console.read_input() {
                     Ok(v) => v,
                     Err(e) => break Err(e),
                 };
@@ -146,11 +147,14 @@ impl<'a> OpenAI<'a> {
         }
     }
 
-    pub async fn ask(&mut self, query: Option<String>) -> Result<()> {
+    pub async fn ask<C>(&mut self, console: &mut C, query: Option<String>) -> Result<()>
+    where
+        C: UiTrait,
+    {
         let mut local_query = query;
 
         loop {
-            let ret = self.query_loop(local_query).await;
+            let ret = self.query_loop(console, local_query).await;
 
             local_query = None;
 

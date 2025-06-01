@@ -1,15 +1,24 @@
 <!doctype html>
 <html lang="en-US">
-  <head>
-    <meta charset="utf-8" />
-    <title>hello-wasm example</title>
-  </head>
-  <body>
-    <script type="module">
-      import init, { ado_export } from "./pkg/adolib.js";
-      init().then(() => {
-        ado_export();
-      });
-    </script>
-  </body>
+
+<head>
+  <meta charset="utf-8" />
+  <title>hello-wasm example</title>
+</head>
+
+<body>
+  <script type="module">
+
+
+    import init, { ado_main, WasmUI } from "./pkg/adolib.js";
+
+    await init()
+
+    let io = new WasmUI();
+
+    ado_main(io)
+
+  </script>
+</body>
+
 </html>

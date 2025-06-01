@@ -6,6 +6,7 @@ use adolib::{
     error::{Error, Result},
     llm::openai::query::OpenAI,
     staples::setup_logger,
+    ui::ux::Console,
 };
 use clap::Parser;
 
@@ -73,9 +74,11 @@ async fn main() -> Result<()> {
         },
     };
 
+    let mut console = Console::new()?;
+
     let mut o = OpenAI::new(&config)?;
 
-    match o.ask(query).await {
+    match o.ask(&mut console, query).await {
         Ok(()) => Ok(()),
         // CTRL+C or CTRL+D are ok, we still want to return success
         Err(Error::EOF) => Ok(()),

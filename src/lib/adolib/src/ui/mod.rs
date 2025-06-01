@@ -7,7 +7,7 @@ pub trait UiTrait {
 }
 
 #[cfg(target_arch = "wasm32")]
-mod wasm;
+mod wasm_console;
 
 #[cfg(not(target_arch = "wasm32"))]
 mod console;
@@ -16,7 +16,7 @@ pub mod ux {
     #[cfg(not(target_arch = "wasm32"))]
     pub use super::console::ConsoleUI as Console;
     #[cfg(target_arch = "wasm32")]
-    pub use super::wasm::WasmUI as Console;
+    pub use super::wasm_console::WasmUI as Console;
 }
 
 //pub mod spinner;
