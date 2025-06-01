@@ -26,6 +26,7 @@ pub struct OpenAI<'a> {
     functions: ConfigFunctions,
     openai: &'a OpenAiConfig,
     handler: FunctionHandler<'a>,
+    initial_query: Option<String>,
 }
 
 impl<'a> OpenAI<'a> {
@@ -43,6 +44,7 @@ impl<'a> OpenAI<'a> {
             functions,
             openai,
             handler: FunctionHandler::new(config)?,
+            initial_query: None,
         })
     }
 
@@ -102,14 +104,14 @@ impl<'a> OpenAI<'a> {
         format!("{}: {}", FUNC_PROMPT_PRE, func_names_str)
     }
 
-    async fn query_loop<C>(&mut self, console: &mut C, query: Option<String>) -> Result<()>
+    async fn query_loop<C>(&mut self, console: &mut C) -> Result<()>
     where
         C: UiTrait,
     {
         let mut req = OpenAIFunctionRequest::new(&self.openai.model, &self.functions);
 
-        let query = match query {
-            Some(v) => v,
+        let query = match &self.initial_query {
+            Some(v) => v.to_string(),
             None => console.read_input()?,
         };
 
@@ -147,16 +149,16 @@ impl<'a> OpenAI<'a> {
         }
     }
 
-    pub async fn ask<C>(&mut self, console: &mut C, query: Option<String>) -> Result<()>
+    pub fn with_initial_query(&mut self, query: String) {
+        self.initial_query = Some(query)
+    }
+
+    pub async fn ask<C>(&mut self, console: &mut C) -> Result<()>
     where
         C: UiTrait,
     {
-        let mut local_query = query;
-
         loop {
-            let ret = self.query_loop(console, local_query).await;
-
-            local_query = None;
+            let ret = self.query_loop(console).await;
 
             if let Err(Error::ResetInput) = ret {
                 continue;

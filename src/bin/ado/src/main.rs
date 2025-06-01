@@ -49,7 +49,7 @@ async fn main() -> Result<()> {
 
     setup_logger(args.verbose)?;
 
-    let query = match args.shell_handler {
+    let query_opt = match args.shell_handler {
         Some(v) => match detect_shell_question(&v) {
             true => Some(v),
             false => {
@@ -78,7 +78,11 @@ async fn main() -> Result<()> {
 
     let mut o = OpenAI::new(&config)?;
 
-    match o.ask(&mut console, query).await {
+    if let Some(query) = query_opt {
+        o.with_initial_query(query);
+    }
+
+    match o.ask(&mut console).await {
         Ok(()) => Ok(()),
         // CTRL+C or CTRL+D are ok, we still want to return success
         Err(Error::EOF) => Ok(()),
