@@ -4,7 +4,7 @@
 ## Install from source
 
 ```
-cargo install --path .
+ cargo install --path src/bin/ado/
 ```
 
 ## Install from github
