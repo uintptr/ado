@@ -7,7 +7,6 @@ edition = "2024"
 base64 = { workspace = true }
 bytes = { workspace = true }
 chrono = { workspace = true }
-colored = { workspace = true }
 derive_more = { workspace = true }
 fern = { workspace = true }
 glob = { workspace = true }
@@ -21,12 +20,12 @@ spinner = { workspace = true }
 tokio = { workspace = true }
 toml = { workspace = true }
 walkdir = { workspace = true }
+which = { workspace = true }
+rustyline = { workspace = true }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-which = { workspace = true }
 whois-rust = { workspace = true }
 x11rb = { workspace = true }
-rustyline = { workspace = true }
 home = { workspace = true }
 
 

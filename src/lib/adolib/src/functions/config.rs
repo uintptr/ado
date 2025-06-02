@@ -62,7 +62,7 @@ where
     }
 }
 
-impl ConfigFunctions {
+impl<'a> ConfigFunctions {
     pub fn load() -> Result<Self> {
         let mut list = Vec::new();
 

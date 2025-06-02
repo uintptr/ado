@@ -4,11 +4,9 @@ use serde_json::Value;
 use crate::{
     error::{Error, Result},
     functions::function_handler::FunctionHandler,
-    ui::UiTrait,
 };
 
 use super::request::{OpenAIFunctionInput, OpenAIFunctionOutput, OpenAIInput};
-use log::error;
 
 #[derive(Debug, Deserialize)]
 pub struct OpenAiOutputMessageContent {
@@ -23,19 +21,6 @@ pub struct OpenAIOutputMessage {
     pub status: String,
     pub content: Vec<OpenAiOutputMessageContent>,
     pub role: String,
-}
-
-impl OpenAIOutputMessage {
-    pub fn process<C>(&self, console: &C)
-    where
-        C: UiTrait,
-    {
-        for c in self.content.iter() {
-            if let Err(e) = console.display(&c.text) {
-                error!("{e}");
-            }
-        }
-    }
 }
 
 #[derive(Debug, Deserialize)]
@@ -54,13 +39,13 @@ impl OpenAIOutputFunctionCall {
 }
 
 #[derive(Debug, Deserialize)]
-pub enum OpenAIOutput {
+pub enum OpenAIResponseOutput {
     Message(OpenAIOutputMessage),
     FunctionCall(OpenAIOutputFunctionCall),
 }
 
 #[derive(Debug, Deserialize)]
-pub struct OpenAIFunctionResponse {
+pub struct OpenAIResponse {
     pub id: String,
     pub created_at: u64,
     pub status: String,
@@ -71,13 +56,13 @@ pub struct OpenAIFunctionResponse {
     pub parallel_tool_calls: bool,
     pub previous_response_id: Option<String>,
     #[serde(deserialize_with = "deserialized_openai_output")]
-    pub output: Vec<OpenAIOutput>,
+    pub output: Vec<OpenAIResponseOutput>,
     pub service_tier: String,
     pub store: bool,
     pub temperature: f64,
 }
 
-fn deserialized_openai_output<'de, D>(deserializer: D) -> std::result::Result<Vec<OpenAIOutput>, D::Error>
+fn deserialized_openai_output<'de, D>(deserializer: D) -> std::result::Result<Vec<OpenAIResponseOutput>, D::Error>
 where
     D: Deserializer<'de>,
 {
@@ -112,7 +97,7 @@ where
                         return Err(serde::de::Error::custom(e));
                     }
                 };
-                OpenAIOutput::FunctionCall(func)
+                OpenAIResponseOutput::FunctionCall(func)
             }
             "message" => {
                 let msg: OpenAIOutputMessage = match serde_json::from_value(v) {
@@ -121,7 +106,7 @@ where
                         return Err(serde::de::Error::custom(e));
                     }
                 };
-                OpenAIOutput::Message(msg)
+                OpenAIResponseOutput::Message(msg)
             }
             _ => {
                 return Err(serde::de::Error::custom(Error::TypeMissing {
@@ -136,22 +121,29 @@ where
     Ok(outputs)
 }
 
-impl OpenAIFunctionResponse {
-    pub fn from_string(input: &str) -> Result<OpenAIFunctionResponse> {
+pub struct OpenAIOutput {
+    pub messages: Vec<String>,
+    pub inputs: Vec<OpenAIInput>,
+}
+
+impl OpenAIResponse {
+    pub fn from_string(input: &str) -> Result<OpenAIResponse> {
         let res = serde_json::from_str(input)?;
         Ok(res)
     }
 
-    pub async fn process_output<C>(&self, console: &C, func_handler: &FunctionHandler<'_>) -> Result<Vec<OpenAIInput>>
-    where
-        C: UiTrait,
-    {
+    pub async fn process_output(&self, func_handler: &FunctionHandler<'_>) -> Result<OpenAIOutput> {
+        let mut messages = Vec::new();
         let mut inputs = Vec::new();
 
         for output in self.output.iter() {
             match output {
-                OpenAIOutput::Message(m) => m.process(console),
-                OpenAIOutput::FunctionCall(f) => {
+                OpenAIResponseOutput::Message(m) => {
+                    for content in m.content.iter() {
+                        messages.push(content.text.to_string());
+                    }
+                }
+                OpenAIResponseOutput::FunctionCall(f) => {
                     let output = match f.process(func_handler).await {
                         Ok(v) => v,
                         Err(e) => format!("error: {e}"),
@@ -176,7 +168,7 @@ impl OpenAIFunctionResponse {
             }
         }
 
-        Ok(inputs)
+        Ok(OpenAIOutput { messages, inputs })
     }
 }
 
@@ -185,7 +177,7 @@ impl OpenAIFunctionResponse {
 mod tests {
     use std::{fs, path::Path};
 
-    use crate::{config::file::ConfigFile, staples::find_file, ui::ux::Console};
+    use crate::{config::file::ConfigFile, staples::find_file};
 
     use super::*;
 
@@ -197,18 +189,13 @@ mod tests {
 
         let resp_json = fs::read_to_string(test_file).unwrap();
 
-        let res = OpenAIFunctionResponse::from_string(&resp_json).unwrap();
+        let res = OpenAIResponse::from_string(&resp_json).unwrap();
 
         let config = ConfigFile::load().unwrap();
 
         let handler = FunctionHandler::new(&config).unwrap();
-        let console = Console::new().unwrap();
 
-        let inputs = res.process_output(&console, &handler).await.unwrap();
-
-        let res_json = serde_json::to_string_pretty(&inputs).unwrap();
-
-        println!("{res_json}");
+        res.process_output(&handler).await.unwrap();
     }
 
     #[test]
@@ -219,7 +206,7 @@ mod tests {
 
         let resp_json = fs::read_to_string(test_file).unwrap();
 
-        let res = OpenAIFunctionResponse::from_string(&resp_json).unwrap();
+        let res = OpenAIResponse::from_string(&resp_json).unwrap();
         dbg!(res);
     }
 }

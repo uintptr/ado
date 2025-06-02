@@ -5,15 +5,15 @@ use std::{
     process::{Command, Stdio},
 };
 
+use adolib::{
+    const_vars::{DOT_DIRECTORY, PKG_NAME, PKG_VERSION},
+    error::{Error, Result},
+    ui::user_commands::UserCommands,
+};
 use colored;
 use colored::Colorize;
 use log::{error, info, warn};
 use which::which;
-
-use crate::{
-    const_vars::{DOT_DIRECTORY, PKG_NAME, PKG_VERSION},
-    error::{Error, Result},
-};
 
 use rustyline::completion::FilenameCompleter;
 use rustyline::error::ReadlineError;
@@ -22,8 +22,6 @@ use rustyline::validate::MatchingBracketValidator;
 use rustyline::{Completer, Helper, Hinter, Validator};
 use rustyline::{CompletionType, Config, Editor};
 use rustyline::{Highlighter, hint::HistoryHinter};
-
-use super::{UiTrait, user_commands::UserCommands};
 
 #[derive(Helper, Completer, Highlighter, Hinter, Validator)]
 struct MyHelper {
@@ -158,23 +156,8 @@ impl ConsoleUI {
             }
         }
     }
-}
 
-impl UiTrait for ConsoleUI {
-    fn display(&self, text: &str) -> Result<()> {
-        match &self.glow {
-            Some(v) => self.display_glow(v, text),
-            None => self.display_boring(text),
-        }
-    }
-
-    fn display_error(&self, err: Error) -> Result<()> {
-        let err_str = format!("Error: {err}");
-        println!("{}", err_str.red());
-        Ok(())
-    }
-
-    fn read_input(&mut self) -> Result<String> {
+    pub fn read_input(&mut self) -> Result<String> {
         loop {
             let line = self.readline()?;
 
@@ -195,20 +178,40 @@ impl UiTrait for ConsoleUI {
             break Ok(line);
         }
     }
+
+    pub fn display(&self, msg: &str) -> Result<()> {
+        match &self.glow {
+            Some(v) => self.display_glow(v, msg),
+            None => self.display_boring(msg),
+        }
+    }
+
+    pub fn display_messages(&self, messages: &Vec<String>) -> Result<()> {
+        for msg in messages.iter() {
+            self.display(msg)?
+        }
+
+        Ok(())
+    }
+
+    pub fn display_error(&self, err: Error) -> Result<()> {
+        let err_str = format!("Error: {err}");
+        println!("{}", err_str.red());
+        Ok(())
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        staples::setup_logger,
-        ui::{UiTrait, ux::Console},
-    };
+    use adolib::staples::setup_logger;
+
+    use super::ConsoleUI;
 
     #[test]
     fn display_text() {
         setup_logger(true).unwrap();
 
-        let console = Console::new().unwrap();
+        let console = ConsoleUI::new().unwrap();
 
         console.display("Hello, World!").unwrap();
     }

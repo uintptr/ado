@@ -1,16 +1,18 @@
-use std::{fs, path::Path};
+use std::{
+    fs,
+    io::{self, Write},
+    path::Path,
+};
 
-use ado::shell::detect_shell_question;
+use ado::{console::ConsoleUI, shell::detect_shell_question};
 use adolib::{
     config::file::ConfigFile,
     error::{Error, Result},
-    llm::openai::query::OpenAI,
+    llm::openai::chain::AIChain,
     staples::setup_logger,
-    ui::ux::Console,
 };
 use clap::Parser;
-
-use log::error;
+use spinner::SpinnerBuilder;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -49,7 +51,7 @@ async fn main() -> Result<()> {
 
     setup_logger(args.verbose)?;
 
-    let query_opt = match args.shell_handler {
+    let mut query_opt = match args.shell_handler {
         Some(v) => match detect_shell_question(&v) {
             true => Some(v),
             false => {
@@ -74,21 +76,40 @@ async fn main() -> Result<()> {
         },
     };
 
-    let mut console = Console::new()?;
+    let mut console = ConsoleUI::new()?;
 
-    let mut o = OpenAI::new(&config)?;
+    let mut chain = AIChain::new(&config)?;
 
-    if let Some(query) = query_opt {
-        o.with_initial_query(query);
-    }
+    loop {
+        let query = match query_opt {
+            Some(v) => v,
+            None => match console.read_input() {
+                Ok(v) => v,
+                Err(Error::ResetInput) => {
+                    chain.reset();
+                    continue;
+                }
+                Err(Error::EOF) => break Ok(()),
+                Err(e) => break Err(e),
+            },
+        };
 
-    match o.ask(&mut console).await {
-        Ok(()) => Ok(()),
-        // CTRL+C or CTRL+D are ok, we still want to return success
-        Err(Error::EOF) => Ok(()),
-        Err(e) => {
-            error!("{e}");
-            Err(e)
-        }
+        //
+        // little spinner waiting for the response
+        //
+        let spinner = SpinnerBuilder::new("".into()).start();
+
+        //
+        // query the LLM
+        //
+        let msgs = chain.query(query).await?;
+
+        spinner.close();
+        print!("\r ");
+        io::stdout().flush()?;
+
+        console.display_messages(&msgs)?;
+
+        query_opt = None
     }
 }

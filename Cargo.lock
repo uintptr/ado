@@ -23,9 +23,14 @@ version = "0.1.0"
 dependencies = [
  "adolib",
  "clap",
+ "colored",
+ "derive_more",
  "home",
  "log",
+ "rustyline",
+ "spinner",
  "tokio",
+ "which",
 ]
 
 [[package]]
@@ -35,7 +40,6 @@ dependencies = [
  "base64",
  "bytes",
  "chrono",
- "colored",
  "derive_more",
  "fern",
  "getrandom 0.2.16",

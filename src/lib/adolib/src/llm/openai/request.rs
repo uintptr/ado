@@ -39,19 +39,19 @@ pub enum OpenAIInput {
 }
 
 #[derive(Debug, Serialize)]
-pub struct OpenAIFunctionRequest<'a> {
-    model: &'a str,
+pub struct OpenAIRequest {
+    model: String,
     input: Vec<OpenAIInput>,
-    tools: &'a Vec<ConfigFunction>,
+    tools: Vec<ConfigFunction>,
 }
 
-impl<'a> OpenAIFunctionRequest<'a> {
-    pub fn new(model: &'a str, functions: &'a ConfigFunctions) -> Self {
-        Self {
-            model,
+impl OpenAIRequest {
+    pub fn new(model: &str, functions: ConfigFunctions) -> Result<OpenAIRequest> {
+        Ok(OpenAIRequest {
+            model: model.to_string(),
             input: vec![],
-            tools: &functions.list,
-        }
+            tools: functions.list,
+        })
     }
 
     pub fn with_input_role<S1, S2>(&mut self, role: S1, content: S2)
