@@ -6,4 +6,4 @@ pub mod llm;
 pub mod staples;
 pub mod ui;
 #[cfg(target_arch = "wasm32")]
-pub mod wasm_main;
+pub mod wasm_export;

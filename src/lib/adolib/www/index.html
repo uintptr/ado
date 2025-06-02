@@ -10,13 +10,13 @@
   <script type="module">
 
 
-    import init, { ado_main, WasmUI } from "./pkg/adolib.js";
+    import init, { WasmContext } from "./pkg/adolib.js";
 
     await init()
 
-    let io = new WasmUI();
+    let ctx = new WasmContext();
 
-    ado_main(io)
+    ctx.init()
 
   </script>
 </body>
