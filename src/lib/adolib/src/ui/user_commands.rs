@@ -38,6 +38,7 @@ impl Command for CommandQuit {
     }
 }
 
+#[derive(Default)]
 pub struct UserCommands {
     commands: Vec<Box<dyn Command>>,
 }

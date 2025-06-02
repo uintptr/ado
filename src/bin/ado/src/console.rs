@@ -186,7 +186,7 @@ impl ConsoleUI {
         }
     }
 
-    pub fn display_messages(&self, messages: &Vec<String>) -> Result<()> {
+    pub fn display_messages(&self, messages: &[String]) -> Result<()> {
         for msg in messages.iter() {
             self.display(msg)?
         }

@@ -62,7 +62,7 @@ impl<'a> LLM<'a> {
 
     pub async fn query(&mut self, req: &mut OpenAIRequest) -> Result<Vec<String>> {
         loop {
-            let res = self.post_contents(&req).await?;
+            let res = self.post_contents(req).await?;
 
             let outputs = res.process_output(&self.handler).await?;
 
