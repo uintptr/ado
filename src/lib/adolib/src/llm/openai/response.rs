@@ -33,7 +33,7 @@ pub struct OpenAIOutputFunctionCall {
 }
 
 impl OpenAIOutputFunctionCall {
-    pub async fn process(&self, handler: &FunctionHandler<'_>) -> Result<String> {
+    pub async fn process(&self, handler: &FunctionHandler) -> Result<String> {
         handler.call(&self.name, &self.arguments).await
     }
 }
@@ -132,7 +132,7 @@ impl OpenAIResponse {
         Ok(res)
     }
 
-    pub async fn process_output(&self, func_handler: &FunctionHandler<'_>) -> Result<OpenAIOutput> {
+    pub async fn process_output(&self, func_handler: &FunctionHandler) -> Result<OpenAIOutput> {
         let mut messages = Vec::new();
         let mut inputs = Vec::new();
 

@@ -14,7 +14,7 @@ use super::wasm::from_file;
 const DEF_OPENAI_URL: &str = "https://api.openai.com/v1/responses";
 const DEF_OPENAI_MODEL: &str = "gpt-4.1";
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct OpenAiConfig {
     #[serde(default = "openai_default_key")]
     pub key: String,
@@ -25,7 +25,7 @@ pub struct OpenAiConfig {
     pub prompt: Option<String>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct GoogleConfig {
     pub cx: String,
     pub geo: String,

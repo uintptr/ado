@@ -9,14 +9,14 @@ use reqwest::Client;
 
 use super::{request::OpenAIRequest, response::OpenAIResponse};
 
-pub struct LLM<'a> {
+pub struct LLM {
     client: Client,
-    openai: &'a OpenAiConfig,
-    handler: FunctionHandler<'a>,
+    openai: OpenAiConfig,
+    handler: FunctionHandler,
 }
 
-impl<'a> LLM<'a> {
-    pub fn new(config: &'a ConfigFile) -> Result<LLM<'a>> {
+impl LLM {
+    pub fn new(config: &ConfigFile) -> Result<LLM> {
         let openai = config.openai()?;
 
         if openai.key.is_empty() {
@@ -25,7 +25,7 @@ impl<'a> LLM<'a> {
 
         Ok(LLM {
             client: Client::new(),
-            openai,
+            openai: openai.clone(),
             handler: FunctionHandler::new(config)?,
         })
     }

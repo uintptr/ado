@@ -6,8 +6,8 @@ const FUNC_PROMPT_PRE: &str = r#"Dont forget that you have access series of
 tools and functions to call to give the user the best possible answer. Here's
 the list of functions"#;
 
-pub struct AIChain<'a> {
-    llm: LLM<'a>,
+pub struct AIChain {
+    llm: LLM,
     req: OpenAIRequest,
 }
 
@@ -23,8 +23,8 @@ fn build_functions_prompt(functions: &ConfigFunctions) -> String {
     format!("{}: {}", FUNC_PROMPT_PRE, func_names_str)
 }
 
-impl<'a> AIChain<'a> {
-    pub fn new(config: &'a ConfigFile) -> Result<AIChain<'a>> {
+impl AIChain {
+    pub fn new(config: &ConfigFile) -> Result<AIChain> {
         let functions = ConfigFunctions::load()?;
 
         let llm = LLM::new(config)?;

@@ -16,7 +16,16 @@
 
     let ctx = new WasmContext();
 
-    ctx.init()
+    console.log(ctx)
+
+    await ctx.load_config()
+
+    let ret = await ctx.query("tell a joke")
+
+    console.log(ret)
+
+    ret = await ctx.query("what was the initial question")
+    console.log(ret)
 
   </script>
 </body>

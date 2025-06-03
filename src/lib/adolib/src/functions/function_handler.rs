@@ -11,16 +11,16 @@ use super::{
     functions_search::FunctionsSearch, functions_shell::FunctionsShell, whois::functions::FunctionsWhois,
 };
 
-pub struct FunctionHandler<'a> {
+pub struct FunctionHandler {
     files: FunctionsFiles,
     http: FunctionsHttp,
     browser: Option<FunctionsBrowser>,
-    search: FunctionsSearch<'a>,
+    search: FunctionsSearch,
     shell: FunctionsShell,
     whois: FunctionsWhois,
 }
 
-impl<'a> FunctionHandler<'a> {
+impl FunctionHandler {
     pub fn new(config: &ConfigFile) -> Result<FunctionHandler> {
         Ok(FunctionHandler {
             files: FunctionsFiles::new(),

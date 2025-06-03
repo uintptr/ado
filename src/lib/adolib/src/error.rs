@@ -14,6 +14,7 @@ pub enum Error {
     DirnameError,
     NotFound,
     InvalidFormat,
+    NotInitialized,
     Empty,
     HttpGetFailure,
     QueryMissingError,

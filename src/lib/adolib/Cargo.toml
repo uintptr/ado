@@ -16,7 +16,6 @@ rust-embed = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 shell-words = { workspace = true }
-spinner = { workspace = true }
 tokio = { workspace = true }
 toml = { workspace = true }
 walkdir = { workspace = true }
@@ -34,7 +33,7 @@ getrandom_0_2 = { workspace = true }
 wasm-bindgen = { workspace = true }
 ring = { workspace = true }
 wasm-bindgen-futures = { workspace = true }
-
+console_error_panic_hook = { workspace = true }
 
 [lib]
 crate-type = ["cdylib", "rlib"]

@@ -47,7 +47,6 @@ pub fn ado_main() -> i32 {
 
 #[wasm_bindgen]
 pub struct WasmContext {
-    config: Option<ConfigFile>,
     chain: Option<AIChain>,
 }
 
@@ -62,13 +61,12 @@ impl From<Error> for JsValue {
 impl WasmContext {
     #[wasm_bindgen(constructor)]
     pub fn new() -> WasmContext {
-        WasmContext {
-            config: None,
-            chain: None,
-        }
+        console_error_panic_hook::set_once();
+
+        WasmContext { chain: None }
     }
 
-    pub async fn init(&mut self) -> Result<()> {
+    pub async fn load_config(&mut self) -> Result<()> {
         let config = match ConfigFile::load_with_url(CONFIG_URL).await {
             Ok(v) => v,
             Err(e) => {
@@ -78,10 +76,17 @@ impl WasmContext {
             }
         };
 
-        let chain = AIChain::new(&config);
+        let chain = AIChain::new(&config)?;
 
-        self.config = Some(config);
+        self.chain = Some(chain);
 
         Ok(())
+    }
+
+    pub async fn query(&mut self, query: &str) -> Result<Vec<String>> {
+        match &mut self.chain {
+            Some(chain) => chain.query(query).await,
+            None => Err(Error::NotInitialized),
+        }
     }
 }

@@ -8,14 +8,14 @@ use crate::{
 
 use super::function_args::FunctionArgs;
 
-pub struct FunctionsSearch<'a> {
+pub struct FunctionsSearch {
     client: Client,
-    google: &'a GoogleConfig,
+    google: GoogleConfig,
 }
 
-impl<'a> FunctionsSearch<'a> {
-    pub fn new(config: &'a ConfigFile) -> Result<Self> {
-        let google = config.search()?;
+impl FunctionsSearch {
+    pub fn new(config: &ConfigFile) -> Result<Self> {
+        let google = config.search()?.clone();
 
         Ok(Self {
             client: Client::new(),
