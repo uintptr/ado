@@ -19,6 +19,7 @@ shell-words = { workspace = true }
 tokio = { workspace = true }
 toml = { workspace = true }
 walkdir = { workspace = true }
+#redis = { workspace = true }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 whois-rust = { workspace = true }
@@ -37,3 +38,7 @@ console_error_panic_hook = { workspace = true }
 
 [lib]
 crate-type = ["cdylib", "rlib"]
+
+[profile.release]
+lto = true
+opt-level = 's'

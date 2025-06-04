@@ -42,16 +42,21 @@ pub enum OpenAIInput {
 pub struct OpenAIRequest {
     model: String,
     input: Vec<OpenAIInput>,
-    tools: Vec<ConfigFunction>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    tools: Option<Vec<ConfigFunction>>,
 }
 
 impl OpenAIRequest {
-    pub fn new(model: &str, functions: ConfigFunctions) -> Result<OpenAIRequest> {
-        Ok(OpenAIRequest {
+    pub fn new(model: &str) -> OpenAIRequest {
+        OpenAIRequest {
             model: model.to_string(),
             input: vec![],
-            tools: functions.list,
-        })
+            tools: None,
+        }
+    }
+
+    pub fn with_functions(&mut self, functions: ConfigFunctions) {
+        self.tools = Some(functions.list)
     }
 
     pub fn with_input_role<S1, S2>(&mut self, role: S1, content: S2)

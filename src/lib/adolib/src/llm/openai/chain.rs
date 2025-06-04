@@ -33,7 +33,9 @@ impl AIChain {
 
         let function_prompt = build_functions_prompt(&functions);
 
-        let mut req = OpenAIRequest::new(&openai.model, functions)?;
+        let mut req = OpenAIRequest::new(&openai.model);
+
+        req.with_functions(functions);
 
         if let Some(prompt) = &openai.prompt {
             req.with_input_role("user", prompt);

@@ -64,6 +64,14 @@ impl ConfigFile {
         Ok(config)
     }
 
+    pub fn from_string<S>(value: S) -> Result<ConfigFile>
+    where
+        S: AsRef<str>,
+    {
+        let config: ConfigFile = toml::from_str(value.as_ref())?;
+        Ok(config)
+    }
+
     pub async fn load_with_url<S>(url: S) -> Result<ConfigFile>
     where
         S: AsRef<str>,

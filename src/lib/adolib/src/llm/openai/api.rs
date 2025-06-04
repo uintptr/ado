@@ -76,4 +76,19 @@ impl LLM {
             req.with_inputs(outputs.inputs);
         }
     }
+
+    pub async fn message<S>(&self, content: S) -> Result<String>
+    where
+        S: AsRef<str>,
+    {
+        let mut req = OpenAIRequest::new(&self.openai.model);
+
+        req.with_input_role("user", content);
+
+        let res = self.post_contents(&req).await?;
+
+        let outputs = res.process_output(&self.handler).await?;
+
+        Ok(outputs.messages.join("\n"))
+    }
 }

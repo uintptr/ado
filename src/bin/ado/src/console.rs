@@ -73,7 +73,7 @@ fn init_readline(commands: &UserCommands) -> Result<Editor<MyHelper, FileHistory
         validator: MatchingBracketValidator::new(),
     };
 
-    for c in commands.list_commands() {
+    for (c, _) in commands.list_commands() {
         if let Err(e) = rl.add_history_entry(c) {
             warn!("{e}");
         }

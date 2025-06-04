@@ -40,36 +40,18 @@ impl Command for CommandQuit {
 
 #[derive(Default)]
 pub struct UserCommands {
-    commands: Vec<Box<dyn Command>>,
+    handlers: Vec<Box<dyn Command>>,
 }
 
 impl UserCommands {
     pub fn new() -> Self {
-        let commands: Vec<Box<dyn Command>> = vec![Box::new(CommandReset), Box::new(CommandQuit)];
+        let handlers: Vec<Box<dyn Command>> = vec![Box::new(CommandReset), Box::new(CommandQuit)];
 
-        Self { commands }
-    }
-
-    fn display_help(&self) -> String {
-        let mut help = Vec::new();
-
-        help.push("# Help".to_string());
-
-        help.push(format!("* `{:<9}` This help", "/help"));
-
-        for c in self.commands.iter() {
-            help.push(format!("* `{:<9}` {}", c.name(), c.desc()));
-        }
-
-        help.join("\n")
+        Self { handlers }
     }
 
     pub fn handler(&self, line: &str) -> Result<String> {
-        if line.eq("/help") {
-            return Ok(self.display_help());
-        }
-
-        for c in self.commands.iter() {
+        for c in self.handlers.iter() {
             if c.name() == line {
                 return c.handler();
             }
@@ -80,13 +62,11 @@ impl UserCommands {
         })
     }
 
-    pub fn list_commands(&self) -> Vec<&'static str> {
+    pub fn list_commands(&self) -> Vec<(&'static str, &'static str)> {
         let mut command_names = Vec::new();
 
-        command_names.push("/help");
-
-        for c in self.commands.iter() {
-            command_names.push(c.name());
+        for c in self.handlers.iter() {
+            command_names.push((c.name(), c.desc()));
         }
 
         command_names
