@@ -221,7 +221,7 @@ async function main() {
 
     // get the config.toml file
 
-    let config = await utils.fetch_as_string("http://10.0.0.2/ado.toml")
+    let config = await utils.fetch_as_string("https://keys.pi/ado.toml")
 
     if (config != null) {
 
