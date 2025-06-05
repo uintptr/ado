@@ -3,7 +3,8 @@ use std::time::Duration;
 use crate::{
     config::file::ConfigFile,
     error::{Error, Result},
-    llm::openai::chain::AIChain,
+    llm::{openai::chain::AIChain, question::question_detection},
+    search::google::GoogleCSE,
     ui::user_commands::UserCommands,
     wasm::reddit::RedditQuery,
 };
@@ -53,6 +54,7 @@ pub struct AdoWasm {
     commands: UserCommands,
     chain: AIChain,
     reddit: RedditQuery,
+    search: GoogleCSE,
 }
 
 // or for your custom error type:
@@ -90,20 +92,18 @@ impl AdoWasm {
         let chain = AIChain::new(&config).unwrap();
         let reddit = RedditQuery::new(&config).unwrap();
         let commands = UserCommands::new();
+        let search = GoogleCSE::new(&config).unwrap();
 
         AdoWasm {
             commands,
             chain,
             reddit,
+            search,
         }
     }
 
     pub async fn find_sub_reddit(&self, description: &str) -> Result<String> {
         self.reddit.find_sub(description).await
-    }
-
-    pub async fn search(&self, _query: &str) -> Result<String> {
-        unimplemented!()
     }
 
     pub async fn query(&mut self, content: &str) -> Result<String> {
@@ -138,5 +138,17 @@ impl AdoWasm {
         }
 
         commands
+    }
+
+    pub async fn search(&self, query: &str) -> Result<String> {
+        self.search.query(query).await
+    }
+
+    pub async fn lucky(&self, query: &str) -> Result<String> {
+        self.search.lucky(query).await
+    }
+
+    pub fn is_question(&self, query: &str) -> bool {
+        question_detection(query)
     }
 }

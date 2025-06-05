@@ -1,10 +1,9 @@
 //@ts-check
 
 import * as utils from "./utils.js"
-import init, { AdoWasm } from "../pkg/adolib.js";
+import init, { AdoWasm } from "./pkg/adolib.js";
 
 const marked = window["marked"]
-
 
 // @ts-ignore
 if (window.hljs) {
@@ -29,7 +28,7 @@ export { }
  * @param {string} name
  * @returns {HTMLElement | null}
  */
-function new_search_card(item, name) {
+function search_new_card(item, name) {
 
     const result = utils.new_template(name)
 
@@ -77,26 +76,33 @@ function new_search_card(item, name) {
 
 
 /**
- * @param {HTMLElement} container
+ * @param {AdoWasm} wctx
  * @param {string} q
  */
-async function issue_google_query(container, q) {
+async function search_issue_query(wctx, q) {
 
+    const container = document.getElementById("results")
 
-    let results = []; //await utils.fetch_as_json(url)
+    if (container != null && container instanceof HTMLElement) {
 
-    if (results != null) {
-        results.items.forEach(item => {
-            let card = new_search_card(item, "search_result")
+        let results_str = await wctx.search(q)
 
-            if (card != null && card instanceof HTMLElement) {
-                container.appendChild(card)
-                const item_b64 = utils.object_to_b64(item)
-                card.setAttribute("chat-data-b64", item_b64)
-            }
-        });
+        if (results_str != null) {
 
-        utils.show_element(container)
+            let results = JSON.parse(results_str)
+
+            results.items.forEach(item => {
+                let card = search_new_card(item, "search_result")
+
+                if (card != null && card instanceof HTMLElement) {
+                    container.appendChild(card)
+                    const item_b64 = utils.object_to_b64(item)
+                    card.setAttribute("chat-data-b64", item_b64)
+                }
+            });
+
+            utils.show_element(container)
+        }
     }
 }
 
@@ -110,6 +116,103 @@ async function command_reset(container, cmdline) {
     utils.hide_element(container)
 }
 
+/**
+ * @param {string} response
+ * @param {boolean} markdown
+ * @param {string | null} chat_source
+ */
+function add_command_response(response, markdown = true, chat_source = null) {
+
+    const container = document.getElementById("results")
+
+    if (container == null || !(container instanceof HTMLElement)) {
+        console.log("result not found", container)
+        return
+    }
+
+    utils.show_element(container)
+
+    const result = utils.new_template("command_result")
+
+    if (null != result) {
+
+        // to rebuild the context
+        if (null != chat_source) {
+            result.setAttribute("chat-source", chat_source)
+            result.setAttribute("chat-data", response)
+        }
+
+        const text_container = result.querySelector("#command_text")
+
+        if (text_container != null && text_container instanceof HTMLElement) {
+
+            if (true == markdown) {
+                text_container.innerHTML = marked.parse(response)
+            }
+            else {
+                text_container.innerText = response
+            }
+
+            container.appendChild(result)
+        }
+        else {
+            console.error("unable to find text container")
+        }
+    }
+    else {
+        console.error("couldn't find template")
+    }
+}
+
+
+/**
+ * @param {AdoWasm} wctx
+ */
+function init_cmd_line(wctx) {
+
+    const cmd_input = document.getElementById('cmd_line');
+
+    if (cmd_input != null && cmd_input instanceof HTMLInputElement) {
+
+        document.addEventListener('keydown', function (event) {
+
+            if (event.ctrlKey) {
+                return
+            }
+
+            cmd_input.focus()
+        });
+
+        cmd_input.addEventListener("keyup", async function (e) {
+            if (e.key == "Enter") {
+
+                //
+                // hide the keyboard
+                //
+                if (true == utils.isMobile()) {
+                    cmd_input.blur()
+                }
+
+                const cmd_line = cmd_input.value
+                cmd_input.value = ""
+
+                if (cmd_line.length > 0) {
+                    let ret = await wctx.query(cmd_line)
+
+                    console.log(ret)
+
+                    add_command_response(ret)
+                }
+            }
+            else if (e.key == "Escape") {
+                cmd_input.value = ""
+            }
+        })
+    }
+    else {
+        console.error("couldn't find the search input")
+    }
+}
 
 async function main() {
 
@@ -124,25 +227,66 @@ async function main() {
 
         let wctx = new AdoWasm(config); // global
 
-        console.log(wctx)
-
-        let reddit = await wctx.find_sub_reddit("all")
-
-        console.log(reddit)
+        init_cmd_line(wctx)
 
         const search = window.location.search;
-
-        if (false == await utils.auth()) {
-            console.log("not authorized")
-            window.location.href = "/login.html"
-            return
-        }
 
         // from the URL bar
         if (search != null && search.length > 0) {
             const urlParams = new URLSearchParams(search);
-            console.log(urlParams)
+
+            const q = urlParams.get('q')
+
+            if (q != null) {
+
+                let q_plus_two = q.slice(2)
+
+                if (q.startsWith("s ")) {
+                    //
+                    // assume this is a search
+                    //
+                    search_issue_query(wctx, q_plus_two)
+                } else if (q.startsWith("a ")) {
+                    let amazon_url = "https://www.amazon.ca/s?k=" + q_plus_two
+                    window.location.href = amazon_url
+                } else if (q.startsWith("c ")) {
+                    //
+                    // assume this is a chat request
+                    //
+                    let res = await wctx.query(q_plus_two)
+                    add_command_response(res)
+                } else if (q.startsWith("l ")) {
+                    let lucky_url = await wctx.lucky(q_plus_two)
+                    window.location.href = lucky_url
+                } else if (q.startsWith("r ")) {
+                    let sub = await wctx.find_sub_reddit(q_plus_two)
+                    let reddit_url = "https://old.reddit.com" + sub + "/"
+                    console.log(reddit_url)
+                    window.location.href = reddit_url
+                } else if (q.startsWith("t ")) {
+                    let yfi_url = "https://finance.yahoo.com/quote/" + q_plus_two + "/"
+                    window.location.href = yfi_url
+                } else {
+                    //
+                    // detect if this is a question
+                    //
+                    if (true == wctx.is_question(q)) {
+                        let res = await wctx.query(q)
+                        add_command_response(res)
+
+                    } else {
+                        //
+                        // fallback is lucky url
+                        //
+                        let lucky_url = await wctx.lucky(q)
+                        window.location.href = lucky_url
+                    }
+                }
+            }
         }
+    } else {
+        console.log("not authorized")
+        window.location.href = "/login.html"
     }
 }
 

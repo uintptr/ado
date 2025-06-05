@@ -3,6 +3,7 @@ pub mod const_vars;
 pub mod error;
 pub mod functions;
 pub mod llm;
+pub mod search;
 pub mod staples;
 pub mod ui;
 #[cfg(target_arch = "wasm32")]

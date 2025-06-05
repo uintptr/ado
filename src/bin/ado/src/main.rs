@@ -4,11 +4,11 @@ use std::{
     path::Path,
 };
 
-use ado::{console::ConsoleUI, shell::detect_shell_question};
+use ado::console::ConsoleUI;
 use adolib::{
     config::file::ConfigFile,
     error::{Error, Result},
-    llm::openai::chain::AIChain,
+    llm::{openai::chain::AIChain, question::question_detection},
     staples::setup_logger,
 };
 use clap::Parser;
@@ -52,7 +52,7 @@ async fn main() -> Result<()> {
     setup_logger(args.verbose)?;
 
     let mut query_opt = match args.shell_handler {
-        Some(v) => match detect_shell_question(&v) {
+        Some(v) => match question_detection(&v) {
             true => Some(v),
             false => {
                 println!("ado: {}: command not found", v);

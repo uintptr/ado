@@ -16,6 +16,8 @@ pub enum Error {
     InvalidFormat,
     NotInitialized,
     Empty,
+    EmptySearchResult,
+    InvalidJsonType,
     HttpGetFailure,
     QueryMissingError,
     ConfigNotFound,

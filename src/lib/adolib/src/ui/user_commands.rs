@@ -50,7 +50,25 @@ impl UserCommands {
         Self { handlers }
     }
 
+    fn build_help(&self) -> String {
+        let mut lines = Vec::new();
+
+        lines.push("## Help".to_string());
+
+        lines.push(format!("* `{:<7}`This help", "/help"));
+
+        for c in self.handlers.iter() {
+            lines.push(format!("* `{:<7}`{}", c.name(), c.desc()));
+        }
+
+        lines.join("\n")
+    }
+
     pub fn handler(&self, line: &str) -> Result<String> {
+        if line.starts_with("/help") {
+            return Ok(self.build_help());
+        }
+
         for c in self.handlers.iter() {
             if c.name() == line {
                 return c.handler();

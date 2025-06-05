@@ -1,4 +1,4 @@
-pub fn detect_shell_question(query: &str) -> bool {
+pub fn question_detection(query: &str) -> bool {
     if query.starts_with("how ")
         || query.starts_with("how's ")
         || query.starts_with("does ")
