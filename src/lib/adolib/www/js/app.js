@@ -255,6 +255,9 @@ async function main() {
                     //
                     let res = await wctx.query(q_plus_two)
                     add_command_response(res)
+                } else if (q.startsWith("g ")) {
+                    let google_url = "https://google.com/search?q=" + q_plus_two
+                    window.location.href = google_url
                 } else if (q.startsWith("l ")) {
                     let lucky_url = await wctx.lucky(q_plus_two)
                     window.location.href = lucky_url

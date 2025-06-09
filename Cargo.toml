@@ -24,9 +24,9 @@ tokio = { version = "1.45.1", features = [
     "tokio-macros",
     "test-util",
 ] }
-toml = "0.8.22"
+toml = "0.8.23"
 walkdir = "2.5.0"
-which = "7.0.3"
+which = "8.0.0"
 whois-rust = "1.6.0"
 x11rb = "0.13.1"
 rustyline = { version = "16.0.0", features = [
@@ -42,4 +42,3 @@ ring = { version = "0.17.14", features = ["wasm32_unknown_unknown_js"] }
 wasm-bindgen-futures = "0.4.50"
 adolib = { path = "src/lib/adolib" }
 console_error_panic_hook = "0.1.7"
-redis = "0.31.0"
