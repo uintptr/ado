@@ -94,7 +94,8 @@ impl FunctionsHttp {
 
 #[cfg(test)]
 mod tests {
-    use crate::staples::setup_logger;
+
+    use crate::logging::logger::setup_logger;
 
     use super::FunctionsHttp;
 

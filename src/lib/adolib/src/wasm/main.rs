@@ -4,6 +4,7 @@ use crate::{
     config::file::ConfigFile,
     error::{Error, Result},
     llm::{openai::chain::AIChain, question::question_detection},
+    logging::logger::setup_logger,
     search::google::GoogleCSE,
     ui::user_commands::UserCommands,
     wasm::reddit::RedditQuery,
@@ -86,6 +87,8 @@ impl AdoWasmCommand {
 impl AdoWasm {
     #[wasm_bindgen(constructor)]
     pub fn new(config: &str) -> AdoWasm {
+        setup_logger(true).unwrap();
+
         console_error_panic_hook::set_once();
 
         let config = ConfigFile::from_string(config).unwrap();

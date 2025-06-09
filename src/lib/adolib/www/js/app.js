@@ -1,7 +1,7 @@
 //@ts-check
 
 import * as utils from "./utils.js"
-import init, { AdoWasm } from "./pkg/adolib.js";
+import init, { AdoWasm,  } from "./pkg/adolib.js";
 
 const marked = window["marked"]
 

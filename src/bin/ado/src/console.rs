@@ -203,7 +203,8 @@ impl ConsoleUI {
 
 #[cfg(test)]
 mod tests {
-    use adolib::staples::setup_logger;
+
+    use adolib::logging::logger::setup_logger;
 
     use super::ConsoleUI;
 

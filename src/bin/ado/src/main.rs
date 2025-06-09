@@ -9,7 +9,7 @@ use adolib::{
     config::file::ConfigFile,
     error::{Error, Result},
     llm::{openai::chain::AIChain, question::question_detection},
-    staples::setup_logger,
+    logging::logger::setup_logger,
 };
 use clap::Parser;
 use spinner::SpinnerBuilder;

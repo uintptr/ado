@@ -66,7 +66,7 @@ impl GoogleCSE {
 mod tests {
     use log::info;
 
-    use crate::staples::setup_logger;
+    use crate::logging::logger::setup_logger;
 
     use super::*;
 
