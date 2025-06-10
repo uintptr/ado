@@ -2,8 +2,15 @@
 
 import * as utils from "./utils.js"
 import init, { AdoWasm,  } from "./pkg/adolib.js";
+import { navigateWithLoading, configureLoadingScreen } from "./loading-screen.js";
 
 const marked = window["marked"]
+
+// Configure loading screen with minimal delays
+configureLoadingScreen({
+    enableDelay: false,   // Disable artificial delays
+    minAnimationTime: 200 // Set minimal animation time
+});
 
 // @ts-ignore
 if (window.hljs) {
@@ -254,7 +261,7 @@ async function main() {
                     search_issue_query(wctx, q_plus_two)
                 } else if (q.startsWith("a ")) {
                     let amazon_url = "https://www.amazon.ca/s?k=" + q_plus_two
-                    window.location.href = amazon_url
+                    await navigateWithLoading(amazon_url)
                 } else if (q.startsWith("c ")) {
                     //
                     // assume this is a chat request
@@ -263,18 +270,18 @@ async function main() {
                     add_command_response(res)
                 } else if (q.startsWith("g ")) {
                     let google_url = "https://google.com/search?q=" + q_plus_two
-                    window.location.href = google_url
+                    await navigateWithLoading(google_url)
                 } else if (q.startsWith("l ")) {
                     let lucky_url = await wctx.lucky(q_plus_two)
-                    window.location.href = lucky_url
+                    await navigateWithLoading(lucky_url)
                 } else if (q.startsWith("r ")) {
                     let sub = await wctx.find_sub_reddit(q_plus_two)
                     let reddit_url = "https://old.reddit.com" + sub + "/"
                     console.log(reddit_url)
-                    window.location.href = reddit_url
+                    await navigateWithLoading(reddit_url)
                 } else if (q.startsWith("t ")) {
                     let yfi_url = "https://finance.yahoo.com/quote/" + q_plus_two + "/"
-                    window.location.href = yfi_url
+                    await navigateWithLoading(yfi_url)
                 } else {
                     //
                     // detect if this is a question
@@ -288,14 +295,14 @@ async function main() {
                         // fallback is lucky url
                         //
                         let lucky_url = await wctx.lucky(q)
-                        window.location.href = lucky_url
+                        await navigateWithLoading(lucky_url)
                     }
                 }
             }
         }
     } else {
         console.log("not authorized")
-        window.location.href = "/login.html"
+        await navigateWithLoading("/login.html")
     }
 }
 

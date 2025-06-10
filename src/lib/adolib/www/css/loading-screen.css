@@ -1,0 +1,134 @@
+/* Loading Screen Styles - Matching Main App Theme */
+.retro-loading-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: var(--bg-dark, #121212);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s, visibility 0s 0.3s;
+}
+
+.retro-loading-screen.active {
+    opacity: 1;
+    visibility: visible;
+    transition: opacity 0.3s, visibility 0s;
+}
+
+.retro-loading-content {
+    text-align: center;
+    color: var(--text-primary, #f8f9fd);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.retro-loading-header {
+    font-size: 2.5rem;
+    margin-bottom: 1.5rem;
+    letter-spacing: 1px;
+    text-shadow: 0 0 10px var(--accent-color, #4d7cfe);
+    font-weight: 600;
+}
+
+.retro-loading-bar-container {
+    width: 300px;
+    height: 30px;
+    background-color: var(--bg-input, #252525);
+    border: 2px solid var(--accent-color, #4d7cfe);
+    border-radius: var(--input-border-radius, 12px);
+    padding: 4px;
+    margin-bottom: 1.5rem;
+    box-shadow: var(--shadow, 0 8px 20px rgba(0, 0, 0, 0.25));
+}
+
+.retro-loading-bar {
+    height: 100%;
+    width: 0%;
+    background: var(--accent-gradient, linear-gradient(120deg, #4d7cfe, #8e5cff));
+    border-radius: calc(var(--input-border-radius, 12px) - 4px);
+    transition: width 0.5s ease-in-out;
+}
+
+.retro-loading-text {
+    font-size: 1rem;
+    color: var(--text-secondary, #c0c7db);
+    min-height: 4.5rem;
+}
+
+.retro-loading-text-line {
+    margin: 0.5rem 0;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 0.3s, transform 0.3s;
+    font-weight: 500;
+}
+
+.retro-loading-text-line.visible {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.retro-blink {
+    animation: blink 1s infinite;
+    color: var(--accent-color, #4d7cfe);
+}
+
+.retro-scan-line {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    background: linear-gradient(
+        to bottom,
+        rgba(0, 0, 0, 0) 0%,
+        rgba(77, 124, 254, 0.1) 50%,
+        rgba(0, 0, 0, 0) 100%
+    );
+    animation: scan 8s linear infinite;
+    opacity: 0.1;
+    pointer-events: none;
+}
+
+.retro-crt-effect {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(ellipse at center, transparent 0%, rgba(0, 0, 0, 0.5) 100%);
+    pointer-events: none;
+    opacity: 0.2;
+}
+
+@keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
+}
+
+@keyframes scan {
+    0% { transform: translateY(-100vh); }
+    100% { transform: translateY(100vh); }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .retro-loading-header {
+        font-size: 1.8rem;
+    }
+    
+    .retro-loading-bar-container {
+        width: 250px;
+        height: 25px;
+    }
+    
+    .retro-loading-text {
+        font-size: 0.9rem;
+    }
+}
