@@ -148,6 +148,12 @@ function add_command_response(response, markdown = true, chat_source = null) {
 
             if (true == markdown) {
                 text_container.innerHTML = marked.parse(response)
+                // Apply syntax highlighting to code blocks
+                if (window.hljs) {
+                    result.querySelectorAll('pre code').forEach((block) => {
+                        window.hljs.highlightElement(block);
+                    });
+                }
             }
             else {
                 text_container.innerText = response
