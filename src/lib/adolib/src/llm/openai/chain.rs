@@ -1,3 +1,5 @@
+use log::info;
+
 use crate::{config::file::ConfigFile, error::Result, functions::config::ConfigFunctions};
 
 use super::{api::LLM, request::OpenAIRequest};
@@ -50,6 +52,7 @@ impl AIChain {
     where
         S: AsRef<str>,
     {
+        info!("query: {}", content.as_ref());
         self.req.with_input_role("user", content);
         self.llm.query(&mut self.req).await
     }

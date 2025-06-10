@@ -6,7 +6,7 @@ use serde::{Deserialize, Deserializer, Serialize};
 
 use crate::{
     error::{Error, Result},
-    functions::assets::FunctionAssets,
+    functions::assets::{FunctionAssets, FunctionAssetsPlatform},
 };
 
 const PARAM_VALID_TYPES: &[&str] = &["object", "string", "integer", "boolean", "array"];
@@ -66,7 +66,12 @@ impl ConfigFunctions {
     pub fn load() -> Result<Self> {
         let mut list = Vec::new();
 
-        for name in FunctionAssets::iter() {
+        info!("loading function assets");
+
+        // load both
+        for name in FunctionAssets::iter().chain(FunctionAssetsPlatform::iter()) {
+            info!("loading {}", name);
+
             let f = match FunctionAssets::get(&name) {
                 Some(v) => v,
                 None => {
@@ -81,6 +86,10 @@ impl ConfigFunctions {
 
             list.extend(inner_list);
         }
+
+        //
+        // load platform specific functions (wasm vs console)
+        //
 
         info!("function count: {}", list.len());
 
