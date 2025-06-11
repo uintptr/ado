@@ -68,11 +68,28 @@ impl ConfigFunctions {
 
         info!("loading function assets");
 
-        // load both
-        for name in FunctionAssets::iter().chain(FunctionAssetsPlatform::iter()) {
+        for name in FunctionAssets::iter() {
             info!("loading {}", name);
 
             let f = match FunctionAssets::get(&name) {
+                Some(v) => v,
+                None => {
+                    error!("unable to read {}", name);
+                    continue;
+                }
+            };
+
+            let content = String::from_utf8_lossy(&f.data);
+
+            let inner_list: Vec<ConfigFunction> = serde_json::from_str(&content)?;
+
+            list.extend(inner_list);
+        }
+
+        for name in FunctionAssetsPlatform::iter() {
+            info!("loading {}", name);
+
+            let f = match FunctionAssetsPlatform::get(&name) {
                 Some(v) => v,
                 None => {
                     error!("unable to read {}", name);
