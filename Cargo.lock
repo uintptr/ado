@@ -59,6 +59,7 @@ dependencies = [
  "walkdir",
  "wasm-bindgen",
  "wasm-bindgen-futures",
+ "web-sys",
  "which",
  "whois-rust",
  "x11rb",

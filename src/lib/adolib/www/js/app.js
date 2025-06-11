@@ -218,7 +218,7 @@ function init_cmd_line(wctx) {
                         let ret = await wctx.query(cmd_line)
                         add_command_response(ret)
                     } catch (error) {
-                        if (error == "ResetInput") {
+                        if (error == "ResetInput" || error == "EOF") {
                             wctx.reset()
                             command_reset()
                         }
