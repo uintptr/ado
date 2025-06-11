@@ -114,13 +114,14 @@ async function search_issue_query(wctx, q) {
 }
 
 
-/**
- * @param {HTMLElement} container
- * @param {string} cmdline
-*/
-async function command_reset(container, cmdline) {
-    utils.remove_all_children(container)
-    utils.hide_element(container)
+function command_reset() {
+
+    const results = document.getElementById("results")
+
+    if (results != null && results instanceof HTMLElement) {
+        utils.remove_all_children(results)
+        utils.hide_element(results)
+    }
 }
 
 /**
@@ -213,11 +214,18 @@ function init_cmd_line(wctx) {
 
                     add_command_response(cmd_line, false)
 
-                    let ret = await wctx.query(cmd_line)
-
-                    console.log(ret)
-
-                    add_command_response(ret)
+                    try {
+                        let ret = await wctx.query(cmd_line)
+                        add_command_response(ret)
+                    } catch (error) {
+                        if (error == "ResetInput") {
+                            wctx.reset()
+                            command_reset()
+                        }
+                        else {
+                            console.log("error: " + error)
+                        }
+                    }
                 }
             }
             else if (e.key == "Escape") {
@@ -227,6 +235,87 @@ function init_cmd_line(wctx) {
     }
     else {
         console.error("couldn't find the search input")
+    }
+}
+
+/**
+ * @param {AdoWasm} wctx
+ * @param {string} search
+ */
+
+async function search_handler(wctx, search) {
+    const urlParams = new URLSearchParams(search);
+
+    const q = urlParams.get('q')
+
+    if (q != null) {
+
+        let q_plus_two = q.slice(2)
+
+        if (q.startsWith("s ")) {
+            //
+            // assume this is a search
+            //
+            search_issue_query(wctx, q_plus_two)
+        } else if (q.startsWith("a ")) {
+            //
+            // amazon search
+            //
+            let amazon_url = "https://www.amazon.ca/s?k=" + q_plus_two
+            await navigateWithLoading(amazon_url)
+        } else if (q.startsWith("c ")) {
+            //
+            // assume this is a chat request
+            //
+            let res = await wctx.query(q_plus_two)
+            add_command_response(res)
+        } else if (q.startsWith("g ")) {
+            //
+            // google search
+            //
+            let google_url = "https://google.com/search?q=" + q_plus_two
+            await navigateWithLoading(google_url)
+        } else if (q.startsWith("l ")) {
+            //
+            // I'm feeling lucky google search
+            //
+            let lucky_url = await wctx.lucky(q_plus_two)
+            await navigateWithLoading(lucky_url)
+        } else if (q.startsWith("r ")) {
+            //
+            // Find the associated subreddit
+            //
+            let sub = await wctx.find_sub_reddit(q_plus_two)
+            let reddit_url = "https://old.reddit.com" + sub + "/"
+            await navigateWithLoading(reddit_url)
+        } else if (q.startsWith("t ")) {
+            //
+            // ticker
+            //
+            let yfi_url = "https://finance.yahoo.com/quote/" + q_plus_two + "/"
+            await navigateWithLoading(yfi_url)
+        } else if (q.startsWith("w ")) {
+            //
+            // wikipedia
+            //
+            let wikipedia_url = await wctx.lucky("wikipedia " + q_plus_two)
+            await navigateWithLoading(wikipedia_url)
+        } else {
+            //
+            // detect if this is a question
+            //
+            if (true == wctx.is_question(q)) {
+                let res = await wctx.query(q)
+                add_command_response(res)
+            } else {
+                //
+                // fallback to google I'm feeling lucky url. In most
+                // cases this is better than a search result
+                //
+                let lucky_url = await wctx.lucky(q)
+                await navigateWithLoading(lucky_url)
+            }
+        }
     }
 }
 
@@ -249,73 +338,7 @@ async function main() {
 
         // from the URL bar
         if (search != null && search.length > 0) {
-            const urlParams = new URLSearchParams(search);
-
-            const q = urlParams.get('q')
-
-            if (q != null) {
-
-                let q_plus_two = q.slice(2)
-
-                if (q.startsWith("s ")) {
-                    //
-                    // assume this is a search
-                    //
-                    search_issue_query(wctx, q_plus_two)
-                } else if (q.startsWith("a ")) {
-                    //
-                    // amazon search
-                    //
-                    let amazon_url = "https://www.amazon.ca/s?k=" + q_plus_two
-                    await navigateWithLoading(amazon_url)
-                } else if (q.startsWith("c ")) {
-                    //
-                    // assume this is a chat request
-                    //
-                    let res = await wctx.query(q_plus_two)
-                    add_command_response(res)
-                } else if (q.startsWith("g ")) {
-                    //
-                    // google search
-                    //
-                    let google_url = "https://google.com/search?q=" + q_plus_two
-                    await navigateWithLoading(google_url)
-                } else if (q.startsWith("l ")) {
-                    //
-                    // I'm feeling lucky google search
-                    //
-                    let lucky_url = await wctx.lucky(q_plus_two)
-                    await navigateWithLoading(lucky_url)
-                } else if (q.startsWith("r ")) {
-                    //
-                    // Find the associated subreddit
-                    //
-                    let sub = await wctx.find_sub_reddit(q_plus_two)
-                    let reddit_url = "https://old.reddit.com" + sub + "/"
-                    await navigateWithLoading(reddit_url)
-                } else if (q.startsWith("t ")) {
-                    let yfi_url = "https://finance.yahoo.com/quote/" + q_plus_two + "/"
-                    await navigateWithLoading(yfi_url)
-                } else if (q.startsWith("w ")) {
-                    let wikipedia_url = await wctx.lucky("wikipedia " + q_plus_two)
-                    await navigateWithLoading(wikipedia_url)
-                } else {
-                    //
-                    // detect if this is a question
-                    //
-                    if (true == wctx.is_question(q)) {
-                        let res = await wctx.query(q)
-                        add_command_response(res)
-                    } else {
-                        //
-                        // fallback to google I'm feeling lucky url. In most
-                        // cases this is better than a search result
-                        //
-                        let lucky_url = await wctx.lucky(q)
-                        await navigateWithLoading(lucky_url)
-                    }
-                }
-            }
+            search_handler(wctx, search)
         }
     } else {
         console.log("not authorized")

@@ -6,7 +6,7 @@ use crate::{
     llm::{openai::chain::AIChain, question::question_detection},
     logging::logger::setup_logger,
     search::google::GoogleCSE,
-    ui::user_commands::UserCommands,
+    ui::commands::UserCommands,
     wasm::reddit::RedditQuery,
 };
 use tokio::time::sleep;
@@ -153,5 +153,9 @@ impl AdoWasm {
 
     pub fn is_question(&self, query: &str) -> bool {
         question_detection(query)
+    }
+
+    pub fn reset(&mut self) {
+        self.chain.reset();
     }
 }

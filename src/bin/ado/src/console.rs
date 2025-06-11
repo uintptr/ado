@@ -8,7 +8,7 @@ use std::{
 use adolib::{
     const_vars::{DOT_DIRECTORY, PKG_NAME, PKG_VERSION},
     error::{Error, Result},
-    ui::user_commands::UserCommands,
+    ui::commands::UserCommands,
 };
 use colored;
 use colored::Colorize;

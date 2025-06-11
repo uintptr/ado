@@ -1,1 +1,1 @@
-pub mod user_commands;
+pub mod commands;
