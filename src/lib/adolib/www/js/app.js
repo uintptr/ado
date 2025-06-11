@@ -210,6 +210,9 @@ function init_cmd_line(wctx) {
                 cmd_input.value = ""
 
                 if (cmd_line.length > 0) {
+
+                    add_command_response(cmd_line, false)
+
                     let ret = await wctx.query(cmd_line)
 
                     console.log(ret)
@@ -293,6 +296,9 @@ async function main() {
                 } else if (q.startsWith("t ")) {
                     let yfi_url = "https://finance.yahoo.com/quote/" + q_plus_two + "/"
                     await navigateWithLoading(yfi_url)
+                } else if (q.startsWith("w ")) {
+                    let wikipedia_url = await wctx.lucky("wikipedia " + q_plus_two)
+                    await navigateWithLoading(wikipedia_url)
                 } else {
                     //
                     // detect if this is a question
