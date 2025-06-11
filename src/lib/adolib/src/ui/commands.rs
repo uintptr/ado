@@ -5,6 +5,7 @@ use crate::error::{Error, Result};
 trait Command {
     fn name(&self) -> &'static str;
     fn desc(&self) -> &'static str;
+    fn short(&self) -> &'static str;
     fn handler(&self) -> Result<String>;
 }
 
@@ -12,6 +13,10 @@ struct CommandReset;
 impl Command for CommandReset {
     fn name(&self) -> &'static str {
         "/reset"
+    }
+
+    fn short(&self) -> &'static str {
+        "/r"
     }
     fn desc(&self) -> &'static str {
         "Reset console and inputs"
@@ -29,6 +34,11 @@ impl Command for CommandQuit {
     fn name(&self) -> &'static str {
         "/quit"
     }
+
+    fn short(&self) -> &'static str {
+        "/h"
+    }
+
     fn desc(&self) -> &'static str {
         "Deuces ☮"
     }
@@ -54,23 +64,24 @@ impl UserCommands {
         let mut lines = Vec::new();
 
         lines.push("## Help".to_string());
-
-        lines.push(format!("* `{:<7}`This help", "/help"));
+        lines.push("| Command | Shortcut | Description |".to_string());
+        lines.push("|---------|----------|---------|".to_string());
+        lines.push(format!("| `{}` | `{}` | {} |", "/help", "/h", "This Help"));
 
         for c in self.handlers.iter() {
-            lines.push(format!("* `{:<7}`{}", c.name(), c.desc()));
+            lines.push(format!("| `{}` | `{}` | {} |", c.name(), c.short(), c.desc()));
         }
 
         lines.join("\n")
     }
 
     pub fn handler(&self, line: &str) -> Result<String> {
-        if line.starts_with("/help") {
+        if line == "/help" || line == "/h" {
             return Ok(self.build_help());
         }
 
         for c in self.handlers.iter() {
-            if c.name() == line {
+            if c.name() == line || c.short() == line {
                 return c.handler();
             }
         }
@@ -80,11 +91,11 @@ impl UserCommands {
         })
     }
 
-    pub fn list_commands(&self) -> Vec<(&'static str, &'static str)> {
+    pub fn list_commands(&self) -> Vec<(&'static str, &'static str, &'static str)> {
         let mut command_names = Vec::new();
 
         for c in self.handlers.iter() {
-            command_names.push((c.name(), c.desc()));
+            command_names.push((c.name(), c.short(), c.desc()));
         }
 
         command_names

@@ -68,6 +68,7 @@ impl From<Error> for JsValue {
 #[wasm_bindgen]
 pub struct AdoWasmCommand {
     name: String,
+    short: String,
     desc: String,
 }
 
@@ -77,6 +78,12 @@ impl AdoWasmCommand {
     pub fn name(&self) -> String {
         self.name.clone()
     }
+
+    #[wasm_bindgen(getter)]
+    pub fn short(&self) -> String {
+        self.short.clone()
+    }
+
     #[wasm_bindgen(getter)]
     pub fn desc(&self) -> String {
         self.desc.clone()
@@ -126,14 +133,16 @@ impl AdoWasm {
 
         let help = AdoWasmCommand {
             name: "/help".to_string(),
+            short: "/h".to_string(),
             desc: "This help".to_string(),
         };
 
         commands.push(help);
 
-        for (n, d) in self.commands.list_commands() {
+        for (n, s, d) in self.commands.list_commands() {
             let entry = AdoWasmCommand {
                 name: n.to_string(),
+                short: s.to_string(),
                 desc: d.to_string(),
             };
 

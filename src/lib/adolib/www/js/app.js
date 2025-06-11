@@ -223,7 +223,8 @@ function init_cmd_line(wctx) {
                             command_reset()
                         }
                         else {
-                            console.log("error: " + error)
+                            let err_msg = "error: " + error
+                            add_command_response("`" + err_msg + "`")
                         }
                     }
                 }
