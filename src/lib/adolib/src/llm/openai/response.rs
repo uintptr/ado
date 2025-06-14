@@ -3,7 +3,7 @@ use serde_json::Value;
 
 use crate::{
     error::{Error, Result},
-    functions::function_handler::FunctionHandler,
+    functions::handler::FunctionHandler,
 };
 
 use super::request::{OpenAIFunctionInput, OpenAIFunctionOutput, OpenAIInput};

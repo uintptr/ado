@@ -3,12 +3,12 @@ use log::{error, info};
 use crate::{
     config::file::ConfigFile,
     error::{Error, Result},
-    functions::function_args::FunctionArgs,
+    functions::{function_args::FunctionArgs, functions_ip::FunctionsIp},
 };
 
 use super::{
-    browser::functions::FunctionsBrowser, functions_files::FunctionsFiles, functions_http::FunctionsHttp,
-    functions_search::FunctionsSearch, functions_shell::FunctionsShell, whois::functions::FunctionsWhois,
+    browser::functions::FunctionsBrowser, files::FunctionsFiles, http::FunctionsHttp, search::FunctionsSearch,
+    shell::FunctionsShell, whois::functions::FunctionsWhois,
 };
 
 pub struct FunctionHandler {
@@ -18,6 +18,7 @@ pub struct FunctionHandler {
     search: FunctionsSearch,
     shell: FunctionsShell,
     whois: FunctionsWhois,
+    ip: FunctionsIp,
 }
 
 impl FunctionHandler {
@@ -29,6 +30,7 @@ impl FunctionHandler {
             search: FunctionsSearch::new(config)?,
             shell: FunctionsShell::new(),
             whois: FunctionsWhois::new()?,
+            ip: FunctionsIp::new(),
         })
     }
 
@@ -42,7 +44,9 @@ impl FunctionHandler {
                 Some(browser) => browser.browse(&args),
                 None => Err(Error::FunctionNotSupported),
             },
+            "get_ip_address" => self.ip.get().await,
             "http_get" => self.http.get(&args).await,
+            "http_post" => self.http.post(&args).await,
             "file_find" => self.files.find(&args),
             "file_read" => self.files.read(&args),
             "file_list" => self.files.list(&args),

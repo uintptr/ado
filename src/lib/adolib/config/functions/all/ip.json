@@ -1,0 +1,13 @@
+[
+    {
+        "type": "function",
+        "name": "get_ip_address",
+        "description": "a function to get my network facing IP address",
+        "parameters": {
+            "type": "object",
+            "properties": {
+            },
+            "additionalProperties": false
+        }
+    }
+]

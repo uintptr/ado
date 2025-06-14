@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 use base64::{Engine, prelude::BASE64_STANDARD};
-use reqwest::Client;
+use reqwest::{Client, Response};
 use serde::{Serialize, Serializer};
 
 use crate::error::Result;
@@ -30,6 +30,11 @@ pub struct FunctionsHttp {
     client: Client,
 }
 
+fn log_response(res: &Response) {
+    let content_len = res.content_length().unwrap_or(0);
+    info!("{} -> {} len={}", res.url(), res.status().as_u16(), content_len);
+}
+
 impl FunctionsHttp {
     pub fn new() -> FunctionsHttp {
         FunctionsHttp { client: Client::new() }
@@ -46,7 +51,55 @@ impl FunctionsHttp {
 
         let res = req.send().await?;
 
+        log_response(&res);
+
         let status_code = res.status().as_u16();
+
+        let mut headers = HashMap::new();
+        for (k, ov) in res.headers().iter() {
+            if let Ok(v) = ov.to_str() {
+                headers.insert(k.as_str().to_string(), v.to_string());
+            }
+        }
+
+        let data = res.bytes().await?;
+
+        let local_res = HttpResponse {
+            url,
+            code: status_code,
+            headers,
+            base64_data: &data,
+        };
+
+        info!(
+            "{} -> {} len={}",
+            local_res.url,
+            local_res.code,
+            local_res.base64_data.len()
+        );
+
+        //
+        // we send back a json string
+        //
+        let res_json = serde_json::to_string_pretty(&local_res)?;
+
+        Ok(res_json)
+    }
+
+    pub async fn http_post(&self, url: &str, headers: Option<HashMap<&str, &str>>) -> Result<String> {
+        let mut req = self.client.post(url);
+
+        if let Some(h) = headers {
+            for (k, v) in h {
+                req = req.header(k, v)
+            }
+        }
+
+        let res = req.send().await?;
+
+        let status_code = res.status().as_u16();
+
+        log_response(&res);
 
         let mut headers = HashMap::new();
         for (k, ov) in res.headers().iter() {
@@ -86,9 +139,31 @@ impl FunctionsHttp {
         // optional
         //
         let list = args.get_kv_list("http_headers").ok();
-        let headers = list.as_ref().map(|v| args.kv_list_to_map(v));
+        let headers_opt = list.as_ref().map(|v| args.kv_list_to_map(v));
 
-        self.http_get(url, headers).await
+        info!("GET url={}", url);
+        if let Some(headers) = &headers_opt {
+            for (k, v) in headers {
+                info!("header={k}:{v}")
+            }
+        }
+
+        self.http_get(url, headers_opt).await
+    }
+
+    pub async fn post(&self, args: &FunctionArgs) -> Result<String> {
+        let url = args.get_string("url")?;
+        let list = args.get_kv_list("http_headers").ok();
+        let headers_opt = list.as_ref().map(|v| args.kv_list_to_map(v));
+
+        info!("POST url={}", url);
+        if let Some(headers) = &headers_opt {
+            for (k, v) in headers {
+                info!("header={k}:{v}")
+            }
+        }
+
+        self.http_post(url, headers_opt).await
     }
 }
 

@@ -56,6 +56,19 @@ impl OpenAIRequest {
     }
 
     pub fn with_functions(&mut self, functions: ConfigFunctions) {
+        let mut funcs = Vec::new();
+
+        for f in &functions.list {
+            funcs.push(f.name.clone());
+        }
+
+        let prompt = format!(
+            "Don't forget that you have access to functions. The functions are {}",
+            funcs.join(",")
+        );
+
+        self.with_input_role("user", prompt);
+
         self.tools = Some(functions.list)
     }
 

@@ -1,7 +1,7 @@
 use crate::{
     config::file::{ConfigFile, OpenAiConfig},
     error::{Error, Result},
-    functions::function_handler::FunctionHandler,
+    functions::handler::FunctionHandler,
 };
 
 use log::{error, info};
@@ -43,10 +43,15 @@ impl LLM {
             .await?;
 
         let log_msg = format!(
-            "post -> code={} reason={}",
+            "post {} -> code={} reason={}",
+            self.openai.url,
             res.status().as_u16(),
             res.status().as_str()
         );
+
+        for (k, v) in res.headers() {
+            info!("{k}:{v:?}");
+        }
 
         match res.status().is_success() {
             true => info!("{log_msg}"),

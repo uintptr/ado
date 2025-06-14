@@ -1,10 +1,11 @@
 mod assets;
 mod browser;
 pub mod config;
+mod files;
 mod function_args;
-pub mod function_handler;
-mod functions_files;
-mod functions_http;
-mod functions_search;
-mod functions_shell;
+mod functions_ip;
+pub mod handler;
+mod http;
+mod search;
+mod shell;
 mod whois;
