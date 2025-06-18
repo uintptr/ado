@@ -6,7 +6,7 @@ use crate::{
     error::{Error, Result},
     search::google::GoogleCSE,
 };
-use clap::{Parser, Subcommand, error::ErrorKind};
+use clap::{CommandFactory, Parser, Subcommand, error::ErrorKind};
 
 #[derive(Parser)]
 struct Command {
@@ -68,8 +68,8 @@ impl UserCommands {
         Ok(res)
     }
 
-    pub fn list_commands(&self) -> Vec<(&'static str, &'static str, &'static str)> {
-        Vec::new()
+    pub fn usage(&self) -> String {
+        Command::command().render_long_version()
     }
 }
 

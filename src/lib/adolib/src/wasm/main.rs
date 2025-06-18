@@ -122,7 +122,8 @@ impl AdoWasm {
         //
         if content.starts_with("/") {
             let data = self.commands.handler(content).await?;
-            data.try_into()
+            let data_string: String = data.try_into()?;
+            Ok(format!("```sh\n{data_string}\n```"))
         } else {
             let mut ret_list = Vec::new();
 
@@ -135,28 +136,8 @@ impl AdoWasm {
         }
     }
 
-    pub fn list_commands(&self) -> Vec<AdoWasmCommand> {
-        let mut commands = Vec::new();
-
-        let help = AdoWasmCommand {
-            name: "/help".to_string(),
-            short: "/h".to_string(),
-            desc: "This help".to_string(),
-        };
-
-        commands.push(help);
-
-        for (n, s, d) in self.commands.list_commands() {
-            let entry = AdoWasmCommand {
-                name: n.to_string(),
-                short: s.to_string(),
-                desc: d.to_string(),
-            };
-
-            commands.push(entry);
-        }
-
-        commands
+    pub fn usage(&self) -> String {
+        format!("```\n{}\n```", self.commands.usage())
     }
 
     pub async fn search(&self, query: &str) -> Result<String> {
