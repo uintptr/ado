@@ -7,7 +7,10 @@ use std::{
 
 use log::{error, info};
 
-use crate::error::{Error, Result};
+use crate::{
+    data::AdoData,
+    error::{Error, Result},
+};
 
 use super::function_args::FunctionArgs;
 
@@ -87,9 +90,10 @@ impl FunctionsShell {
         Ok(output_json)
     }
 
-    pub fn shell_exec(&self, args: &FunctionArgs) -> Result<String> {
+    pub fn shell_exec(&self, args: &FunctionArgs) -> Result<AdoData> {
         let line = args.get_string("command_line")?;
-        self.shell(line)
+        let output = self.shell(line)?;
+        Ok(AdoData::String(output))
     }
 }
 

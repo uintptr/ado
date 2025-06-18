@@ -16,7 +16,10 @@ struct FileEntry {
     file_size: u64,
 }
 
-use crate::error::{Error, Result};
+use crate::{
+    data::AdoData,
+    error::{Error, Result},
+};
 
 use super::function_args::FunctionArgs;
 
@@ -27,7 +30,7 @@ impl FunctionsFiles {
         FunctionsFiles {}
     }
 
-    pub fn write(&self, args: &FunctionArgs) -> Result<String> {
+    pub fn write(&self, args: &FunctionArgs) -> Result<AdoData> {
         let file_name = args.get_string("file_name")?;
         let file_data = args.get_string("file_data")?;
 
@@ -39,10 +42,10 @@ impl FunctionsFiles {
 
         let msg = format!("{file_name} was successfully written");
 
-        Ok(msg)
+        Ok(AdoData::String(msg))
     }
 
-    pub fn read(&self, args: &FunctionArgs) -> Result<String> {
+    pub fn read(&self, args: &FunctionArgs) -> Result<AdoData> {
         let file_path = args.get_string("file_path")?;
 
         let mut f = fs::OpenOptions::new().read(true).open(file_path)?;
@@ -51,7 +54,7 @@ impl FunctionsFiles {
 
         f.read_to_end(&mut buf)?;
 
-        args.to_base64_string(&buf)
+        Ok(AdoData::Bytes(buf))
     }
 
     pub fn find_file<P, T>(&self, root: P, file_name: T) -> Result<PathBuf>
@@ -94,7 +97,7 @@ impl FunctionsFiles {
         })
     }
 
-    pub fn find(&self, args: &FunctionArgs) -> Result<String> {
+    pub fn find(&self, args: &FunctionArgs) -> Result<AdoData> {
         let file_name = args.get_string("file_name")?;
 
         let cwd = env::current_dir()?;
@@ -108,10 +111,10 @@ impl FunctionsFiles {
             }
         };
 
-        Ok(file_path)
+        Ok(AdoData::String(file_path))
     }
 
-    pub fn list(&self, args: &FunctionArgs) -> Result<String> {
+    pub fn list(&self, args: &FunctionArgs) -> Result<AdoData> {
         let directory = match args.get_string("directory") {
             Ok(v) => Path::new(v).to_path_buf(),
             Err(_) => env::current_dir()?,
@@ -165,13 +168,12 @@ impl FunctionsFiles {
 
         let ret_str = serde_json::to_string(&files)?;
 
-        Ok(ret_str)
+        Ok(AdoData::String(ret_str))
     }
 }
 
 #[cfg(test)]
 mod tests {
-
 
     use crate::logging::logger::setup_logger;
 

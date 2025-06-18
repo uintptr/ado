@@ -1,138 +1,18 @@
-use std::collections::HashMap;
-
-use base64::{Engine, prelude::BASE64_STANDARD};
-use reqwest::{Client, Response};
-use serde::{Serialize, Serializer};
-
-use crate::error::Result;
+use crate::{data::AdoData, error::Result, http::req::Http};
 use log::info;
 
 use super::function_args::FunctionArgs;
 
-#[derive(Debug, Serialize)]
-pub struct HttpResponse<'a> {
-    url: &'a str,
-    code: u16,
-    headers: HashMap<String, String>,
-    #[serde(serialize_with = "base64_serializer")]
-    base64_data: &'a [u8],
-}
-
-pub fn base64_serializer<S>(bytes: &[u8], serializer: S) -> std::result::Result<S::Ok, S::Error>
-where
-    S: Serializer,
-{
-    serializer.serialize_str(&BASE64_STANDARD.encode(bytes))
-}
-
-#[derive(Default)]
 pub struct FunctionsHttp {
-    client: Client,
-}
-
-fn log_response(res: &Response) {
-    let content_len = res.content_length().unwrap_or(0);
-    info!("{} -> {} len={}", res.url(), res.status().as_u16(), content_len);
+    http: Http,
 }
 
 impl FunctionsHttp {
     pub fn new() -> FunctionsHttp {
-        FunctionsHttp { client: Client::new() }
+        FunctionsHttp { http: Http::new() }
     }
 
-    pub async fn http_get(&self, url: &str, headers: Option<HashMap<&str, &str>>) -> Result<String> {
-        let mut req = self.client.get(url);
-
-        if let Some(h) = headers {
-            for (k, v) in h {
-                req = req.header(k, v)
-            }
-        }
-
-        let res = req.send().await?;
-
-        log_response(&res);
-
-        let status_code = res.status().as_u16();
-
-        let mut headers = HashMap::new();
-        for (k, ov) in res.headers().iter() {
-            if let Ok(v) = ov.to_str() {
-                headers.insert(k.as_str().to_string(), v.to_string());
-            }
-        }
-
-        let data = res.bytes().await?;
-
-        let local_res = HttpResponse {
-            url,
-            code: status_code,
-            headers,
-            base64_data: &data,
-        };
-
-        info!(
-            "{} -> {} len={}",
-            local_res.url,
-            local_res.code,
-            local_res.base64_data.len()
-        );
-
-        //
-        // we send back a json string
-        //
-        let res_json = serde_json::to_string_pretty(&local_res)?;
-
-        Ok(res_json)
-    }
-
-    pub async fn http_post(&self, url: &str, headers: Option<HashMap<&str, &str>>) -> Result<String> {
-        let mut req = self.client.post(url);
-
-        if let Some(h) = headers {
-            for (k, v) in h {
-                req = req.header(k, v)
-            }
-        }
-
-        let res = req.send().await?;
-
-        let status_code = res.status().as_u16();
-
-        log_response(&res);
-
-        let mut headers = HashMap::new();
-        for (k, ov) in res.headers().iter() {
-            if let Ok(v) = ov.to_str() {
-                headers.insert(k.as_str().to_string(), v.to_string());
-            }
-        }
-
-        let data = res.bytes().await?;
-
-        let local_res = HttpResponse {
-            url,
-            code: status_code,
-            headers,
-            base64_data: &data,
-        };
-
-        info!(
-            "{} -> {} len={}",
-            local_res.url,
-            local_res.code,
-            local_res.base64_data.len()
-        );
-
-        //
-        // we send back a json string
-        //
-        let res_json = serde_json::to_string_pretty(&local_res)?;
-
-        Ok(res_json)
-    }
-
-    pub async fn get(&self, args: &FunctionArgs) -> Result<String> {
+    pub async fn get(&self, args: &FunctionArgs) -> Result<AdoData> {
         let url = args.get_string("url")?;
 
         //
@@ -148,10 +28,12 @@ impl FunctionsHttp {
             }
         }
 
-        self.http_get(url, headers_opt).await
+        let res = self.http.get(url, headers_opt).await?;
+
+        Ok(AdoData::Http(res))
     }
 
-    pub async fn post(&self, args: &FunctionArgs) -> Result<String> {
+    pub async fn post(&self, args: &FunctionArgs) -> Result<AdoData> {
         let url = args.get_string("url")?;
         let list = args.get_kv_list("http_headers").ok();
         let headers_opt = list.as_ref().map(|v| args.kv_list_to_map(v));
@@ -163,27 +45,8 @@ impl FunctionsHttp {
             }
         }
 
-        self.http_post(url, headers_opt).await
-    }
-}
+        let res = self.http.post(url, headers_opt).await?;
 
-#[cfg(test)]
-mod tests {
-
-    use crate::logging::logger::setup_logger;
-
-    use super::FunctionsHttp;
-
-    use log::info;
-
-    #[tokio::test]
-    async fn test_get() {
-        setup_logger(true).unwrap();
-
-        let http = FunctionsHttp::new();
-
-        let json_data = http.http_get("http://localhost:8000", None).await.unwrap();
-
-        info!("{json_data}");
+        Ok(AdoData::Http(res))
     }
 }

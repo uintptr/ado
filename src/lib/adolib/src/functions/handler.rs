@@ -2,6 +2,7 @@ use log::{error, info};
 
 use crate::{
     config::file::ConfigFile,
+    data::AdoData,
     error::{Error, Result},
     functions::{function_args::FunctionArgs, functions_ip::FunctionsIp},
 };
@@ -34,7 +35,7 @@ impl FunctionHandler {
         })
     }
 
-    pub async fn call(&self, name: &str, args: &str) -> Result<String> {
+    pub async fn call(&self, name: &str, args: &str) -> Result<AdoData> {
         info!("executing {name}");
 
         let args = FunctionArgs::new(args)?;

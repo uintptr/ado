@@ -101,7 +101,7 @@ impl AdoWasm {
         let config = ConfigFile::from_string(config).unwrap();
         let chain = AIChain::new(&config).unwrap();
         let reddit = RedditQuery::new(&config).unwrap();
-        let commands = UserCommands::new();
+        let commands = UserCommands::new(&config).unwrap();
         let search = GoogleCSE::new(&config).unwrap();
 
         AdoWasm {
@@ -121,10 +121,17 @@ impl AdoWasm {
         // see if it's a command first
         //
         if content.starts_with("/") {
-            self.commands.handler(content)
+            let data = self.commands.handler(content).await?;
+            data.try_into()
         } else {
-            let ret = self.chain.query(content).await?;
-            Ok(ret.join("\n"))
+            let mut ret_list = Vec::new();
+
+            for d in self.chain.query(content).await? {
+                let d: String = d.try_into()?;
+                ret_list.push(d);
+            }
+
+            Ok(ret_list.join("\n"))
         }
     }
 

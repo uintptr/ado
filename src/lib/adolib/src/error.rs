@@ -58,6 +58,9 @@ pub enum Error {
         name: String,
     },
     ApiKeyNotFound,
+    ApiFailure {
+        message: String,
+    },
     CommandNotFound {
         command: String,
     },

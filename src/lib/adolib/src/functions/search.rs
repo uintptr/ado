@@ -1,6 +1,6 @@
 use log::info;
 
-use crate::{config::file::ConfigFile, error::Result, search::google::GoogleCSE};
+use crate::{config::file::ConfigFile, data::AdoData, error::Result, search::google::GoogleCSE};
 
 use super::function_args::FunctionArgs;
 
@@ -15,13 +15,15 @@ impl FunctionsSearch {
         Ok(Self { search })
     }
 
-    pub async fn search(&self, args: &FunctionArgs) -> Result<String> {
+    pub async fn search(&self, args: &FunctionArgs) -> Result<AdoData> {
         let query = args.get_string("query")?;
 
         info!("search term: {query}");
 
         let data = self.search.query(query).await?;
 
-        args.to_base64_string(data.as_bytes())
+        let b64string = args.to_base64_string(data.as_bytes())?;
+
+        Ok(AdoData::Base64(b64string))
     }
 }

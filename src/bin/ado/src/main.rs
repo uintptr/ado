@@ -76,14 +76,14 @@ async fn main() -> Result<()> {
         },
     };
 
-    let mut console = ConsoleUI::new()?;
+    let mut console = ConsoleUI::new(&config)?;
 
     let mut chain = AIChain::new(&config)?;
 
     loop {
         let query = match query_opt {
             Some(v) => v,
-            None => match console.read_input() {
+            None => match console.read_input().await {
                 Ok(v) => v,
                 Err(Error::ResetInput) => {
                     chain.reset();

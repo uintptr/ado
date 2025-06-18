@@ -1,7 +1,10 @@
 use reqwest::Client;
 use serde_json::Value;
 
-use crate::error::Result;
+use crate::{
+    data::AdoData,
+    error::{Error, Result},
+};
 
 pub struct FunctionsIp {}
 
@@ -12,13 +15,15 @@ impl FunctionsIp {
         FunctionsIp {}
     }
 
-    pub async fn get(&self) -> Result<String> {
+    pub async fn get(&self) -> Result<AdoData> {
         let client = Client::new();
 
         let res = client.get(API_URL).send().await?;
 
         if !res.status().is_success() {
-            return Ok("API Failure".to_string());
+            return Err(Error::ApiFailure {
+                message: res.status().as_str().to_string(),
+            });
         }
 
         let data = res.text().await?;
@@ -30,14 +35,12 @@ impl FunctionsIp {
             None => "unknown",
         };
 
-        Ok(ip_str.to_string())
+        Ok(AdoData::String(ip_str.to_string()))
     }
 }
 
 #[cfg(test)]
 mod tests {
-
-    use log::info;
 
     use crate::logging::logger::setup_logger;
 
@@ -48,8 +51,6 @@ mod tests {
         setup_logger(true).unwrap();
         let ip = FunctionsIp::new();
 
-        let my_ip = ip.get().await.unwrap();
-
-        info!("ip: {my_ip}")
+        let _my_ip = ip.get().await.unwrap();
     }
 }

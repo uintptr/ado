@@ -1,5 +1,6 @@
 use crate::{
     config::file::{ConfigFile, OpenAiConfig},
+    data::AdoData,
     error::{Error, Result},
     functions::handler::FunctionHandler,
 };
@@ -65,7 +66,7 @@ impl LLM {
         Ok(res)
     }
 
-    pub async fn query(&mut self, req: &mut OpenAIRequest) -> Result<Vec<String>> {
+    pub async fn query(&mut self, req: &mut OpenAIRequest) -> Result<Vec<AdoData>> {
         loop {
             let res = self.post_contents(req).await?;
 
@@ -92,8 +93,12 @@ impl LLM {
 
         let res = self.post_contents(&req).await?;
 
-        let outputs = res.process_output(&self.handler).await?;
+        let mut outout_str = Vec::new();
+        for d in res.process_output(&self.handler).await?.messages {
+            let d: String = d.try_into()?;
+            outout_str.push(d);
+        }
 
-        Ok(outputs.messages.join("\n"))
+        Ok(outout_str.join("\n"))
     }
 }

@@ -6,6 +6,7 @@ use crate::{
     error::{Error, Result},
 };
 
+#[derive(Debug)]
 pub struct GoogleCSE {
     http_client: Client,
     google: GoogleConfig,

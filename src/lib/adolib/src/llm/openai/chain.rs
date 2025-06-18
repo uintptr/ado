@@ -1,6 +1,6 @@
 use log::info;
 
-use crate::{config::file::ConfigFile, error::Result, functions::config::ConfigFunctions};
+use crate::{config::file::ConfigFile, data::AdoData, error::Result, functions::config::ConfigFunctions};
 
 use super::{api::LLM, request::OpenAIRequest};
 
@@ -48,7 +48,7 @@ impl AIChain {
         Ok(AIChain { llm, req })
     }
 
-    pub async fn query<S>(&mut self, content: S) -> Result<Vec<String>>
+    pub async fn query<S>(&mut self, content: S) -> Result<Vec<AdoData>>
     where
         S: AsRef<str>,
     {

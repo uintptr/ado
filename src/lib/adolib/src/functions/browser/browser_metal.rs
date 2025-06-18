@@ -2,7 +2,7 @@ use std::{path::PathBuf, process::Command};
 
 use which::which;
 
-use crate::{error::Result, functions::function_args::FunctionArgs};
+use crate::{data::AdoData, error::Result, functions::function_args::FunctionArgs};
 
 pub struct FunctionsBrowser {
     xdg_open: PathBuf,
@@ -15,7 +15,7 @@ impl FunctionsBrowser {
         Ok(FunctionsBrowser { xdg_open })
     }
 
-    pub fn browse(&self, args: &FunctionArgs) -> Result<String> {
+    pub fn browse(&self, args: &FunctionArgs) -> Result<AdoData> {
         let url = args.get_string("url")?;
 
         let mut child = Command::new(&self.xdg_open).arg(url).spawn()?;
@@ -27,7 +27,7 @@ impl FunctionsBrowser {
             false => "failure",
         };
 
-        Ok(ret_str.to_string())
+        Ok(AdoData::String(ret_str.to_string()))
     }
 }
 

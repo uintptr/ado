@@ -6,7 +6,9 @@ use std::{
 };
 
 use adolib::{
+    config::file::ConfigFile,
     const_vars::{DOT_DIRECTORY, PKG_NAME, PKG_VERSION},
+    data::AdoData,
     error::{Error, Result},
     ui::commands::UserCommands,
 };
@@ -89,7 +91,7 @@ fn init_readline(commands: &UserCommands) -> Result<Editor<MyHelper, FileHistory
 }
 
 impl ConsoleUI {
-    pub fn new() -> Result<Self> {
+    pub fn new(config: &ConfigFile) -> Result<Self> {
         let glow = match which("glow") {
             Ok(v) => {
                 info!("glow is @ {}", v.display());
@@ -101,7 +103,7 @@ impl ConsoleUI {
             }
         };
 
-        let commands = UserCommands::new();
+        let commands = UserCommands::new(config)?;
 
         // pretty start
         clear_console()?;
@@ -115,11 +117,14 @@ impl ConsoleUI {
         })
     }
 
-    fn display_glow(&self, glow: &Path, text: &str) -> Result<()> {
+    fn display_glow<S>(&self, glow: &Path, text: S) -> Result<()>
+    where
+        S: AsRef<str>,
+    {
         let mut child = Command::new(glow).stdin(Stdio::piped()).spawn()?;
 
         if let Some(stdin) = child.stdin.as_mut() {
-            stdin.write_all(text.as_bytes())?;
+            stdin.write_all(text.as_ref().as_bytes())?;
         }
 
         child.wait()?;
@@ -127,8 +132,11 @@ impl ConsoleUI {
         Ok(())
     }
 
-    fn display_boring(&self, text: &str) -> Result<()> {
-        print!("{text}");
+    fn display_boring<S>(&self, text: S) -> Result<()>
+    where
+        S: AsRef<str>,
+    {
+        print!("{}", text.as_ref());
         Ok(())
     }
 
@@ -161,7 +169,7 @@ impl ConsoleUI {
         }
     }
 
-    pub fn read_input(&mut self) -> Result<String> {
+    pub async fn read_input(&mut self) -> Result<String> {
         loop {
             let line = self.readline()?;
 
@@ -169,7 +177,7 @@ impl ConsoleUI {
             let line = line.trim().to_string();
 
             if line.starts_with("/") {
-                match self.commands.handler(&line) {
+                match self.commands.handler(&line).await {
                     Ok(v) => self.display(&v)?,
                     Err(e @ Error::EOF) => return Err(e),
                     Err(e @ Error::ResetInput) => return Err(e),
@@ -183,14 +191,22 @@ impl ConsoleUI {
         }
     }
 
-    pub fn display(&self, msg: &str) -> Result<()> {
+    pub fn display(&self, data: &AdoData) -> Result<()> {
+        let msg = match data {
+            AdoData::Json(s) => &format!("```json\n{s}\n```"),
+            AdoData::String(s) => s,
+            AdoData::Base64(s) => s,
+            AdoData::Bytes(_) => &data.to_base64()?,
+            AdoData::Http(s) => &serde_json::to_string(s)?,
+        };
+
         match &self.glow {
             Some(v) => self.display_glow(v, msg),
             None => self.display_boring(msg),
         }
     }
 
-    pub fn display_messages(&self, messages: &[String]) -> Result<()> {
+    pub fn display_messages(&self, messages: &[AdoData]) -> Result<()> {
         for msg in messages.iter() {
             self.display(msg)?
         }
@@ -208,7 +224,7 @@ impl ConsoleUI {
 #[cfg(test)]
 mod tests {
 
-    use adolib::logging::logger::setup_logger;
+    use adolib::{config::file::ConfigFile, data::AdoData, logging::logger::setup_logger, ui::commands::UserCommands};
 
     use super::ConsoleUI;
 
@@ -216,8 +232,21 @@ mod tests {
     fn display_text() {
         setup_logger(true).unwrap();
 
-        let console = ConsoleUI::new().unwrap();
+        let config = ConfigFile::load().unwrap();
 
-        console.display("Hello, World!").unwrap();
+        let console = ConsoleUI::new(&config).unwrap();
+
+        console.display(&AdoData::String("Hello, World!".to_string())).unwrap();
+    }
+
+    #[tokio::test]
+    async fn arg_parser() {
+        setup_logger(true).unwrap();
+
+        let config = ConfigFile::load().unwrap();
+
+        let cmd = UserCommands::new(&config).unwrap();
+
+        cmd.handler("/quit").await.unwrap();
     }
 }

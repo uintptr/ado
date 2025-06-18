@@ -1,103 +1,88 @@
-use std::io::{self, Write};
+use log::error;
 
-use crate::error::{Error, Result};
+use crate::{
+    config::file::ConfigFile,
+    data::AdoData,
+    error::{Error, Result},
+    search::google::GoogleCSE,
+};
+use clap::{Parser, Subcommand, error::ErrorKind};
 
-trait Command {
-    fn name(&self) -> &'static str;
-    fn desc(&self) -> &'static str;
-    fn short(&self) -> &'static str;
-    fn handler(&self) -> Result<String>;
+#[derive(Parser)]
+struct Command {
+    #[command(subcommand)]
+    commands: Commands,
 }
 
-struct CommandReset;
-impl Command for CommandReset {
-    fn name(&self) -> &'static str {
-        "/reset"
-    }
-
-    fn short(&self) -> &'static str {
-        "/r"
-    }
-    fn desc(&self) -> &'static str {
-        "Reset console and inputs"
-    }
-
-    fn handler(&self) -> Result<String> {
-        print!("{esc}c", esc = 27 as char);
-        io::stdout().flush()?;
-        Err(Error::ResetInput)
-    }
+#[derive(Subcommand)]
+enum Commands {
+    /// reset the input context
+    Reset,
+    /// quit
+    Quit,
+    /// Google search
+    Search {
+        /// query string
+        #[arg(trailing_var_arg = true)]
+        query: Vec<String>,
+    },
 }
 
-struct CommandQuit;
-impl Command for CommandQuit {
-    fn name(&self) -> &'static str {
-        "/quit"
-    }
-
-    fn short(&self) -> &'static str {
-        "/h"
-    }
-
-    fn desc(&self) -> &'static str {
-        "Deuces ☮"
-    }
-
-    fn handler(&self) -> Result<String> {
-        Err(Error::EOF)
-    }
-}
-
-#[derive(Default)]
 pub struct UserCommands {
-    handlers: Vec<Box<dyn Command>>,
+    search: GoogleCSE,
 }
 
 impl UserCommands {
-    pub fn new() -> Self {
-        let handlers: Vec<Box<dyn Command>> = vec![Box::new(CommandReset), Box::new(CommandQuit)];
+    pub fn new(config: &ConfigFile) -> Result<UserCommands> {
+        let search = GoogleCSE::new(config)?;
 
-        Self { handlers }
+        Ok(UserCommands { search })
     }
 
-    fn build_help(&self) -> String {
-        let mut lines = Vec::new();
+    pub async fn handler(&self, line: &str) -> Result<AdoData> {
+        let line: String = line.chars().skip(1).collect();
+        let mut args = shell_words::split(&line)?;
 
-        lines.push("## Help".to_string());
-        lines.push("| Command | Shortcut | Description |".to_string());
-        lines.push("|---------|----------|---------|".to_string());
-        lines.push(format!("| `{}` | `{}` | {} |", "/help", "/h", "This Help"));
+        args.insert(0, "".to_string());
 
-        for c in self.handlers.iter() {
-            lines.push(format!("| `{}` | `{}` | {} |", c.name(), c.short(), c.desc()));
-        }
+        let res = match Command::try_parse_from(args) {
+            Ok(c) => match c.commands {
+                Commands::Quit => return Err(Error::EOF),
+                Commands::Reset => return Err(Error::ResetInput),
+                Commands::Search { query } => {
+                    let json_str = self.search.query(query.join(" ")).await?;
+                    AdoData::Json(json_str)
+                }
+            },
+            Err(e) => match e.kind() {
+                ErrorKind::DisplayHelp | ErrorKind::DisplayHelpOnMissingArgumentOrSubcommand => {
+                    AdoData::String(e.to_string())
+                }
+                _ => {
+                    error!("{e}");
+                    return Err(Error::ConfigNotFound);
+                }
+            },
+        };
 
-        lines.join("\n")
-    }
-
-    pub fn handler(&self, line: &str) -> Result<String> {
-        if line == "/help" || line == "/h" {
-            return Ok(self.build_help());
-        }
-
-        for c in self.handlers.iter() {
-            if c.name() == line || c.short() == line {
-                return c.handler();
-            }
-        }
-
-        Err(Error::CommandNotFound {
-            command: line.to_string(),
-        })
+        Ok(res)
     }
 
     pub fn list_commands(&self) -> Vec<(&'static str, &'static str, &'static str)> {
-        let mut command_names = Vec::new();
+        Vec::new()
+    }
+}
 
-        for c in self.handlers.iter() {
-            command_names.push((c.name(), c.short(), c.desc()));
-        }
+#[cfg(test)]
+mod tests {
+    use crate::{config::file::ConfigFile, ui::commands::UserCommands};
 
-        command_names
+    #[test]
+    fn test_handler() {
+        let config = ConfigFile::load().unwrap();
+
+        let cmd = UserCommands::new(&config).unwrap();
+
+        let _ret = cmd.handler("/help");
     }
 }

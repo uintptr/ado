@@ -2,6 +2,7 @@ use log::info;
 use whois_rust::{WhoIs, WhoIsLookupOptions};
 
 use crate::{
+    data::AdoData,
     error::{Error, Result},
     functions::{assets::WhoisAssets, function_args::FunctionArgs},
 };
@@ -33,9 +34,10 @@ impl FunctionsWhois {
         Ok(data)
     }
 
-    pub fn query(&self, args: &FunctionArgs) -> Result<String> {
+    pub fn query(&self, args: &FunctionArgs) -> Result<AdoData> {
         let domain_name = args.get_string("domain_name")?;
-        self.query_domain(domain_name)
+        let res = self.query_domain(domain_name)?;
+        Ok(AdoData::String(res))
     }
 }
 

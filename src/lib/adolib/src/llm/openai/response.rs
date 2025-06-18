@@ -2,6 +2,7 @@ use serde::{Deserialize, Deserializer};
 use serde_json::Value;
 
 use crate::{
+    data::AdoData,
     error::{Error, Result},
     functions::handler::FunctionHandler,
 };
@@ -33,7 +34,7 @@ pub struct OpenAIOutputFunctionCall {
 }
 
 impl OpenAIOutputFunctionCall {
-    pub async fn process(&self, handler: &FunctionHandler) -> Result<String> {
+    pub async fn process(&self, handler: &FunctionHandler) -> Result<AdoData> {
         handler.call(&self.name, &self.arguments).await
     }
 }
@@ -122,7 +123,7 @@ where
 }
 
 pub struct OpenAIOutput {
-    pub messages: Vec<String>,
+    pub messages: Vec<AdoData>,
     pub inputs: Vec<OpenAIInput>,
 }
 
@@ -140,14 +141,16 @@ impl OpenAIResponse {
             match output {
                 OpenAIResponseOutput::Message(m) => {
                     for content in m.content.iter() {
-                        messages.push(content.text.to_string());
+                        messages.push(AdoData::String(content.text.to_string()));
                     }
                 }
                 OpenAIResponseOutput::FunctionCall(f) => {
                     let output = match f.process(func_handler).await {
                         Ok(v) => v,
-                        Err(e) => format!("error: {e}"),
+                        Err(e) => AdoData::String(format!("error: {e}")),
                     };
+
+                    let output: String = output.try_into()?;
 
                     let out_func = OpenAIFunctionOutput {
                         t: "function_call_output".to_string(),

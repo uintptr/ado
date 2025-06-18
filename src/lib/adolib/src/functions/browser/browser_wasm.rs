@@ -1,4 +1,5 @@
 use crate::{
+    data::AdoData,
     error::{Error, Result},
     functions::function_args::FunctionArgs,
 };
@@ -10,7 +11,7 @@ impl FunctionsBrowser {
         Ok(Self {})
     }
 
-    pub fn browse(&self, _args: &FunctionArgs) -> Result<String> {
+    pub fn browse(&self, _args: &FunctionArgs) -> Result<AdoData> {
         Err(Error::NotImplemented)
     }
 }
