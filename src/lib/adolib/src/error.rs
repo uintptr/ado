@@ -64,6 +64,9 @@ pub enum Error {
     CommandNotFound {
         command: String,
     },
+    Usage {
+        help: String,
+    },
     //
     // 2nd party
     //

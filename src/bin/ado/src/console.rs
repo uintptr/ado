@@ -184,6 +184,16 @@ impl ConsoleUI {
         }
     }
 
+    pub fn display_string<S>(&self, value: S) -> Result<()>
+    where
+        S: AsRef<str>,
+    {
+        match &self.glow {
+            Some(v) => self.display_glow(v, value),
+            None => self.display_boring(value),
+        }
+    }
+
     pub fn display(&self, data: &AdoData) -> Result<()> {
         let msg = match data {
             AdoData::Json(s) => &format!("```json\n{s}\n```"),
@@ -193,10 +203,7 @@ impl ConsoleUI {
             AdoData::Http(s) => &serde_json::to_string(s)?,
         };
 
-        match &self.glow {
-            Some(v) => self.display_glow(v, msg),
-            None => self.display_boring(msg),
-        }
+        self.display_string(msg)
     }
 
     pub fn display_search(&self, data: &AdoData) -> Result<()> {

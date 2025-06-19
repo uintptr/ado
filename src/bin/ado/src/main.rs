@@ -46,13 +46,14 @@ where
     Ok(data)
 }
 
-async fn main_loop(config: ConfigFile, _initial_query: Option<String>) -> Result<()> {
-    let mut console = ConsoleUI::new(&config)?;
-
-    let mut command = UserCommands::new(&config)?;
+async fn main_loop(mut console: ConsoleUI, mut command: UserCommands, opt_input: Option<String>) -> Result<()> {
+    let mut init_query = opt_input;
 
     loop {
-        let input = console.read_input().await?;
+        let input = match init_query {
+            Some(v) => v,
+            None => console.read_input().await?,
+        };
 
         //
         // little spinner waiting for the response
@@ -70,10 +71,13 @@ async fn main_loop(config: ConfigFile, _initial_query: Option<String>) -> Result
 
         match ret {
             Ok(v) => console.display_messages(&v)?,
+            Err(Error::Usage { help }) => console.display_string(help)?,
             Err(e @ Error::CommandNotFound { command: _ }) => console.display_error(e)?,
             Err(Error::EOF) => return Ok(()),
             Err(e) => return Err(e),
         }
+
+        init_query = None
     }
 }
 
@@ -108,9 +112,12 @@ async fn main() -> Result<()> {
         },
     };
 
-    match main_loop(config, query_opt).await {
-        Ok(_) => Ok(()),
-        Err(Error::EOF) => Ok(()),
+    let console = ConsoleUI::new(&config)?;
+
+    let command = UserCommands::new(&config)?;
+
+    match main_loop(console, command, query_opt).await {
+        Ok(_) | Err(Error::EOF) => Ok(()),
         Err(e) => Err(e),
     }
 }

@@ -36,8 +36,6 @@ pub enum Command {
         #[arg(trailing_var_arg = true)]
         query: Vec<String>,
     },
-    /// Usage
-    Usage,
 }
 
 pub struct CommandInfo {
@@ -100,20 +98,12 @@ impl UserCommands {
                         data: Some(AdoData::Json(json_str)),
                     })
                 }
-                Command::Usage => {
-                    let usage_str = CommandCli::command().render_long_help().to_string();
-
-                    Ok(CommandResponse {
-                        command: Command::Usage,
-                        data: Some(AdoData::String(usage_str)),
-                    })
-                }
             },
             Err(e) => match e.kind() {
-                ErrorKind::DisplayHelp | ErrorKind::DisplayHelpOnMissingArgumentOrSubcommand => Ok(CommandResponse {
-                    command: Command::Usage,
-                    data: Some(AdoData::String(e.to_string())),
-                }),
+                ErrorKind::DisplayHelp | ErrorKind::DisplayHelpOnMissingArgumentOrSubcommand => {
+                    let usage = e.to_string();
+                    Err(Error::Usage { help: usage })
+                }
                 _ => {
                     error!("{e}");
                     Err(Error::CommandNotFound {
