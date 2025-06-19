@@ -48,7 +48,7 @@ impl AIChain {
         Ok(AIChain { llm, req })
     }
 
-    pub async fn query<S>(&mut self, content: S) -> Result<Vec<AdoData>>
+    pub async fn query<S>(&mut self, content: S) -> Result<AdoData>
     where
         S: AsRef<str>,
     {

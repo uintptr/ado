@@ -123,7 +123,7 @@ where
 }
 
 pub struct OpenAIOutput {
-    pub messages: Vec<AdoData>,
+    pub message: AdoData,
     pub inputs: Vec<OpenAIInput>,
 }
 
@@ -134,14 +134,17 @@ impl OpenAIResponse {
     }
 
     pub async fn process_output(&self, func_handler: &FunctionHandler) -> Result<OpenAIOutput> {
-        let mut messages = Vec::new();
+        let mut message = AdoData::String("".to_string());
         let mut inputs = Vec::new();
 
         for output in self.output.iter() {
             match output {
                 OpenAIResponseOutput::Message(m) => {
-                    for content in m.content.iter() {
-                        messages.push(AdoData::String(content.text.to_string()));
+                    assert!(1 == m.content.len());
+
+                    if let Some(content) = m.content.first() {
+                        message = AdoData::String(content.text.to_string());
+                        break;
                     }
                 }
                 OpenAIResponseOutput::FunctionCall(f) => {
@@ -171,7 +174,7 @@ impl OpenAIResponse {
             }
         }
 
-        Ok(OpenAIOutput { messages, inputs })
+        Ok(OpenAIOutput { message, inputs })
     }
 }
 

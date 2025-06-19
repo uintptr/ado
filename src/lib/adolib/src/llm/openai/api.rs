@@ -66,7 +66,7 @@ impl LLM {
         Ok(res)
     }
 
-    pub async fn query(&mut self, req: &mut OpenAIRequest) -> Result<Vec<AdoData>> {
+    pub async fn query(&mut self, req: &mut OpenAIRequest) -> Result<AdoData> {
         loop {
             let res = self.post_contents(req).await?;
 
@@ -76,7 +76,7 @@ impl LLM {
                 //
                 // Nothing to do
                 //
-                break Ok(outputs.messages);
+                break Ok(outputs.message);
             }
 
             req.with_inputs(outputs.inputs);
@@ -92,13 +92,9 @@ impl LLM {
         req.with_input_role("user", content);
 
         let res = self.post_contents(&req).await?;
+        let msg = res.process_output(&self.handler).await?.message;
+        let output_string: String = msg.try_into()?;
 
-        let mut outout_str = Vec::new();
-        for d in res.process_output(&self.handler).await?.messages {
-            let d: String = d.try_into()?;
-            outout_str.push(d);
-        }
-
-        Ok(outout_str.join("\n"))
+        Ok(output_string)
     }
 }

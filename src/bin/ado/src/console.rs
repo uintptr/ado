@@ -2,7 +2,7 @@ use std::{
     fs,
     io::{self, Write},
     path::{Path, PathBuf},
-    process::{Command, Stdio},
+    process::Stdio,
 };
 
 use adolib::{
@@ -10,7 +10,7 @@ use adolib::{
     const_vars::{DOT_DIRECTORY, PKG_NAME, PKG_VERSION},
     data::AdoData,
     error::{Error, Result},
-    ui::commands::UserCommands,
+    ui::commands::{Command, CommandResponse, UserCommands},
 };
 use colored;
 use colored::Colorize;
@@ -38,7 +38,6 @@ struct MyHelper {
 pub struct ConsoleUI {
     glow: Option<PathBuf>,
     rl: Editor<MyHelper, FileHistory>,
-    commands: UserCommands,
 }
 
 fn clear_console() -> Result<()> {
@@ -75,13 +74,15 @@ fn init_readline(commands: &UserCommands) -> Result<Editor<MyHelper, FileHistory
         validator: MatchingBracketValidator::new(),
     };
 
-    for (c, s, _) in commands.list_commands() {
-        if let Err(e) = rl.add_history_entry(c) {
+    for c in commands.list_commands() {
+        if let Err(e) = rl.add_history_entry(c.name) {
             warn!("{e}");
         }
 
-        if let Err(e) = rl.add_history_entry(s) {
-            warn!("{e}");
+        for a in c.alias {
+            if let Err(e) = rl.add_history_entry(a) {
+                warn!("{e}");
+            }
         }
     }
 
@@ -113,7 +114,6 @@ impl ConsoleUI {
         Ok(Self {
             glow,
             rl: init_readline(&commands)?,
-            commands,
         })
     }
 
@@ -121,7 +121,7 @@ impl ConsoleUI {
     where
         S: AsRef<str>,
     {
-        let mut child = Command::new(glow).stdin(Stdio::piped()).spawn()?;
+        let mut child = std::process::Command::new(glow).stdin(Stdio::piped()).spawn()?;
 
         if let Some(stdin) = child.stdin.as_mut() {
             stdin.write_all(text.as_ref().as_bytes())?;
@@ -176,14 +176,7 @@ impl ConsoleUI {
             // remove leading / trailing white spaces
             let line = line.trim().to_string();
 
-            if line.starts_with("/") {
-                match self.commands.handler(&line).await {
-                    Ok(v) => self.display(&v)?,
-                    Err(e @ Error::EOF) => return Err(e),
-                    Err(e @ Error::ResetInput) => return Err(e),
-                    Err(e) => self.display_error(e)?,
-                }
-
+            if line.is_empty() {
                 continue;
             }
 
@@ -206,9 +199,19 @@ impl ConsoleUI {
         }
     }
 
-    pub fn display_messages(&self, messages: &[AdoData]) -> Result<()> {
-        for msg in messages.iter() {
-            self.display(msg)?
+    pub fn display_search(&self, data: &AdoData) -> Result<()> {
+        //
+        // display nicely
+        //
+        self.display(data)
+    }
+
+    pub fn display_messages(&self, resp: &CommandResponse) -> Result<()> {
+        if let Some(data) = &resp.data {
+            match &resp.command {
+                Command::Search { query: _ } => self.display_search(data)?,
+                _ => self.display(data)?,
+            }
         }
 
         Ok(())
@@ -245,7 +248,7 @@ mod tests {
 
         let config = ConfigFile::load().unwrap();
 
-        let cmd = UserCommands::new(&config).unwrap();
+        let mut cmd = UserCommands::new(&config).unwrap();
 
         cmd.handler("/quit").await.unwrap();
     }

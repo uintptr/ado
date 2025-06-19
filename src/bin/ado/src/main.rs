@@ -8,8 +8,9 @@ use ado::console::ConsoleUI;
 use adolib::{
     config::file::ConfigFile,
     error::{Error, Result},
-    llm::{openai::chain::AIChain, question::question_detection},
+    llm::question::question_detection,
     logging::logger::setup_logger,
+    ui::commands::UserCommands,
 };
 use clap::Parser;
 use spinner::SpinnerBuilder;
@@ -44,14 +45,45 @@ where
     let data = fs::read_to_string(file_path)?;
     Ok(data)
 }
-#[tokio::main]
 
+async fn main_loop(config: ConfigFile, _initial_query: Option<String>) -> Result<()> {
+    let mut console = ConsoleUI::new(&config)?;
+
+    let mut command = UserCommands::new(&config)?;
+
+    loop {
+        let input = console.read_input().await?;
+
+        //
+        // little spinner waiting for the response
+        //
+        let spinner = SpinnerBuilder::new("".into()).start();
+
+        //
+        // process the command
+        //
+        let ret = command.handler(&input).await;
+
+        spinner.close();
+        print!(" \r ");
+        io::stdout().flush()?;
+
+        match ret {
+            Ok(v) => console.display_messages(&v)?,
+            Err(e @ Error::CommandNotFound { command: _ }) => console.display_error(e)?,
+            Err(Error::EOF) => return Ok(()),
+            Err(e) => return Err(e),
+        }
+    }
+}
+
+#[tokio::main]
 async fn main() -> Result<()> {
     let args = UserArgs::parse();
 
     setup_logger(args.verbose)?;
 
-    let mut query_opt = match args.shell_handler {
+    let query_opt = match args.shell_handler {
         Some(v) => match question_detection(&v) {
             true => Some(v),
             false => {
@@ -76,40 +108,9 @@ async fn main() -> Result<()> {
         },
     };
 
-    let mut console = ConsoleUI::new(&config)?;
-
-    let mut chain = AIChain::new(&config)?;
-
-    loop {
-        let query = match query_opt {
-            Some(v) => v,
-            None => match console.read_input().await {
-                Ok(v) => v,
-                Err(Error::ResetInput) => {
-                    chain.reset();
-                    continue;
-                }
-                Err(Error::EOF) => break Ok(()),
-                Err(e) => break Err(e),
-            },
-        };
-
-        //
-        // little spinner waiting for the response
-        //
-        let spinner = SpinnerBuilder::new("".into()).start();
-
-        //
-        // query the LLM
-        //
-        let msgs = chain.query(query).await?;
-
-        spinner.close();
-        print!("\r ");
-        io::stdout().flush()?;
-
-        console.display_messages(&msgs)?;
-
-        query_opt = None
+    match main_loop(config, query_opt).await {
+        Ok(_) => Ok(()),
+        Err(Error::EOF) => Ok(()),
+        Err(e) => Err(e),
     }
 }
