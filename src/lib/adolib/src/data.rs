@@ -50,11 +50,15 @@ impl HttpResponse {
 
 #[derive(Debug)]
 pub enum AdoData {
+    Empty,
+    Reset,
     String(String),
     Bytes(Vec<u8>),
     Json(String),
     Base64(String),
     Http(HttpResponse),
+    SearchData(String),
+    UsageString(String),
 }
 
 impl TryFrom<AdoData> for String {
@@ -62,11 +66,15 @@ impl TryFrom<AdoData> for String {
 
     fn try_from(value: AdoData) -> Result<String> {
         let s = match value {
+            AdoData::Empty => "".into(),
+            AdoData::Reset => "".into(),
             AdoData::String(s) => s,
             AdoData::Json(s) => s,
             AdoData::Base64(s) => s,
             AdoData::Bytes(b) => BASE64_STANDARD.encode(b),
             AdoData::Http(h) => serde_json::to_string(&h)?,
+            AdoData::SearchData(s) => s,
+            AdoData::UsageString(s) => s,
         };
 
         Ok(s)
@@ -76,6 +84,8 @@ impl TryFrom<AdoData> for String {
 impl AdoData {
     pub fn to_base64(&self) -> Result<String> {
         let out = match self {
+            AdoData::Empty => BASE64_STANDARD.encode("".to_string()),
+            AdoData::Reset => BASE64_STANDARD.encode("".to_string()),
             AdoData::String(s) => BASE64_STANDARD.encode(s),
             AdoData::Json(s) => BASE64_STANDARD.encode(s),
             AdoData::Base64(s) => BASE64_STANDARD.encode(s),
@@ -84,6 +94,8 @@ impl AdoData {
                 let json_str = serde_json::to_string(h)?;
                 BASE64_STANDARD.encode(json_str)
             }
+            AdoData::SearchData(s) => BASE64_STANDARD.encode(s),
+            AdoData::UsageString(s) => BASE64_STANDARD.encode(s),
         };
 
         Ok(out)

@@ -6,7 +6,7 @@ use crate::{
     llm::{openai::chain::AIChain, question::question_detection},
     logging::logger::setup_logger,
     search::google::GoogleCSE,
-    ui::commands::UserCommands,
+    ui::commands::{CommandResponse, UserCommands},
     wasm::reddit::RedditQuery,
 };
 use tokio::time::sleep;
@@ -116,28 +116,11 @@ impl AdoWasm {
         self.reddit.find_sub(description).await
     }
 
-    pub async fn query(&mut self, content: &str) -> Result<String> {
+    pub async fn query(&mut self, content: &str) -> Result<CommandResponse> {
         //
         // see if it's a command first
         //
-        if content.starts_with("/") {
-            let data = self.commands.handler(content).await?;
-            let data_string: String = data.try_into()?;
-            Ok(format!("```sh\n{data_string}\n```"))
-        } else {
-            let mut ret_list = Vec::new();
-
-            for d in self.chain.query(content).await? {
-                let d: String = d.try_into()?;
-                ret_list.push(d);
-            }
-
-            Ok(ret_list.join("\n"))
-        }
-    }
-
-    pub fn usage(&self) -> String {
-        format!("```\n{}\n```", self.commands.usage())
+        self.commands.handler(content).await
     }
 
     pub async fn search(&self, query: &str) -> Result<String> {

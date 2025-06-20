@@ -14,7 +14,7 @@ struct CommandCli {
 }
 
 #[derive(Debug, Subcommand)]
-pub enum Command {
+enum Command {
     /// query the LLM
     #[command(alias = "q")]
     Query {
@@ -47,12 +47,6 @@ pub struct UserCommands {
     chain: AIChain,
 }
 
-#[derive(Debug)]
-pub struct CommandResponse {
-    pub command: Command,
-    pub data: Option<AdoData>,
-}
-
 impl UserCommands {
     pub fn new(config: &ConfigFile) -> Result<UserCommands> {
         let search = GoogleCSE::new(config)?;
@@ -61,7 +55,7 @@ impl UserCommands {
         Ok(UserCommands { search, chain })
     }
 
-    pub async fn handler<S>(&mut self, line: S) -> Result<CommandResponse>
+    pub async fn handler<S>(&mut self, line: S) -> Result<AdoData>
     where
         S: AsRef<str>,
     {
@@ -74,47 +68,28 @@ impl UserCommands {
                 Command::Query { input } => {
                     let input_str = input.join(" ");
 
-                    let rep = self.chain.query(input_str).await?;
-
-                    Ok(CommandResponse {
-                        command: Command::Query { input },
-                        data: Some(rep),
-                    })
+                    self.chain.query(input_str).await
                 }
                 Command::Quit => Err(Error::EOF),
                 Command::Reset => {
                     self.chain.reset();
-                    Ok(CommandResponse {
-                        command: Command::Reset,
-                        data: None,
-                    })
+                    Ok(AdoData::Reset)
                 }
                 Command::Search { query } => {
                     let json_str = self.search.query(query.join(" ")).await?;
 
-                    Ok(CommandResponse {
-                        command: Command::Search { query },
-                        data: Some(AdoData::Json(json_str)),
-                    })
+                    Ok(AdoData::SearchData(json_str))
                 }
             },
             Err(e) => match e.kind() {
                 ErrorKind::DisplayHelp | ErrorKind::DisplayHelpOnMissingArgumentOrSubcommand => {
-                    let usage = e.to_string();
-                    Err(Error::Usage { help: usage })
+                    Ok(AdoData::UsageString(e.to_string()))
                 }
                 _ => {
                     //
                     // assuming this is query
                     //
-                    let rep = self.chain.query(&line).await?;
-
-                    Ok(CommandResponse {
-                        command: Command::Query {
-                            input: vec![line.as_ref().to_string()],
-                        },
-                        data: Some(rep),
-                    })
+                    self.chain.query(&line).await
                 }
             },
         }

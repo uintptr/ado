@@ -13,7 +13,6 @@ use adolib::{
     ui::commands::UserCommands,
 };
 use clap::Parser;
-use log::info;
 use spinner::SpinnerBuilder;
 
 #[derive(Parser, Debug)]
@@ -69,8 +68,6 @@ async fn main_loop(mut console: ConsoleUI, mut command: UserCommands, opt_input:
         spinner.close();
         print!(" \r ");
         io::stdout().flush()?;
-
-        info!("{ret:?}");
 
         match ret {
             Ok(v) => console.display_messages(&v)?,

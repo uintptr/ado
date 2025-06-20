@@ -8,9 +8,9 @@ use std::{
 use adolib::{
     config::file::ConfigFile,
     const_vars::{DOT_DIRECTORY, PKG_NAME, PKG_VERSION},
-    data::AdoData,
+    data::{AdoData, HttpResponse},
     error::{Error, Result},
-    ui::commands::{Command, CommandResponse, UserCommands},
+    ui::commands::UserCommands,
 };
 use colored;
 use colored::Colorize;
@@ -195,25 +195,11 @@ impl ConsoleUI {
         }
     }
 
-    fn display(&self, data: &AdoData) -> Result<()> {
-        let msg = match data {
-            AdoData::Json(s) => &format!("```json\n{s}\n```"),
-            AdoData::String(s) => s,
-            AdoData::Base64(s) => s,
-            AdoData::Bytes(_) => &data.to_base64()?,
-            AdoData::Http(s) => &serde_json::to_string(s)?,
-        };
-
-        self.display_string(msg)
-    }
-
-    fn display_search(&self, data: &AdoData) -> Result<()> {
-        let data = match data {
-            AdoData::Json(s) => s,
-            _ => return Err(Error::InvalidFormat),
-        };
-
-        let value: Value = serde_json::from_str(data)?;
+    fn display_search<S>(&self, data: S) -> Result<()>
+    where
+        S: AsRef<str>,
+    {
+        let value: Value = serde_json::from_str(data.as_ref())?;
 
         let items = value.get("items").ok_or(Error::InvalidFormat)?;
 
@@ -240,8 +226,18 @@ impl ConsoleUI {
                 None => continue,
             };
 
+            let link_display = match item.get("displayLink") {
+                Some(v) => match v.as_str() {
+                    Some(v) => v,
+                    None => continue,
+                },
+                None => continue,
+            };
+
             md_lines.push(format!("## {i} {title}"));
-            md_lines.push(format!(" * {link}"));
+            md_lines.push(format!(" * [{link_display}]({link})"));
+
+            info!("{md_lines:?}");
         }
 
         let md = md_lines.join("\n");
@@ -249,15 +245,52 @@ impl ConsoleUI {
         self.display_string(md)
     }
 
-    pub fn display_messages(&self, resp: &CommandResponse) -> Result<()> {
-        if let Some(data) = &resp.data {
-            match &resp.command {
-                Command::Search { query: _ } => self.display_search(data)?,
-                _ => self.display(data)?,
-            }
-        }
+    fn display_usage<S>(&self, usage: S) -> Result<()>
+    where
+        S: AsRef<str>,
+    {
+        self.display_string(usage)
+    }
 
-        Ok(())
+    fn display_json<S>(&self, data: S) -> Result<()>
+    where
+        S: AsRef<str>,
+    {
+        let md = format!("```json\n{}\n```", data.as_ref());
+        self.display_string(md)
+    }
+
+    fn display_base64<S>(&self, _data: S) -> Result<()>
+    where
+        S: AsRef<str>,
+    {
+        unimplemented!()
+    }
+
+    fn display_bytes(&self, _data: &[u8]) -> Result<()> {
+        unimplemented!()
+    }
+
+    fn display_http(&self, _resp: &HttpResponse) -> Result<()> {
+        unimplemented!()
+    }
+
+    fn display(&self, data: &AdoData) -> Result<()> {
+        match data {
+            AdoData::Empty => return Ok(()),
+            AdoData::Reset => clear_console(),
+            AdoData::Json(s) => self.display_json(s),
+            AdoData::String(s) => self.display_string(s),
+            AdoData::Base64(s) => self.display_base64(s),
+            AdoData::Bytes(b) => self.display_bytes(b),
+            AdoData::Http(s) => self.display_http(s),
+            AdoData::SearchData(s) => self.display_search(s),
+            AdoData::UsageString(s) => self.display_usage(s),
+        }
+    }
+
+    pub fn display_messages(&self, data: &AdoData) -> Result<()> {
+        self.display(data)
     }
 
     pub fn display_error(&self, err: Error) -> Result<()> {
@@ -316,8 +349,6 @@ mod tests {
 
         let config = ConfigFile::load().unwrap();
         let console = ConsoleUI::new(&config).unwrap();
-
-        let json_data = AdoData::Json(json_data);
 
         console.display_search(&json_data).unwrap();
     }
