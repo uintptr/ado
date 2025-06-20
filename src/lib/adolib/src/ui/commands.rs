@@ -1,5 +1,3 @@
-use log::error;
-
 use crate::{
     config::file::ConfigFile,
     data::AdoData,
@@ -15,7 +13,7 @@ struct CommandCli {
     commands: Command,
 }
 
-#[derive(Subcommand)]
+#[derive(Debug, Subcommand)]
 pub enum Command {
     /// query the LLM
     #[command(alias = "q")]
@@ -49,6 +47,7 @@ pub struct UserCommands {
     chain: AIChain,
 }
 
+#[derive(Debug)]
 pub struct CommandResponse {
     pub command: Command,
     pub data: Option<AdoData>,
@@ -62,8 +61,11 @@ impl UserCommands {
         Ok(UserCommands { search, chain })
     }
 
-    pub async fn handler(&mut self, line: &str) -> Result<CommandResponse> {
-        let mut args = shell_words::split(line)?;
+    pub async fn handler<S>(&mut self, line: S) -> Result<CommandResponse>
+    where
+        S: AsRef<str>,
+    {
+        let mut args = shell_words::split(line.as_ref())?;
 
         args.insert(0, "".to_string());
 
@@ -79,10 +81,7 @@ impl UserCommands {
                         data: Some(rep),
                     })
                 }
-                Command::Quit => Ok(CommandResponse {
-                    command: Command::Quit,
-                    data: None,
-                }),
+                Command::Quit => Err(Error::EOF),
                 Command::Reset => {
                     self.chain.reset();
                     Ok(CommandResponse {
@@ -105,9 +104,16 @@ impl UserCommands {
                     Err(Error::Usage { help: usage })
                 }
                 _ => {
-                    error!("{e}");
-                    Err(Error::CommandNotFound {
-                        command: line.to_string(),
+                    //
+                    // assuming this is query
+                    //
+                    let rep = self.chain.query(&line).await?;
+
+                    Ok(CommandResponse {
+                        command: Command::Query {
+                            input: vec![line.as_ref().to_string()],
+                        },
+                        data: Some(rep),
                     })
                 }
             },

@@ -48,6 +48,7 @@ impl HttpResponse {
     }
 }
 
+#[derive(Debug)]
 pub enum AdoData {
     String(String),
     Bytes(Vec<u8>),

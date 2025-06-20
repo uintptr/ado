@@ -15,6 +15,7 @@ use adolib::{
 use colored;
 use colored::Colorize;
 use log::{error, info, warn};
+use serde_json::Value;
 use which::which;
 
 use rustyline::completion::FilenameCompleter;
@@ -194,7 +195,7 @@ impl ConsoleUI {
         }
     }
 
-    pub fn display(&self, data: &AdoData) -> Result<()> {
+    fn display(&self, data: &AdoData) -> Result<()> {
         let msg = match data {
             AdoData::Json(s) => &format!("```json\n{s}\n```"),
             AdoData::String(s) => s,
@@ -206,11 +207,46 @@ impl ConsoleUI {
         self.display_string(msg)
     }
 
-    pub fn display_search(&self, data: &AdoData) -> Result<()> {
-        //
-        // display nicely
-        //
-        self.display(data)
+    fn display_search(&self, data: &AdoData) -> Result<()> {
+        let data = match data {
+            AdoData::Json(s) => s,
+            _ => return Err(Error::InvalidFormat),
+        };
+
+        let value: Value = serde_json::from_str(data)?;
+
+        let items = value.get("items").ok_or(Error::InvalidFormat)?;
+
+        let items = items.as_array().ok_or(Error::InvalidFormat)?;
+
+        let mut md_lines = Vec::new();
+
+        md_lines.push("# Search Results".to_string());
+
+        for (i, item) in items.iter().enumerate() {
+            let title = match item.get("title") {
+                Some(v) => match v.as_str() {
+                    Some(v) => v,
+                    None => continue,
+                },
+                None => continue,
+            };
+
+            let link = match item.get("link") {
+                Some(v) => match v.as_str() {
+                    Some(v) => v,
+                    None => continue,
+                },
+                None => continue,
+            };
+
+            md_lines.push(format!("## {i} {title}"));
+            md_lines.push(format!(" * {link}"));
+        }
+
+        let md = md_lines.join("\n");
+
+        self.display_string(md)
     }
 
     pub fn display_messages(&self, resp: &CommandResponse) -> Result<()> {
@@ -233,6 +269,8 @@ impl ConsoleUI {
 
 #[cfg(test)]
 mod tests {
+
+    use std::{fs, path::Path};
 
     use adolib::{config::file::ConfigFile, data::AdoData, logging::logger::setup_logger, ui::commands::UserCommands};
 
@@ -258,5 +296,29 @@ mod tests {
         let mut cmd = UserCommands::new(&config).unwrap();
 
         cmd.handler("/quit").await.unwrap();
+    }
+
+    #[test]
+    fn display_search() {
+        setup_logger(true).unwrap();
+
+        let manifest_dir = env!("CARGO_MANIFEST_DIR");
+        let json_file = Path::new(manifest_dir)
+            .join("..")
+            .join("..")
+            .join("..")
+            .join("test")
+            .join("search_test.json")
+            .canonicalize()
+            .unwrap();
+
+        let json_data = fs::read_to_string(json_file).unwrap();
+
+        let config = ConfigFile::load().unwrap();
+        let console = ConsoleUI::new(&config).unwrap();
+
+        let json_data = AdoData::Json(json_data);
+
+        console.display_search(&json_data).unwrap();
     }
 }
