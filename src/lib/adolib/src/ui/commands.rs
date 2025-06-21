@@ -59,9 +59,9 @@ impl UserCommands {
     where
         S: AsRef<str>,
     {
-        let mut args = shell_words::split(line.as_ref())?;
+        let mut args: Vec<&str> = line.as_ref().split_whitespace().collect();
 
-        args.insert(0, "".to_string());
+        args.insert(0, "");
 
         match CommandCli::try_parse_from(args) {
             Ok(c) => match c.commands {

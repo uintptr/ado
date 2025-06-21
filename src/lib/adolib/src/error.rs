@@ -103,8 +103,6 @@ pub enum Error {
     Readline(rustyline::error::ReadlineError),
     #[from]
     Http(reqwest::Error),
-    //#[from]
-    //Redis(redis::RedisError),
 }
 
 impl core::fmt::Display for Error {
