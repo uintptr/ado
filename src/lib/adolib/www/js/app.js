@@ -80,47 +80,29 @@ function search_new_card(item, name) {
 }
 
 
-
-
 /**
- * @param {AdoWasm} wctx
- * @param {string} q
+ * @param {string} json_data
  */
-async function search_issue_query(wctx, q) {
+async function display_search_results(json_data) {
 
     const container = document.getElementById("results")
 
     if (container != null && container instanceof HTMLElement) {
 
-        let results_str = await wctx.search(q)
+        let results = JSON.parse(json_data)
 
-        if (results_str != null) {
+        results.items.forEach(item => {
+            let card = search_new_card(item, "search_result")
 
-            let results = JSON.parse(results_str)
+            if (card != null && card instanceof HTMLElement) {
+                container.appendChild(card)
+                const item_b64 = utils.object_to_b64(item)
+                card.setAttribute("chat-data-b64", item_b64)
+            }
+        });
 
-            results.items.forEach(item => {
-                let card = search_new_card(item, "search_result")
+        utils.show_element(container)
 
-                if (card != null && card instanceof HTMLElement) {
-                    container.appendChild(card)
-                    const item_b64 = utils.object_to_b64(item)
-                    card.setAttribute("chat-data-b64", item_b64)
-                }
-            });
-
-            utils.show_element(container)
-        }
-    }
-}
-
-
-function command_reset() {
-
-    const results = document.getElementById("results")
-
-    if (results != null && results instanceof HTMLElement) {
-        utils.remove_all_children(results)
-        utils.hide_element(results)
     }
 }
 
@@ -129,7 +111,7 @@ function command_reset() {
  * @param {boolean} markdown
  * @param {string | null} chat_source
  */
-function add_command_response(response, markdown = true, chat_source = null) {
+function display_string(response, markdown = true, chat_source = null) {
 
     const container = document.getElementById("results")
 
@@ -179,6 +161,58 @@ function add_command_response(response, markdown = true, chat_source = null) {
 }
 
 
+
+
+/**
+ * @param {AdoWasm} wctx
+ * @param {string} q
+ */
+async function search_issue_query(wctx, q) {
+
+    const container = document.getElementById("results")
+
+    if (container != null && container instanceof HTMLElement) {
+
+        let results_str = await wctx.search(q)
+
+        if (results_str != null) {
+            display_search_results(results_str)
+        }
+    }
+}
+
+
+function display_reset() {
+
+    const results = document.getElementById("results")
+
+    if (results != null && results instanceof HTMLElement) {
+        utils.remove_all_children(results)
+        utils.hide_element(results)
+    }
+}
+
+/**
+ * @param {object} response
+ */
+function response_handler(response) {
+
+    if (response.hasOwnProperty("UsageString")) {
+        let usage = "```\n" + response.UsageString + "\n```"
+        display_string(usage)
+    } else if (response.hasOwnProperty("String")) {
+        display_string(response.String)
+    } else if (response.hasOwnProperty("SearchData")) {
+        let json_data = response.SearchData
+        display_search_results(json_data)
+    } else if (response == "Reset") {
+        display_reset()
+    } else {
+        console.warn(response)
+    }
+}
+
+
 /**
  * @param {AdoWasm} wctx
  */
@@ -212,20 +246,14 @@ function init_cmd_line(wctx) {
 
                 if (cmd_line.length > 0) {
 
-                    add_command_response(cmd_line, false)
+                    display_string(cmd_line, false)
 
                     try {
                         let ret = await wctx.query(cmd_line)
-                        add_command_response(ret)
+                        response_handler(ret)
                     } catch (error) {
-                        if (error == "ResetInput" || error == "EOF") {
-                            wctx.reset()
-                            command_reset()
-                        }
-                        else {
-                            let err_msg = "error: " + error
-                            add_command_response("`" + err_msg + "`")
-                        }
+                        let err_msg = "error: " + error
+                        display_string("`" + err_msg + "`")
                     }
                 }
             }
@@ -269,7 +297,7 @@ async function search_handler(wctx, search) {
             // assume this is a chat request
             //
             let res = await wctx.query(q_plus_two)
-            add_command_response(res)
+            response_handler(res)
         } else if (q.startsWith("g ")) {
             //
             // google search
@@ -307,7 +335,7 @@ async function search_handler(wctx, search) {
             //
             if (true == wctx.is_question(q)) {
                 let res = await wctx.query(q)
-                add_command_response(res)
+                response_handler(res)
             } else {
                 //
                 // fallback to google I'm feeling lucky url. In most

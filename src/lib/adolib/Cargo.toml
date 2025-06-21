@@ -36,6 +36,7 @@ ring = { workspace = true }
 wasm-bindgen-futures = { workspace = true }
 console_error_panic_hook = { workspace = true }
 web-sys = { workspace = true }
+gloo-utils = { workspace = true }
 
 [lib]
 crate-type = ["cdylib", "rlib"]

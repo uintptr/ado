@@ -6,9 +6,10 @@ use crate::{
     llm::{openai::chain::AIChain, question::question_detection},
     logging::logger::setup_logger,
     search::google::GoogleCSE,
-    ui::commands::{CommandResponse, UserCommands},
+    ui::commands::UserCommands,
     wasm::reddit::RedditQuery,
 };
+use gloo_utils::format::JsValueSerdeExt;
 use tokio::time::sleep;
 use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
 
@@ -116,11 +117,15 @@ impl AdoWasm {
         self.reddit.find_sub(description).await
     }
 
-    pub async fn query(&mut self, content: &str) -> Result<CommandResponse> {
+    pub async fn query(&mut self, content: &str) -> Result<JsValue> {
         //
         // see if it's a command first
         //
-        self.commands.handler(content).await
+        let data = self.commands.handler(content).await?;
+
+        let obj = JsValue::from_serde(&data)?;
+
+        Ok(obj)
     }
 
     pub async fn search(&self, query: &str) -> Result<String> {

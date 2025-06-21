@@ -48,7 +48,7 @@ impl HttpResponse {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub enum AdoData {
     Empty,
     Reset,
