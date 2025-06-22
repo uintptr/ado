@@ -1,4 +1,5 @@
 /.vscode
+/.zed
 /target
 /src/lib/target/
 /src/lib/adolib/www/opensearch.xml

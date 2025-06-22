@@ -26,6 +26,7 @@ enum Command {
     #[command(alias = "r")]
     Reset,
     /// quit
+    #[command(alias = "exit")]
     Quit,
     /// Google search
     #[command(alias = "s")]
