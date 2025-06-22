@@ -234,10 +234,17 @@ impl ConsoleUI {
                 None => continue,
             };
 
+            let snippet = match item.get("snippet") {
+                Some(v) => match v.as_str() {
+                    Some(v) => v,
+                    None => continue,
+                },
+                None => continue,
+            };
+
             md_lines.push(format!("## {i} {title}"));
             md_lines.push(format!(" * [{link_display}]({link})"));
-
-            info!("{md_lines:?}");
+            md_lines.push(format!("> {snippet}"));
         }
 
         let md = md_lines.join("\n");
