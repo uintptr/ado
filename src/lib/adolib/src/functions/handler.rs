@@ -4,7 +4,7 @@ use crate::{
     config::file::ConfigFile,
     data::AdoData,
     error::{Error, Result},
-    functions::{function_args::FunctionArgs, functions_ip::FunctionsIp},
+    functions::{function_args::FunctionArgs, ip_address::FunctionsIp},
 };
 
 use super::{
