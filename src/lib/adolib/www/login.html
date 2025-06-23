@@ -1,154 +1,188 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>Login - Command Search</title>
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
-    <style>
-        :root {
-            --bg-dark: #121212;
-            --bg-card: #1e1e1e;
-            --bg-input: #252525;
-            --accent-color: #4d7cfe;
-            --accent-secondary: #8e5cff;
-            --accent-gradient: linear-gradient(120deg, #4d7cfe, #8e5cff);
-            --accent-hover: #6089fd;
-            --text-primary: #f8f9fd;
-            --text-secondary: #c0c7db;
-            --text-tertiary: #8894b3;
-            --border-color: #333333;
-            --transition-speed: 0.25s;
-            --shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
-            --card-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.3);
-            --border-radius: 16px;
-            --input-border-radius: 12px;
-            --mono-font: "JetBrains Mono", monospace;
-        }
-        body {
-            background-color: var(--bg-dark);
-            color: var(--text-primary);
-            font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
-            min-height: 100vh;
-            margin: 0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .login-wrapper {
-            background: var(--bg-card);
-            border-radius: var(--border-radius);
-            box-shadow: var(--card-shadow);
-            padding: 40px 32px 32px 32px;
-            width: 100%;
-            max-width: 400px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        .login-title {
-            font-size: 2rem;
-            font-weight: 600;
-            margin-bottom: 10px;
-            background: var(--accent-gradient);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        .login-subtitle {
-            color: var(--text-tertiary);
-            font-size: 1rem;
-            margin-bottom: 28px;
-            text-align: center;
-        }
-        .login-form {
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            gap: 18px;
-        }
-        .input-group {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-        .input-label {
-            font-size: 0.97rem;
-            color: var(--text-secondary);
-            margin-bottom: 2px;
-        }
-        .login-input {
-            padding: 13px 16px;
-            border-radius: var(--input-border-radius);
-            border: 1px solid var(--border-color);
-            background: var(--bg-input);
-            color: var(--text-primary);
-            font-size: 1rem;
-            outline: none;
-            font-family: var(--mono-font);
-            transition: border-color var(--transition-speed), box-shadow var(--transition-speed);
-        }
-        .login-input:focus {
-            border-color: var(--accent-color);
-            box-shadow: 0 0 0 2px var(--accent-color);
-        }
-        .login-btn {
-            margin-top: 10px;
-            padding: 13px 0;
-            border: none;
-            border-radius: var(--input-border-radius);
-            background: var(--accent-gradient);
-            color: #fff;
-            font-size: 1.1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background var(--transition-speed), box-shadow var(--transition-speed);
-            box-shadow: 0 4px 12px rgba(77, 124, 254, 0.15);
-        }
-        .login-btn:hover {
-            background: var(--accent-hover);
-        }
-        .login-icon {
-            font-size: 2.2rem;
-            margin-bottom: 18px;
-            color: var(--accent-color);
-        }
-        .login-hint {
-            margin-top: 18px;
-            font-size: 0.95rem;
-            color: var(--text-tertiary);
-            text-align: center;
-        }
-        @media (max-width: 500px) {
-            .login-wrapper {
-                padding: 28px 10px 24px 10px;
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Login - Command Search</title>
+        <link
+            rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+        />
+        <style>
+            :root {
+                --bg-dark: #121212;
+                --bg-card: #1e1e1e;
+                --bg-input: #252525;
+                --accent-color: #4d7cfe;
+                --accent-secondary: #8e5cff;
+                --accent-gradient: linear-gradient(120deg, #4d7cfe, #8e5cff);
+                --accent-hover: #6089fd;
+                --text-primary: #f8f9fd;
+                --text-secondary: #c0c7db;
+                --text-tertiary: #8894b3;
+                --border-color: #333333;
+                --transition-speed: 0.25s;
+                --shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+                --card-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.3);
+                --border-radius: 16px;
+                --input-border-radius: 12px;
+                --mono-font: "JetBrains Mono", monospace;
             }
-        }
-    </style>
-</head>
-<body>
-    <div class="login-wrapper">
-        <i class="fas fa-user-circle login-icon"></i>
-        <div class="login-title">Sign In</div>
-        <div class="login-subtitle">Enter your credentials to access Command Search</div>
-        <form class="login-form" method="POST" action="/login">
-            <div class="input-group">
-                <label class="input-label" for="username">Username</label>
-                <input class="login-input" type="text" id="username" name="username" autocomplete="username" required autofocus />
+            body {
+                background-color: var(--bg-dark);
+                color: var(--text-primary);
+                font-family:
+                    "Inter",
+                    -apple-system,
+                    BlinkMacSystemFont,
+                    sans-serif;
+                min-height: 100vh;
+                margin: 0;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            .login-wrapper {
+                background: var(--bg-card);
+                border-radius: var(--border-radius);
+                box-shadow: var(--card-shadow);
+                padding: 40px 32px 32px 32px;
+                width: 100%;
+                max-width: 400px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            }
+            .login-title {
+                font-size: 2rem;
+                font-weight: 600;
+                margin-bottom: 10px;
+                background: var(--accent-gradient);
+                -webkit-background-clip: text;
+                background-clip: text;
+                -webkit-text-fill-color: transparent;
+            }
+            .login-subtitle {
+                color: var(--text-tertiary);
+                font-size: 1rem;
+                margin-bottom: 28px;
+                text-align: center;
+            }
+            .login-form {
+                width: 100%;
+                display: flex;
+                flex-direction: column;
+                gap: 18px;
+            }
+            .input-group {
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
+            }
+            .input-label {
+                font-size: 0.97rem;
+                color: var(--text-secondary);
+                margin-bottom: 2px;
+            }
+            .login-input {
+                padding: 13px 16px;
+                border-radius: var(--input-border-radius);
+                border: 1px solid var(--border-color);
+                background: var(--bg-input);
+                color: var(--text-primary);
+                font-size: 1rem;
+                outline: none;
+                font-family: var(--mono-font);
+                transition:
+                    border-color var(--transition-speed),
+                    box-shadow var(--transition-speed);
+            }
+            .login-input:focus {
+                border-color: var(--accent-color);
+                box-shadow: 0 0 0 2px var(--accent-color);
+            }
+            .login-btn {
+                margin-top: 10px;
+                padding: 13px 0;
+                border: none;
+                border-radius: var(--input-border-radius);
+                background: var(--accent-gradient);
+                color: #fff;
+                font-size: 1.1rem;
+                font-weight: 600;
+                cursor: pointer;
+                transition:
+                    background var(--transition-speed),
+                    box-shadow var(--transition-speed);
+                box-shadow: 0 4px 12px rgba(77, 124, 254, 0.15);
+            }
+            .login-btn:hover {
+                background: var(--accent-hover);
+            }
+            .login-icon {
+                font-size: 2.2rem;
+                margin-bottom: 18px;
+                color: var(--accent-color);
+            }
+            .login-hint {
+                margin-top: 18px;
+                font-size: 0.95rem;
+                color: var(--text-tertiary);
+                text-align: center;
+            }
+            @media (max-width: 500px) {
+                .login-wrapper {
+                    padding: 28px 10px 24px 10px;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="login-wrapper">
+            <i class="fas fa-user-circle login-icon"></i>
+            <div class="login-title">Sign In</div>
+            <div class="login-subtitle">
+                Enter your credentials to access Command Search
             </div>
-            <div class="input-group">
-                <label class="input-label" for="password">Password</label>
-                <input class="login-input" type="password" id="password" name="password" autocomplete="current-password" required />
+            <form class="login-form" method="POST" action="/login">
+                <div class="input-group">
+                    <label class="input-label" for="username">Username</label>
+                    <input
+                        class="login-input"
+                        type="text"
+                        id="username"
+                        name="username"
+                        autocomplete="username"
+                        required
+                        autofocus
+                    />
+                </div>
+                <div class="input-group">
+                    <label class="input-label" for="password">Password</label>
+                    <input
+                        class="login-input"
+                        type="password"
+                        id="password"
+                        name="password"
+                        autocomplete="current-password"
+                        required
+                    />
+                </div>
+                <button class="login-btn" type="submit">Login</button>
+            </form>
+            <div class="login-hint">
+                <span
+                    >Forgot your password?
+                    <a
+                        href="#"
+                        style="
+                            color: var(--accent-color);
+                            text-decoration: none;
+                        "
+                        >Contact support</a
+                    ></span
+                >
             </div>
-            <button class="login-btn" type="submit">Login</button>
-        </form>
-        <div class="login-hint">
-            <span>Forgot your password? <a href="#" style="color:var(--accent-color);text-decoration:none;">Contact support</a></span>
         </div>
-    </div>
-</body>
+    </body>
 </html>

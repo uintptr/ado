@@ -1,441 +1,458 @@
 <!doctype html>
 <html lang="en">
-
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Command Search</title>
-    <link rel="search" type="application/opensearchdescription+xml" title="frontpagecommand" href="/opensearch.xml" />
-    <script src="/js/utils.js" type="module"></script>
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" type="module"></script>
-    <!-- Google Fonts - Added modern font combination -->
-    <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
-        rel="stylesheet" />
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-    <!-- Highlight.js CSS for code highlighting -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/atom-one-dark.min.css" />
-    <!-- Retro Loading Screen CSS -->
-    <link rel="stylesheet" href="/css/loading-screen.css" />
-    <style>
-        :root {
-            /* Classic dark mode color scheme */
-            --bg-dark: #121212;
-            --bg-card: #1e1e1e;
-            --bg-input: #252525;
-            --accent-color: #4d7cfe;
-            --accent-secondary: #8e5cff;
-            --accent-gradient: linear-gradient(120deg, #4d7cfe, #8e5cff);
-            --accent-hover: #6089fd;
-            --text-primary: #f8f9fd;
-            --text-secondary: #c0c7db;
-            --text-tertiary: #8894b3;
-            --border-color: #333333;
-            --transition-speed: 0.25s;
-            --shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
-            --card-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.3);
-            --border-radius: 16px;
-            --input-border-radius: 12px;
-            --mono-font: "JetBrains Mono", monospace;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            background-color: var(--bg-dark);
-            color: var(--text-primary);
-            font-family:
-                "Inter",
-                -apple-system,
-                BlinkMacSystemFont,
-                sans-serif;
-            min-height: 100vh;
-            margin: 0;
-            padding: 0 0 90px 0;
-            display: flex;
-            flex-direction: column;
-            line-height: 1.6;
-        }
-
-        .content-wrapper {
-            display: flex;
-            flex-direction: column;
-            flex: 1;
-            padding: 30px 20px;
-            max-width: 900px;
-            margin: 0 auto;
-            width: 100%;
-            overflow-y: auto;
-        }
-
-        .container {
-            flex: 1;
-            width: 100%;
-            margin-bottom: 80px;
-        }
-
-        .search-bar {
-            margin-bottom: 25px;
-            border: none;
-            position: relative;
-        }
-
-        .search-bar input {
-            width: 100%;
-            padding: 16px 20px;
-            border: none;
-            border-radius: var(--input-border-radius);
-            background-color: var(--bg-input);
-            color: var(--text-primary);
-            font-size: 16px;
-            outline: none;
-            transition: all var(--transition-speed);
-            box-shadow: var(--shadow);
-        }
-
-        .search-bar input:focus {
-            box-shadow: 0 0 0 2px var(--accent-color);
-        }
-
-        .results {
-            background-color: var(--bg-card);
-            border-radius: var(--border-radius);
-            overflow: hidden;
-            box-shadow: var(--card-shadow);
-            transition: all var(--transition-speed);
-            border: 1px solid var(--border-color);
-        }
-
-        .result-item {
-            padding: 20px 24px;
-            border-bottom: 1px solid var(--border-color);
-            transition: all var(--transition-speed);
-        }
-
-        .result-item:hover {
-            background-color: rgba(255, 255, 255, 0.03);
-            transform: translateY(-1px);
-        }
-
-        .result-item:last-child {
-            border-bottom: none;
-        }
-
-        .result-title {
-            font-size: 18px;
-            font-weight: 600;
-            margin-bottom: 8px;
-            line-height: 1.4;
-        }
-
-        .result-title a {
-            color: var(--accent-color);
-            text-decoration: none;
-            transition: color var(--transition-speed);
-            position: relative;
-            display: inline-block;
-        }
-
-        .result-title a:hover {
-            color: var(--accent-hover);
-        }
-
-        .result-title a::after {
-            content: "";
-            position: absolute;
-            width: 0;
-            height: 2px;
-            bottom: -2px;
-            left: 0;
-            background: var(--accent-gradient);
-            transition: width var(--transition-speed);
-        }
-
-        .result-title a:hover::after {
-            width: 100%;
-        }
-
-        .result-url {
-            font-size: 14px;
-            color: var(--text-secondary);
-            margin-bottom: 8px;
-        }
-
-        .result-breadcrumb {
-            font-size: 13px;
-            color: var(--text-tertiary);
-            margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .result-breadcrumb i {
-            font-size: 10px;
-            color: var (--text-tertiary);
-        }
-
-        .result-snippet {
-            font-size: 15px;
-            color: var(--text-secondary);
-            line-height: 1.6;
-        }
-
-        .a-no-deco {
-            text-decoration: none;
-            color: inherit;
-        }
-
-        .command-line {
-            background-color: var(--bg-dark);
-            padding: 18px 20px;
-            position: fixed;
-            bottom: 0;
-            width: 100%;
-            box-sizing: border-box;
-            z-index: 100;
-            box-shadow: 0 -8px 20px rgba(0, 0, 0, 0.2);
-            border-top: 1px solid var(--border-color);
-        }
-
-        .command-input-container {
-            position: relative;
-            display: flex;
-            align-items: center;
-            max-width: 900px;
-            margin: 0 auto;
-        }
-
-        .command-icon {
-            position: absolute;
-            left: 15px;
-            color: var(--accent-color);
-        }
-
-        .command-line input {
-            width: 100%;
-            padding: 14px 14px 14px 40px;
-            border: 1px solid var(--border-color);
-            border-radius: var(--input-border-radius);
-            background-color: var(--bg-input);
-            color: var(--text-primary);
-            font-size: 15px;
-            outline: none;
-            font-family: var(--mono-font);
-            transition: all var(--transition-speed);
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
-        }
-
-        .command-line input:focus {
-            box-shadow:
-                0 0 0 2px var(--accent-color),
-                0 4px 12px rgba(77, 124, 254, 0.2);
-            border-color: var(--accent-color);
-        }
-
-        .empty-state {
-            padding: 60px 20px;
-            text-align: center;
-            color: var(--text-tertiary);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 300px;
-        }
-
-        .empty-state i {
-            font-size: 48px;
-            margin-bottom: 20px;
-            opacity: 0.6;
-            background: var(--accent-gradient);
-            -webkit-background-clip: text;
-            background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-
-        .empty-state p {
-            font-size: 18px;
-            line-height: 1.5;
-            max-width: 400px;
-            margin: 0 auto;
-        }
-
-        .empty-state .hint {
-            margin-top: 12px;
-            font-size: 14px;
-            color: var(--text-tertiary);
-            opacity: 0.7;
-        }
-
-        /* Subtle animations */
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Command Search</title>
+        <link
+            rel="search"
+            type="application/opensearchdescription+xml"
+            title="frontpagecommand"
+            href="/opensearch.xml"
+        />
+        <script src="/js/utils.js" type="module"></script>
+        <script
+            src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"
+            type="module"
+        ></script>
+        <!-- Highlight.js CSS for code highlighting -->
+        <link
+            rel="stylesheet"
+            href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/atom-one-dark.min.css"
+        />
+        <!-- Retro Loading Screen CSS -->
+        <link rel="stylesheet" href="/css/loading-screen.css" />
+        <style>
+            :root {
+                /* Classic dark mode color scheme */
+                --bg-dark: #121212;
+                --bg-card: #1e1e1e;
+                --bg-input: #252525;
+                --accent-color: #4d7cfe;
+                --accent-secondary: #8e5cff;
+                --accent-gradient: linear-gradient(120deg, #4d7cfe, #8e5cff);
+                --accent-hover: #6089fd;
+                --text-primary: #f8f9fd;
+                --text-secondary: #c0c7db;
+                --text-tertiary: #8894b3;
+                --border-color: #333333;
+                --transition-speed: 0.25s;
+                --shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+                --card-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.3);
+                --border-radius: 16px;
+                --input-border-radius: 12px;
+                --mono-font: "JetBrains Mono", monospace;
             }
 
-            to {
-                opacity: 1;
-                transform: translateY(0);
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
             }
-        }
 
-        .result-item {
-            animation: fadeIn 0.3s ease-out;
-        }
+            body {
+                background-color: var(--bg-dark);
+                color: var(--text-primary);
+                font-family:
+                    "Inter",
+                    -apple-system,
+                    BlinkMacSystemFont,
+                    sans-serif;
+                min-height: 100vh;
+                margin: 0;
+                padding: 0 0 90px 0;
+                display: flex;
+                flex-direction: column;
+                line-height: 1.6;
+            }
 
-        /* Responsive improvements */
-        @media (max-width: 768px) {
             .content-wrapper {
-                padding: 20px 15px;
+                display: flex;
+                flex-direction: column;
+                flex: 1;
+                padding: 30px 20px;
+                max-width: 900px;
+                margin: 0 auto;
+                width: 100%;
+                overflow-y: auto;
             }
 
-            .command-line {
-                padding: 14px 15px;
+            .container {
+                flex: 1;
+                width: 100%;
+                margin-bottom: 80px;
+            }
+
+            .search-bar {
+                margin-bottom: 25px;
+                border: none;
+                position: relative;
+            }
+
+            .search-bar input {
+                width: 100%;
+                padding: 16px 20px;
+                border: none;
+                border-radius: var(--input-border-radius);
+                background-color: var(--bg-input);
+                color: var(--text-primary);
+                font-size: 16px;
+                outline: none;
+                transition: all var(--transition-speed);
+                box-shadow: var(--shadow);
+            }
+
+            .search-bar input:focus {
+                box-shadow: 0 0 0 2px var(--accent-color);
+            }
+
+            .results {
+                background-color: var(--bg-card);
+                border-radius: var(--border-radius);
+                overflow: hidden;
+                box-shadow: var(--card-shadow);
+                transition: all var(--transition-speed);
+                border: 1px solid var(--border-color);
             }
 
             .result-item {
-                padding: 18px;
+                padding: 20px 24px;
+                border-bottom: 1px solid var(--border-color);
+                transition: all var(--transition-speed);
+            }
+
+            .result-item:hover {
+                background-color: rgba(255, 255, 255, 0.03);
+                transform: translateY(-1px);
+            }
+
+            .result-item:last-child {
+                border-bottom: none;
+            }
+
+            .result-title {
+                font-size: 18px;
+                font-weight: 600;
+                margin-bottom: 8px;
+                line-height: 1.4;
+            }
+
+            .result-title a {
+                color: var(--accent-color);
+                text-decoration: none;
+                transition: color var(--transition-speed);
+                position: relative;
+                display: inline-block;
+            }
+
+            .result-title a:hover {
+                color: var(--accent-hover);
+            }
+
+            .result-title a::after {
+                content: "";
+                position: absolute;
+                width: 0;
+                height: 2px;
+                bottom: -2px;
+                left: 0;
+                background: var(--accent-gradient);
+                transition: width var(--transition-speed);
+            }
+
+            .result-title a:hover::after {
+                width: 100%;
+            }
+
+            .result-url {
+                font-size: 14px;
+                color: var(--text-secondary);
+                margin-bottom: 8px;
+            }
+
+            .result-breadcrumb {
+                font-size: 13px;
+                color: var(--text-tertiary);
+                margin-bottom: 12px;
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+
+            .result-breadcrumb i {
+                font-size: 10px;
+                color: var (--text-tertiary);
+            }
+
+            .result-snippet {
+                font-size: 15px;
+                color: var(--text-secondary);
+                line-height: 1.6;
+            }
+
+            .a-no-deco {
+                text-decoration: none;
+                color: inherit;
+            }
+
+            .command-line {
+                background-color: var(--bg-dark);
+                padding: 18px 20px;
+                position: fixed;
+                bottom: 0;
+                width: 100%;
+                box-sizing: border-box;
+                z-index: 100;
+                box-shadow: 0 -8px 20px rgba(0, 0, 0, 0.2);
+                border-top: 1px solid var(--border-color);
+            }
+
+            .command-input-container {
+                position: relative;
+                display: flex;
+                align-items: center;
+                max-width: 900px;
+                margin: 0 auto;
+            }
+
+            .command-icon {
+                position: absolute;
+                left: 15px;
+                color: var(--accent-color);
+            }
+
+            .command-line input {
+                width: 100%;
+                padding: 14px 14px 14px 40px;
+                border: 1px solid var(--border-color);
+                border-radius: var(--input-border-radius);
+                background-color: var(--bg-input);
+                color: var(--text-primary);
+                font-size: 15px;
+                outline: none;
+                font-family: var(--mono-font);
+                transition: all var(--transition-speed);
+                box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+            }
+
+            .command-line input:focus {
+                box-shadow:
+                    0 0 0 2px var(--accent-color),
+                    0 4px 12px rgba(77, 124, 254, 0.2);
+                border-color: var(--accent-color);
             }
 
             .empty-state {
-                padding: 40px 15px;
+                padding: 60px 20px;
+                text-align: center;
+                color: var(--text-tertiary);
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                min-height: 300px;
             }
 
             .empty-state i {
-                font-size: 40px;
+                font-size: 48px;
+                margin-bottom: 20px;
+                opacity: 0.6;
+                background: var(--accent-gradient);
+                -webkit-background-clip: text;
+                background-clip: text;
+                -webkit-text-fill-color: transparent;
             }
-        }
 
-        /* Dark scrollbar */
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
+            .empty-state p {
+                font-size: 18px;
+                line-height: 1.5;
+                max-width: 400px;
+                margin: 0 auto;
+            }
 
-        ::-webkit-scrollbar-track {
-            background: var(--bg-dark);
-        }
+            .empty-state .hint {
+                margin-top: 12px;
+                font-size: 14px;
+                color: var(--text-tertiary);
+                opacity: 0.7;
+            }
 
-        ::-webkit-scrollbar-thumb {
-            background: var(--border-color);
-            border-radius: 4px;
-        }
+            /* Subtle animations */
+            @keyframes fadeIn {
+                from {
+                    opacity: 0;
+                    transform: translateY(10px);
+                }
 
-        ::-webkit-scrollbar-thumb:hover {
-            background: var(--text-tertiary);
-        }
-    </style>
-</head>
-
-<body>
-    <div class="content-wrapper">
-        <div class="container">
-            <div id="results" class="results" style="display: none">
-                <!-- Results will be populated here -->
-            </div>
-            <div id="empty-state" class="empty-state">
-                <i class="fas fa-terminal"></i>
-                <p>Enter a command to begin your search</p>
-                <div class="hint">
-                    Try typing a keyword or command below
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="command-line">
-        <div class="command-input-container">
-            <i class="fas fa-chevron-right command-icon"></i>
-            <input id="cmd_line" autofocus autocapitalize="off" type="text" placeholder="Type your command here..." />
-        </div>
-    </div>
-
-    <template id="search_result">
-        <div class="result-item">
-            <div class="result-title">
-                <a target="_blank" rel="noopener noreferrer" id="title_link" class="a-no-deco" href="/"></a>
-            </div>
-            <div id="url_parts" class="result-breadcrumb"></div>
-            <div id="result_text" class="result-snippet"></div>
-        </div>
-    </template>
-
-    <template id="command_result">
-        <div id="command_item" class="result-item">
-            <div id="command_text" class="result-snippet"></div>
-        </div>
-    </template>
-
-    <script type="module">
-    </script>
-
-    <script src="/js/loading-screen.js" type="module"></script>
-    <script src="/js/app.js" type="module"></script>
-    <!-- Highlight.js library -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-    <script>
-        // Show/hide empty state based on results
-        document.addEventListener("DOMContentLoaded", function () {
-            const results = document.getElementById("results");
-            const emptyState = document.getElementById("empty-state");
-            const cmdLine = document.getElementById("cmd_line");
-
-            // Function to toggle empty state visibility
-            function toggleEmptyState() {
-                if (
-                    results.style.display === "none" ||
-                    results.children.length === 0
-                ) {
-                    emptyState.style.display = "flex";
-                } else {
-                    emptyState.style.display = "none";
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
                 }
             }
 
-            // Initial check
-            toggleEmptyState();
+            .result-item {
+                animation: fadeIn 0.3s ease-out;
+            }
 
-            // Add focus to command line
-            setTimeout(() => {
-                cmdLine.focus();
-            }, 100);
+            /* Responsive improvements */
+            @media (max-width: 768px) {
+                .content-wrapper {
+                    padding: 20px 15px;
+                }
 
-            // Re-check whenever results change
-            const observer = new MutationObserver(toggleEmptyState);
-            observer.observe(results, {
-                childList: true,
-                attributes: true,
-                attributeFilter: ["style"],
-            });
+                .command-line {
+                    padding: 14px 15px;
+                }
 
-            // Highlight code blocks after DOM updates
-            const highlightAllCode = () => {
-                document.querySelectorAll('pre code').forEach((block) => {
-                    window.hljs.highlightElement(block);
+                .result-item {
+                    padding: 18px;
+                }
+
+                .empty-state {
+                    padding: 40px 15px;
+                }
+
+                .empty-state i {
+                    font-size: 40px;
+                }
+            }
+
+            /* Dark scrollbar */
+            ::-webkit-scrollbar {
+                width: 8px;
+                height: 8px;
+            }
+
+            ::-webkit-scrollbar-track {
+                background: var(--bg-dark);
+            }
+
+            ::-webkit-scrollbar-thumb {
+                background: var(--border-color);
+                border-radius: 4px;
+            }
+
+            ::-webkit-scrollbar-thumb:hover {
+                background: var(--text-tertiary);
+            }
+        </style>
+    </head>
+
+    <body>
+        <div class="content-wrapper">
+            <div class="container">
+                <div id="results" class="results" style="display: none">
+                    <!-- Results will be populated here -->
+                </div>
+                <div id="empty-state" class="empty-state">
+                    <i class="fas fa-terminal"></i>
+                    <p>Enter a command to begin your search</p>
+                    <div class="hint">
+                        Try typing a keyword or command below
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="command-line">
+            <div class="command-input-container">
+                <i class="fas fa-chevron-right command-icon"></i>
+                <input
+                    id="cmd_line"
+                    autofocus
+                    autocapitalize="off"
+                    type="text"
+                    placeholder="Type your command here..."
+                />
+            </div>
+        </div>
+
+        <template id="search_result">
+            <div class="result-item">
+                <div class="result-title">
+                    <a
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        id="title_link"
+                        class="a-no-deco"
+                        href="/"
+                    ></a>
+                </div>
+                <div id="url_parts" class="result-breadcrumb"></div>
+                <div id="result_text" class="result-snippet"></div>
+            </div>
+        </template>
+
+        <template id="command_result">
+            <div id="command_item" class="result-item">
+                <div id="command_text" class="result-snippet"></div>
+            </div>
+        </template>
+
+        <script type="module"></script>
+
+        <script src="/js/loading-screen.js" type="module"></script>
+        <script src="/js/app.js" type="module"></script>
+        <!-- Highlight.js library -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+        <script>
+            // Show/hide empty state based on results
+            document.addEventListener("DOMContentLoaded", function () {
+                const results = document.getElementById("results");
+                const emptyState = document.getElementById("empty-state");
+                const cmdLine = document.getElementById("cmd_line");
+
+                // Function to toggle empty state visibility
+                function toggleEmptyState() {
+                    if (
+                        results.style.display === "none" ||
+                        results.children.length === 0
+                    ) {
+                        emptyState.style.display = "flex";
+                    } else {
+                        emptyState.style.display = "none";
+                    }
+                }
+
+                // Initial check
+                toggleEmptyState();
+
+                // Add focus to command line
+                setTimeout(() => {
+                    cmdLine.focus();
+                }, 100);
+
+                // Re-check whenever results change
+                const observer = new MutationObserver(toggleEmptyState);
+                observer.observe(results, {
+                    childList: true,
+                    attributes: true,
+                    attributeFilter: ["style"],
                 });
-            };
-            // Run on load and whenever results change
-            highlightAllCode();
-            observer.observe(results, {
-                childList: true,
-                subtree: true,
-            });
-            // Also run after each mutation
-            observer.disconnect();
-            observer.observe(results, {
-                childList: true,
-                subtree: true,
-            });
-            results.addEventListener('DOMSubtreeModified', highlightAllCode);
-        });
-    </script>
-</body>
 
+                // Highlight code blocks after DOM updates
+                const highlightAllCode = () => {
+                    document.querySelectorAll("pre code").forEach((block) => {
+                        window.hljs.highlightElement(block);
+                    });
+                };
+                // Run on load and whenever results change
+                highlightAllCode();
+                observer.observe(results, {
+                    childList: true,
+                    subtree: true,
+                });
+                // Also run after each mutation
+                observer.disconnect();
+                observer.observe(results, {
+                    childList: true,
+                    subtree: true,
+                });
+                results.addEventListener(
+                    "DOMSubtreeModified",
+                    highlightAllCode,
+                );
+            });
+        </script>
+    </body>
 </html>
