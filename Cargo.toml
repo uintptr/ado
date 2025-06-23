@@ -44,3 +44,8 @@ adolib = { path = "src/lib/adolib" }
 console_error_panic_hook = "0.1.7"
 web-sys = { version = "0.3.77", features = ["Storage"] }
 gloo-utils = "0.2.0"
+
+
+[profile.release]
+lto = true
+opt-level = 's'

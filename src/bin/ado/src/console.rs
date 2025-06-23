@@ -210,35 +210,23 @@ impl ConsoleUI {
         md_lines.push("# Search Results".to_string());
 
         for (i, item) in items.iter().enumerate() {
-            let title = match item.get("title") {
-                Some(v) => match v.as_str() {
-                    Some(v) => v,
-                    None => continue,
-                },
+            let title = match item.get("title").and_then(|v| v.as_str()) {
+                Some(v) => v,
                 None => continue,
             };
 
-            let link = match item.get("link") {
-                Some(v) => match v.as_str() {
-                    Some(v) => v,
-                    None => continue,
-                },
+            let link = match item.get("link").and_then(|v| v.as_str()) {
+                Some(v) => v,
                 None => continue,
             };
 
-            let link_display = match item.get("displayLink") {
-                Some(v) => match v.as_str() {
-                    Some(v) => v,
-                    None => continue,
-                },
+            let link_display = match item.get("displayLink").and_then(|v| v.as_str()) {
+                Some(v) => v,
                 None => continue,
             };
 
-            let snippet = match item.get("snippet") {
-                Some(v) => match v.as_str() {
-                    Some(v) => v,
-                    None => continue,
-                },
+            let snippet = match item.get("snippet").and_then(|v| v.as_str()) {
+                Some(v) => v,
                 None => continue,
             };
 
