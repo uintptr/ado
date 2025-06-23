@@ -6,7 +6,7 @@ use serde::{Deserialize, Deserializer, Serialize};
 
 use crate::{
     error::{Error, Result},
-    functions::assets::{FunctionAssets, FunctionAssetsPlatform},
+    tools::assets::{FunctionAssets, FunctionAssetsPlatform},
 };
 
 const PARAM_VALID_TYPES: &[&str] = &["object", "string", "integer", "boolean", "array"];

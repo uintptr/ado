@@ -84,8 +84,8 @@ impl TryFrom<AdoData> for String {
 impl AdoData {
     pub fn to_base64(&self) -> Result<String> {
         let out = match self {
-            AdoData::Empty => BASE64_STANDARD.encode("".to_string()),
-            AdoData::Reset => BASE64_STANDARD.encode("".to_string()),
+            AdoData::Empty => BASE64_STANDARD.encode(""),
+            AdoData::Reset => BASE64_STANDARD.encode(""),
             AdoData::String(s) => BASE64_STANDARD.encode(s),
             AdoData::Json(s) => BASE64_STANDARD.encode(s),
             AdoData::Base64(s) => BASE64_STANDARD.encode(s),

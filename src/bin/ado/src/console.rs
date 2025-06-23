@@ -284,7 +284,7 @@ impl ConsoleUI {
 
     fn display(&self, data: &AdoData) -> Result<()> {
         match data {
-            AdoData::Empty => return Ok(()),
+            AdoData::Empty => Ok(()),
             AdoData::Reset => clear_console(),
             AdoData::Json(s) => self.display_json(s),
             AdoData::String(s) => self.display_string(s),

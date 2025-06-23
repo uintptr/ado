@@ -1,17 +1,17 @@
 use crate::{
     data::AdoData,
     error::{Error, Result},
-    functions::function_args::FunctionArgs,
+    tools::function_args::FunctionArgs,
 };
 
-pub struct FunctionsWhois {}
+pub struct FunctionsBrowser {}
 
-impl FunctionsWhois {
+impl FunctionsBrowser {
     pub fn new() -> Result<Self> {
         Ok(Self {})
     }
 
-    pub fn query(&self, _args: &FunctionArgs) -> Result<AdoData> {
+    pub fn browse(&self, _args: &FunctionArgs) -> Result<AdoData> {
         Err(Error::NotImplemented)
     }
 }

@@ -1,6 +1,6 @@
 use log::info;
 
-use crate::{config::file::ConfigFile, data::AdoData, error::Result, functions::config::ConfigFunctions};
+use crate::{config::file::ConfigFile, data::AdoData, error::Result, tools::config::ConfigFunctions};
 
 use super::{api::LLM, request::OpenAIRequest};
 

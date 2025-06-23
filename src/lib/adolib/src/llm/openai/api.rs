@@ -2,7 +2,7 @@ use crate::{
     config::file::{ConfigFile, OpenAiConfig},
     data::AdoData,
     error::{Error, Result},
-    functions::handler::FunctionHandler,
+    tools::handler::FunctionHandler,
 };
 
 use log::{error, info};

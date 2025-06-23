@@ -4,7 +4,7 @@ use serde_json::Value;
 use crate::{
     data::AdoData,
     error::{Error, Result},
-    functions::handler::FunctionHandler,
+    tools::handler::FunctionHandler,
 };
 
 use super::request::{OpenAIFunctionInput, OpenAIFunctionOutput, OpenAIInput};

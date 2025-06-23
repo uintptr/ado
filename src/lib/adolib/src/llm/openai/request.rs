@@ -4,7 +4,7 @@ use serde::Serialize;
 
 use crate::{
     error::Result,
-    functions::config::{ConfigFunction, ConfigFunctions},
+    tools::config::{ConfigFunction, ConfigFunctions},
 };
 
 #[derive(Debug, Serialize)]
