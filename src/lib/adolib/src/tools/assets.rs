@@ -7,7 +7,7 @@ pub struct FunctionAssetsPlatform;
 
 #[cfg(not(target_arch = "wasm32"))]
 #[derive(Embed)]
-#[folder = "config/functions/metal"]
+#[folder = "config/functions/native"]
 pub struct FunctionAssetsPlatform;
 
 #[derive(Embed)]

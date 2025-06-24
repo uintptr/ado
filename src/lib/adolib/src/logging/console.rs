@@ -1,6 +1,10 @@
+use std::sync::Once;
+
 use crate::error::Result;
 
-pub fn setup_console_logger(verbose: bool) -> Result<()> {
+static INIT: Once = Once::new();
+
+fn init_logger(verbose: bool) -> Result<()> {
     let log_level = match verbose {
         true => log::LevelFilter::Info,
         false => log::LevelFilter::Warn,
@@ -29,5 +33,10 @@ pub fn setup_console_logger(verbose: bool) -> Result<()> {
         .level(log_level)
         .chain(std::io::stdout())
         .apply()?;
+    Ok(())
+}
+
+pub fn setup_console_logger(verbose: bool) -> Result<()> {
+    INIT.call_once(|| init_logger(verbose).unwrap());
     Ok(())
 }

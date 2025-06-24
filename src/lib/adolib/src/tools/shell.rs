@@ -1,14 +1,11 @@
 use base64::{Engine, prelude::BASE64_STANDARD};
 use serde::{Serialize, Serializer};
-use std::{
-    io::Read,
-    process::{Command, Stdio},
-};
+use std::process::{Command, Stdio};
 
-use log::{error, info};
+use log::info;
 
 use crate::{
-    data::AdoData,
+    data::{AdoData, ShellExit},
     error::{Error, Result},
 };
 
@@ -37,7 +34,7 @@ impl FunctionsShell {
         Self {}
     }
 
-    pub fn shell(&self, command_line: &str) -> Result<String> {
+    pub fn shell(&self, command_line: &str) -> Result<AdoData> {
         let comp = shell_words::split(command_line)?;
 
         info!("executing: {}", command_line);
@@ -46,54 +43,20 @@ impl FunctionsShell {
             command: command_line.to_string(),
         })?;
 
-        let mut child = Command::new(program)
+        let child = Command::new(program)
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .args(&comp[1..])
             .spawn()?;
 
-        let exit = child.wait()?;
+        let exit = ShellExit::from_child(child)?;
 
-        let stdout = match child.stdout.as_mut() {
-            Some(v) => {
-                let mut buf = Vec::new();
-                v.read_to_end(&mut buf)?;
-                buf
-            }
-            None => vec![],
-        };
-
-        let stderr = match child.stderr.as_mut() {
-            Some(v) => {
-                let mut buf = Vec::new();
-                v.read_to_end(&mut buf)?;
-                buf
-            }
-            None => vec![],
-        };
-
-        let exit_code = exit.code().unwrap_or(1);
-
-        match exit_code {
-            0 => info!("{} returned 0", program),
-            _ => error!("{} returned {}", program, exit_code),
-        }
-
-        let output = ShellOutput {
-            exit_code,
-            b64_stdout: stdout,
-            b64_stderr: stderr,
-        };
-
-        let output_json = serde_json::to_string(&output)?;
-
-        Ok(output_json)
+        Ok(AdoData::Shell(exit))
     }
 
     pub fn shell_exec(&self, args: &FunctionArgs) -> Result<AdoData> {
         let line = args.get_string("command_line")?;
-        let output = self.shell(line)?;
-        Ok(AdoData::String(output))
+        self.shell(line)
     }
 }
 

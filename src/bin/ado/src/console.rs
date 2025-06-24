@@ -8,7 +8,7 @@ use std::{
 use adolib::{
     config::file::ConfigFile,
     const_vars::{DOT_DIRECTORY, PKG_NAME, PKG_VERSION},
-    data::{AdoData, HttpResponse},
+    data::{AdoData, HttpResponse, ShellExit},
     error::{Error, Result},
     ui::commands::UserCommands,
 };
@@ -247,6 +247,29 @@ impl ConsoleUI {
         self.display_string(usage)
     }
 
+    fn display_shell(&self, exit: &ShellExit) -> Result<()> {
+        let mut lines = Vec::new();
+
+        lines.push("# Shell Execution".to_string());
+
+        lines.push(format!(" * status: {}", exit.exit_code));
+        lines.push(format!(" * time: {}", exit.execution_time));
+
+        if !exit.stdout.is_empty() {
+            lines.push("## stdout".to_string());
+            lines.push(format!("```\n{}\n```", exit.stdout));
+        }
+
+        if !exit.stderr.is_empty() {
+            lines.push("## stderr".to_string());
+            lines.push(format!("```\n{}\n```", exit.stderr));
+        }
+
+        let md = lines.join("\n");
+
+        self.display_string(md)
+    }
+
     fn display_json<S>(&self, data: S) -> Result<()>
     where
         S: AsRef<str>,
@@ -281,6 +304,7 @@ impl ConsoleUI {
             AdoData::Http(s) => self.display_http(s),
             AdoData::SearchData(s) => self.display_search(s),
             AdoData::UsageString(s) => self.display_usage(s),
+            AdoData::Shell(s) => self.display_shell(&s),
         }
     }
 
@@ -300,7 +324,10 @@ mod tests {
 
     use std::{fs, path::Path};
 
-    use adolib::{config::file::ConfigFile, data::AdoData, logging::logger::setup_logger, ui::commands::UserCommands};
+    use adolib::{
+        config::file::ConfigFile, data::AdoData, logging::logger::setup_logger, shell::AdoShell,
+        ui::commands::UserCommands,
+    };
 
     use super::ConsoleUI;
 
@@ -346,5 +373,21 @@ mod tests {
         let console = ConsoleUI::new(&config).unwrap();
 
         console.display_search(&json_data).unwrap();
+    }
+
+    #[test]
+    fn display_shell_test() {
+        setup_logger(true).unwrap();
+
+        let sh = AdoShell::new();
+
+        let data = sh.exec("uname -a").unwrap();
+
+        let config = ConfigFile::load().unwrap();
+        let console = ConsoleUI::new(&config).unwrap();
+
+        if let AdoData::Shell(s) = data {
+            console.display_shell(&s).unwrap();
+        }
     }
 }

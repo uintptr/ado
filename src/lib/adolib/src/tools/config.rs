@@ -9,7 +9,7 @@ use crate::{
     tools::assets::{FunctionAssets, FunctionAssetsPlatform},
 };
 
-const PARAM_VALID_TYPES: &[&str] = &["object", "string", "integer", "boolean", "array"];
+const PARAM_VALID_TYPES: &[&str] = &["object", "string", "integer", "boolean", "array", "number"];
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Properties {
@@ -43,6 +43,7 @@ pub struct ConfigFunction {
     description: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     parameters: Option<Parameters>,
+    returns: Option<Parameters>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]

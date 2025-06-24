@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, io::Read, process::Child, time::Instant};
 
 use base64::{Engine, prelude::BASE64_STANDARD};
 
@@ -49,6 +49,57 @@ impl HttpResponse {
 }
 
 #[derive(Debug, Serialize)]
+pub struct ShellExit {
+    pub stdout: String,
+    pub stderr: String,
+    pub exit_code: i32,
+    pub timed_out: bool,
+    pub execution_time: u64,
+}
+
+impl ShellExit {
+    pub fn from_child(mut child: Child) -> Result<ShellExit> {
+        let start = Instant::now();
+
+        let exit = child.wait()?;
+
+        let duration = start.elapsed();
+
+        let stdout = match child.stdout.as_mut() {
+            Some(v) => {
+                let mut buf = Vec::new();
+                v.read_to_end(&mut buf)?;
+                buf
+            }
+            None => vec![],
+        };
+
+        let stdout = String::from_utf8(stdout).unwrap_or("invalid stdout data".to_string());
+
+        let stderr = match child.stderr.as_mut() {
+            Some(v) => {
+                let mut buf = Vec::new();
+                v.read_to_end(&mut buf)?;
+                buf
+            }
+            None => vec![],
+        };
+
+        let stderr = String::from_utf8(stderr).unwrap_or("invalid stderr data".to_string());
+
+        let exit_code = exit.code().unwrap_or(1);
+
+        Ok(ShellExit {
+            stdout,
+            stderr,
+            exit_code,
+            timed_out: false,
+            execution_time: duration.as_secs(),
+        })
+    }
+}
+
+#[derive(Debug, Serialize)]
 pub enum AdoData {
     Empty,
     Reset,
@@ -59,6 +110,7 @@ pub enum AdoData {
     Http(HttpResponse),
     SearchData(String),
     UsageString(String),
+    Shell(ShellExit),
 }
 
 impl TryFrom<AdoData> for String {
@@ -75,6 +127,7 @@ impl TryFrom<AdoData> for String {
             AdoData::Http(h) => serde_json::to_string(&h)?,
             AdoData::SearchData(s) => s,
             AdoData::UsageString(s) => s,
+            AdoData::Shell(e) => serde_json::to_string(&e)?,
         };
 
         Ok(s)
@@ -96,6 +149,10 @@ impl AdoData {
             }
             AdoData::SearchData(s) => BASE64_STANDARD.encode(s),
             AdoData::UsageString(s) => BASE64_STANDARD.encode(s),
+            AdoData::Shell(e) => {
+                let json_str = serde_json::to_string(e)?;
+                BASE64_STANDARD.encode(json_str)
+            }
         };
 
         Ok(out)
