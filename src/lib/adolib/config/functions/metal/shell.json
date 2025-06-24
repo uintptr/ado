@@ -11,9 +11,7 @@
                     "description": "command line to execute, The output data will be json data base64 encoded"
                 }
             },
-            "required": [
-                "command_line"
-            ],
+            "required": ["command_line"],
             "additionalProperties": false
         }
     }

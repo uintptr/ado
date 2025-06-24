@@ -5,8 +5,7 @@
         "description": "a function to get my network facing IP address",
         "parameters": {
             "type": "object",
-            "properties": {
-            },
+            "properties": {},
             "additionalProperties": false
         }
     }

@@ -11,9 +11,7 @@
                     "description": "Name of the domain name to query. The input name must look like a proper domain name"
                 }
             },
-            "required": [
-                "domain_name"
-            ],
+            "required": ["domain_name"],
             "additionalProperties": false
         }
     }

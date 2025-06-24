@@ -25,16 +25,11 @@
                                 "description": "The value of the http header"
                             }
                         },
-                        "required": [
-                            "key",
-                            "value"
-                        ]
+                        "required": ["key", "value"]
                     }
                 }
             },
-            "required": [
-                "url"
-            ],
+            "required": ["url"],
             "additionalProperties": false
         }
     },
@@ -64,16 +59,11 @@
                                 "description": "The value of the http header"
                             }
                         },
-                        "required": [
-                            "key",
-                            "value"
-                        ]
+                        "required": ["key", "value"]
                     }
                 }
             },
-            "required": [
-                "url"
-            ],
+            "required": ["url"],
             "additionalProperties": false
         }
     }

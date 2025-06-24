@@ -11,9 +11,7 @@
                     "description": "url to browse to"
                 }
             },
-            "required": [
-                "url"
-            ],
+            "required": ["url"],
             "additionalProperties": false
         }
     }

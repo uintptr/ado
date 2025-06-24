@@ -15,10 +15,7 @@
                     "description": "the data of the file to write. the file_data has to be always encoded using base64"
                 }
             },
-            "required": [
-                "file_name",
-                "file_data"
-            ],
+            "required": ["file_name", "file_data"],
             "additionalProperties": false
         }
     },
@@ -34,9 +31,7 @@
                     "description": "name of the file that we're looking for"
                 }
             },
-            "required": [
-                "file_name"
-            ],
+            "required": ["file_name"],
             "additionalProperties": false
         }
     },
@@ -52,9 +47,7 @@
                     "description": "path of the file to read"
                 }
             },
-            "required": [
-                "file_path"
-            ],
+            "required": ["file_path"],
             "additionalProperties": false
         }
     },
