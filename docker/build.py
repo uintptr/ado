@@ -166,7 +166,7 @@ class DockerBuilder:
             cmd_line = f"{self.docker} rmi {self.args.image_name}"
 
             # best effort. don't blow up if this fails
-            # shell_exec(cmd_line, check=False)
+            shell_exec(cmd_line, check=False)
 
     def __build_docker_file(self, out_file: str) -> None:
 
@@ -221,7 +221,7 @@ def main() -> int:
     def_cert = os.path.join(def_cert_root, "fullchain.pem")
     def_key = os.path.join(def_cert_root, "privkey.pem")
 
-    def_output = os.path.join(script_root, f"{DEF_IMAGE_NAME}.tar")
+    def_output = os.path.join(os.getcwd(), f"{DEF_IMAGE_NAME}.tar")
 
     parser.add_argument("-d",
                         "--domain-name",
