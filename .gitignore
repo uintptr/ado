@@ -6,4 +6,6 @@
 /config/config.toml
 /docker/certs
 /docker/*.tar
+*pem
 /ok
+container/templates/opensearch.xml
