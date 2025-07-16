@@ -16,7 +16,7 @@ fn main() {
     }
 
     let dot_dir_name = env::var("CARGO_PKG_NAME").unwrap();
-    let dot_dir_name = format!(".{}", dot_dir_name);
+    let dot_dir_name = format!(".{dot_dir_name}");
 
     let home = home::home_dir().unwrap();
     let dst_dir = Path::new(&home).join(dot_dir_name);

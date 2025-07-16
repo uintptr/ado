@@ -21,7 +21,7 @@ impl FunctionsHttp {
         let list = args.get_kv_list("http_headers").ok();
         let headers_opt = list.as_ref().map(|v| args.kv_list_to_map(v));
 
-        info!("GET url={}", url);
+        info!("GET url={url}");
         if let Some(headers) = &headers_opt {
             for (k, v) in headers {
                 info!("header={k}:{v}")
@@ -38,7 +38,7 @@ impl FunctionsHttp {
         let list = args.get_kv_list("http_headers").ok();
         let headers_opt = list.as_ref().map(|v| args.kv_list_to_map(v));
 
-        info!("POST url={}", url);
+        info!("POST url={url}");
         if let Some(headers) = &headers_opt {
             for (k, v) in headers {
                 info!("header={k}:{v}")

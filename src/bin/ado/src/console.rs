@@ -109,7 +109,7 @@ impl ConsoleUI {
 
         // pretty start
         clear_console()?;
-        let banner = format!("{} {}", PKG_NAME, PKG_VERSION);
+        let banner = format!("{PKG_NAME} {PKG_VERSION}");
         println!("{}", banner.bold().yellow());
 
         Ok(Self {
@@ -304,7 +304,7 @@ impl ConsoleUI {
             AdoData::Http(s) => self.display_http(s),
             AdoData::SearchData(s) => self.display_search(s),
             AdoData::UsageString(s) => self.display_usage(s),
-            AdoData::Shell(s) => self.display_shell(&s),
+            AdoData::Shell(s) => self.display_shell(s),
         }
     }
 

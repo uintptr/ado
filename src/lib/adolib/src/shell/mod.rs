@@ -7,6 +7,7 @@ use crate::{
     error::{Error, Result},
 };
 
+#[derive(Default)]
 pub struct AdoShell {}
 
 impl AdoShell {
@@ -17,7 +18,7 @@ impl AdoShell {
     pub fn exec(&self, command_line: &str) -> Result<AdoData> {
         let comp = shell_words::split(command_line)?;
 
-        info!("executing: {}", command_line);
+        info!("executing: {command_line}");
 
         let program = comp.first().ok_or(Error::CommandNotFound {
             command: command_line.to_string(),

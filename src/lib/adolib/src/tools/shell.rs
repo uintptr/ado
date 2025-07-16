@@ -37,7 +37,7 @@ impl FunctionsShell {
     pub fn shell(&self, command_line: &str) -> Result<AdoData> {
         let comp = shell_words::split(command_line)?;
 
-        info!("executing: {}", command_line);
+        info!("executing: {command_line}");
 
         let program = comp.first().ok_or(Error::CommandNotFound {
             command: command_line.to_string(),

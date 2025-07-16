@@ -70,12 +70,12 @@ impl ConfigFunctions {
         info!("loading function assets");
 
         for name in FunctionAssets::iter() {
-            info!("loading {}", name);
+            info!("loading {name}");
 
             let f = match FunctionAssets::get(&name) {
                 Some(v) => v,
                 None => {
-                    error!("unable to read {}", name);
+                    error!("unable to read {name}");
                     continue;
                 }
             };
@@ -88,12 +88,12 @@ impl ConfigFunctions {
         }
 
         for name in FunctionAssetsPlatform::iter() {
-            info!("loading {}", name);
+            info!("loading {name}");
 
             let f = match FunctionAssetsPlatform::get(&name) {
                 Some(v) => v,
                 None => {
-                    error!("unable to read {}", name);
+                    error!("unable to read {name}");
                     continue;
                 }
             };

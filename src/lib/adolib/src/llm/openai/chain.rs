@@ -22,7 +22,7 @@ fn build_functions_prompt(functions: &ConfigFunctions) -> String {
 
     let func_names_str = func_names.join(",");
 
-    format!("{}: {}", FUNC_PROMPT_PRE, func_names_str)
+    format!("{FUNC_PROMPT_PRE}: {func_names_str}")
 }
 
 impl AIChain {

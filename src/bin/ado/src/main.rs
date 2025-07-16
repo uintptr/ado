@@ -91,7 +91,7 @@ async fn main() -> Result<()> {
         Some(v) => match question_detection(&v) {
             true => Some(v),
             false => {
-                println!("ado: {}: command not found", v);
+                println!("ado: {v}: command not found");
                 return Ok(());
             }
         },
