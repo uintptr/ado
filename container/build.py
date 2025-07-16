@@ -58,7 +58,7 @@ def sha256_file(file_path: str) -> str:
     return hasher.hexdigest()
 
 
-def archive(directory: str, out_file: str, include_root: bool = True) -> None:
+def tarball(directory: str, out_file: str, include_root: bool = True) -> None:
 
     if True == include_root:
         rel_dir = os.path.dirname(directory)
@@ -195,13 +195,22 @@ class DockerBuilder:
             container_root = os.path.join(td, self.args.domain_name)
             os.mkdir(container_root)
 
+            #
+            # www
+            #
             www_root = os.path.join(container_root, "www")
             self.__build_www(www_root)
 
+            #
+            # /etc/certs
+            #
             certs_root = os.path.join(container_root, "certs")
             os.mkdir(certs_root)
             self.__build_certs(certs_root)
 
+            #
+            # /etc/nginx/conf.d/
+            #
             conf_d = os.path.join(container_root, "conf.d")
             os.mkdir(conf_d)
             self.__build_conf_d(conf_d)
@@ -209,7 +218,7 @@ class DockerBuilder:
             compose_file = os.path.join(self.script_root, "docker-compose.yml")
             shutil.copy2(compose_file, container_root)
 
-            archive(container_root, self.args.output)
+            tarball(container_root, self.args.output)
 
 
 def main() -> int:
