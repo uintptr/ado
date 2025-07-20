@@ -2,6 +2,7 @@
   services:
     nginx:
       container_name: webapp
+      restart: unless-stopped
       image: nginx:latest
       ports:
         - "4443:443"
