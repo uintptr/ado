@@ -9,4 +9,4 @@
 *pem
 /ok
 container/templates/opensearch.xml
-/*.tgz
+*.tgz

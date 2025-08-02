@@ -30,7 +30,7 @@ if (window.hljs) {
     });
 }
 
-export {};
+export { };
 
 /**
  * @param {any} item
@@ -314,6 +314,11 @@ async function search_handler(wctx, search) {
                 // cases this is better than a search result
                 //
                 let lucky_url = await wctx.lucky(q);
+
+                if (lucky_url.includes("www.reddit.com")) {
+                    lucky_url = lucky_url.replace(/www/, "old");
+                }
+
                 await navigateWithLoading(lucky_url);
             }
         }
