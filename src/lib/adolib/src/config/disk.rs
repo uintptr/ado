@@ -3,10 +3,11 @@ use std::{
     path::{Path, PathBuf},
 };
 
+use rstaples::staples::find_file;
+
 use crate::{
     const_vars::DOT_DIRECTORY,
     error::{Error, Result},
-    staples::find_file,
 };
 
 use super::file::ConfigFile;

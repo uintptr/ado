@@ -52,6 +52,7 @@ dependencies = [
  "log",
  "reqwest",
  "ring",
+ "rstaples",
  "rust-embed",
  "rustyline",
  "serde",
@@ -1887,6 +1888,18 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn 1.0.109",
+]
+
+[[package]]
+name = "rstaples"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "90e2cdcc07ff69061c2b69d1b9cf8997ac62f3cd554e7dc5ce5b324966ca439c"
+dependencies = [
+ "chrono",
+ "derive_more",
+ "fern",
+ "log",
 ]
 
 [[package]]

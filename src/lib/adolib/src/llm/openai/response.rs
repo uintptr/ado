@@ -183,7 +183,9 @@ impl OpenAIResponse {
 mod tests {
     use std::{fs, path::Path};
 
-    use crate::{config::file::ConfigFile, staples::find_file};
+    use rstaples::staples::find_file;
+
+    use crate::config::file::ConfigFile;
 
     use super::*;
 
