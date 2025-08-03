@@ -145,7 +145,7 @@ class DockerBuilder:
 
     def __copy_static_content(self, out_dir: str) -> None:
 
-        www_root = os.path.join(self.script_root, os.pardir)
+        www_root = os.path.join(self.script_root, os.pardir, os.pardir)
         www_root = os.path.join(www_root, "src", "lib", "adolib", "www")
         www_root = os.path.abspath(www_root)
 
@@ -161,7 +161,7 @@ class DockerBuilder:
 
     def __build_wasm(self, wasm_pkg_root: str) -> None:
 
-        wd = os.path.join(self.script_root, os.pardir)
+        wd = os.path.join(self.script_root, os.pardir, os.pardir)
         wd = os.path.abspath(wd)
 
         cmd_line = f"{self.wasm_pack} build"

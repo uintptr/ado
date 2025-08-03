@@ -1,5 +1,5 @@
 use crate::{
-    config::file::ConfigFile,
+    config::loader::ConfigFile,
     data::AdoData,
     error::{Error, Result},
     llm::openai::chain::AIChain,
@@ -123,11 +123,11 @@ impl UserCommands {
 
 #[cfg(test)]
 mod tests {
-    use crate::{config::file::ConfigFile, ui::commands::UserCommands};
+    use crate::{config::loader::ConfigFile, ui::commands::UserCommands};
 
     #[test]
     fn test_handler() {
-        let config = ConfigFile::load().unwrap();
+        let config = ConfigFile::from_disk().unwrap();
 
         let mut cmd = UserCommands::new(&config).unwrap();
 

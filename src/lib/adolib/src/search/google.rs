@@ -2,7 +2,7 @@ use reqwest::Client;
 use serde_json::Value;
 
 use crate::{
-    config::file::{ConfigFile, GoogleConfig},
+    config::loader::{ConfigFile, GoogleConfig},
     error::{Error, Result},
 };
 
@@ -75,7 +75,7 @@ mod tests {
     async fn test_lucky() {
         setup_logger(true).unwrap();
 
-        let config = ConfigFile::load().unwrap();
+        let config = ConfigFile::from_disk().unwrap();
 
         let search = GoogleCSE::new(&config).unwrap();
 

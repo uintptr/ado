@@ -25,8 +25,33 @@ impl Http {
         Http { client: Client::new() }
     }
 
-    pub async fn get(&self, url: &str, headers: Option<HashMap<&str, &str>>) -> Result<HttpResponse> {
-        let mut req = self.client.get(url);
+    pub async fn put<S, D>(&self, url: S, headers: Option<HashMap<&str, &str>>, data: D) -> Result<HttpResponse>
+    where
+        S: AsRef<str>,
+        D: AsRef<[u8]>,
+    {
+        let mut req = self.client.put(url.as_ref());
+
+        if let Some(h) = headers {
+            for (k, v) in h {
+                req = req.header(k, v)
+            }
+        }
+
+        req = req.body(data.as_ref().to_vec());
+
+        let res = req.send().await?;
+
+        log_response(&res);
+
+        HttpResponse::from_response(res).await
+    }
+
+    pub async fn get<S>(&self, url: S, headers: Option<HashMap<&str, &str>>) -> Result<HttpResponse>
+    where
+        S: AsRef<str>,
+    {
+        let mut req = self.client.get(url.as_ref());
 
         if let Some(h) = headers {
             for (k, v) in h {

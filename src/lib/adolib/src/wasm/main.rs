@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use crate::{
-    config::file::ConfigFile,
+    config::loader::ConfigFile,
     error::{Error, Result},
     llm::{openai::chain::AIChain, question::question_detection},
     logging::logger::setup_logger,
@@ -13,8 +13,6 @@ use gloo_utils::format::JsValueSerdeExt;
 use tokio::time::sleep;
 use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
 
-const CONFIG_URL: &str = "http://10.0.0.2/ado.toml";
-
 #[wasm_bindgen]
 extern "C" {
     #[wasm_bindgen(js_namespace = console)]
@@ -24,31 +22,6 @@ extern "C" {
 pub async fn log_n_sleep(s: &str) {
     log(s);
     sleep(Duration::from_millis(500)).await
-}
-
-async fn ado_load_config() -> Result<()> {
-    let config = match ConfigFile::load_with_url(CONFIG_URL).await {
-        Ok(v) => v,
-        Err(e) => {
-            let msg = format!("unable to load config file {e}");
-            log(&msg);
-            return Err(e);
-        }
-    };
-
-    log(&format!("config: {:?}", config));
-
-    //ret
-    Ok(())
-}
-
-#[wasm_bindgen]
-pub fn ado_main() -> i32 {
-    wasm_bindgen_futures::spawn_local(async {
-        let ret = ado_load_config().await;
-        log(&format!("ado_loop() returned {ret:?}"));
-    });
-    0 // or a placeholder, because async result isn't available synchronously
 }
 
 #[wasm_bindgen]
@@ -93,6 +66,12 @@ impl AdoWasmCommand {
 
 #[wasm_bindgen]
 impl AdoWasm {
+    //
+    // can't make this function async and it also can't return a Result<>.
+    //
+    // that's why we have to use .unwrap()s and the java script code is now
+    // responsible for querying the config from the webdis server
+    //
     #[wasm_bindgen(constructor)]
     pub fn new(config: &str) -> AdoWasm {
         setup_logger(true).unwrap();

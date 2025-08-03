@@ -185,7 +185,7 @@ mod tests {
 
     use rstaples::staples::find_file;
 
-    use crate::config::file::ConfigFile;
+    use crate::config::loader::ConfigFile;
 
     use super::*;
 
@@ -199,7 +199,7 @@ mod tests {
 
         let res = OpenAIResponse::from_string(&resp_json).unwrap();
 
-        let config = ConfigFile::load().unwrap();
+        let config = ConfigFile::from_disk().unwrap();
 
         let handler = FunctionHandler::new(&config).unwrap();
 

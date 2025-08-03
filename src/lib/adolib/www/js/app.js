@@ -131,8 +131,10 @@ function display_string(response, markdown = true, chat_source = null) {
             if (true == markdown) {
                 text_container.innerHTML = marked.parse(response);
                 // Apply syntax highlighting to code blocks
+                // @ts-ignore
                 if (window.hljs) {
                     result.querySelectorAll("pre code").forEach((block) => {
+                        // @ts-ignore
                         window.hljs.highlightElement(block);
                     });
                 }
@@ -325,13 +327,60 @@ async function search_handler(wctx, search) {
     }
 }
 
+
+/**
+ * @param {string} user_id
+ * @param {string} config_server
+ * @returns {Promise<object | null>}
+ */
+
+async function get_config_file(user_id, config_server) {
+
+    const webdis_url = config_server + "/GET/" + user_id
+    let config = await utils.fetch_as_dict(webdis_url);
+    return config.GET
+}
+
+/**
+ * @returns {Promise<string | null>}
+ */
+async function get_user_config() {
+
+    let config = localStorage.getItem("user_config")
+
+    config = null
+
+    if (null == config) {
+        config = await utils.fetch_as_string("https://keys.pi/user.json");
+
+        if (null != config) {
+            localStorage.setItem("user_config", config)
+        }
+    }
+
+    return config
+}
+
+async function get_config() {
+
+    let config = null
+
+    let user_config = await get_user_config()
+
+    if (null != user_config) {
+        let user = JSON.parse(user_config)
+        config = await get_config_file(user.user_id, user.config_server)
+    }
+
+    return config
+}
+
 async function main() {
-    // loading the wasm bit
+    // loading the wasm bits
     await init();
 
     // get the config.toml file
-
-    let config = await utils.fetch_as_string("https://keys.pi/ado.toml");
+    const config = await get_config()
 
     if (config != null) {
         let wctx = new AdoWasm(config); // global

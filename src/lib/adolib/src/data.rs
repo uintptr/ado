@@ -46,6 +46,10 @@ impl HttpResponse {
 
         Ok(local_res)
     }
+
+    pub fn is_success(&self) -> bool {
+        matches!(self.code, 200..299)
+    }
 }
 
 #[derive(Debug, Serialize)]

@@ -18,7 +18,6 @@ export function show_element(element) {
  * @param {string} url
  * @returns {Promise<string | null>}
  */
-
 export async function fetch_as_string(url) {
     try {
         let resp = await fetch(url);
@@ -34,6 +33,16 @@ export async function fetch_as_string(url) {
     }
 
     return null;
+}
+
+/**
+ * @param {string} url
+ * @returns {Promise<object | null>}
+ */
+export async function fetch_as_dict(url) {
+    const response = await fetch(url);
+    const data = await response.json();
+    return data;
 }
 
 /**

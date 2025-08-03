@@ -7,6 +7,7 @@ pub mod llm;
 pub mod logging;
 pub mod search;
 pub mod shell;
+pub mod storage;
 pub mod tools;
 pub mod ui;
 #[cfg(target_arch = "wasm32")]

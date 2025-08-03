@@ -67,6 +67,7 @@ pub enum Error {
     Usage {
         help: String,
     },
+    StorageWriteFailure,
     //
     // 2nd party
     //

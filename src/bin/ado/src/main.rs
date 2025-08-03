@@ -6,7 +6,7 @@ use std::{
 
 use ado::console::ConsoleUI;
 use adolib::{
-    config::file::ConfigFile,
+    config::loader::ConfigFile,
     error::{Error, Result},
     llm::question::question_detection,
     logging::logger::setup_logger,
@@ -26,9 +26,13 @@ struct UserArgs {
     #[arg(short, long)]
     verbose: bool,
 
-    /// remote config url ( mainly for the wasm bits )
-    #[arg(short, long, default_value = "http://10.0.0.2/ado.toml")]
-    remote_config_url: Option<String>,
+    /// user id
+    #[arg(short, long)]
+    user_id: Option<String>,
+
+    // config server
+    #[arg(short, long)]
+    config_server: Option<String>,
 
     /// bash command_not_found_handle
     #[arg(short, long)]
@@ -104,12 +108,9 @@ async fn main() -> Result<()> {
         },
     };
 
-    let config = match ConfigFile::load() {
-        Ok(v) => v,
-        Err(e) => match args.remote_config_url {
-            Some(v) => ConfigFile::load_with_url(&v).await?,
-            None => return Err(e),
-        },
+    let config = match (args.user_id, args.config_server) {
+        (Some(user), Some(server)) => ConfigFile::from_webdis(user, server).await?,
+        _ => ConfigFile::from_disk()?,
     };
 
     let console = ConsoleUI::new(&config)?;

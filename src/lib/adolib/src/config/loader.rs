@@ -1,15 +1,18 @@
-use std::env;
+use std::{
+    env, fs,
+    path::{Path, PathBuf},
+};
 
 use log::error;
 use reqwest::Client;
+use rstaples::staples::find_file;
 use serde::Deserialize;
 
-use crate::error::{Error, Result};
-
-#[cfg(not(target_arch = "wasm32"))]
-use super::disk::from_file;
-#[cfg(target_arch = "wasm32")]
-use super::wasm::from_file;
+use crate::{
+    const_vars::DOT_DIRECTORY,
+    error::{Error, Result},
+    storage::webdis::PersistentStorage,
+};
 
 const DEF_OPENAI_URL: &str = "https://api.openai.com/v1/responses";
 const DEF_OPENAI_MODEL: &str = "gpt-4.1";
@@ -57,9 +60,37 @@ fn openai_default_key() -> String {
     }
 }
 
+const CONFIG_FILE_NAME: &str = "config.toml";
+
+fn find_from_home() -> Result<PathBuf> {
+    let home = env::var("HOME")?;
+
+    let dot_dir = Path::new(&home).join(DOT_DIRECTORY);
+
+    if !dot_dir.exists() {
+        return Err(Error::FileNotFoundError { file_path: dot_dir });
+    }
+
+    let config_file = dot_dir.join(CONFIG_FILE_NAME);
+
+    match config_file.exists() {
+        true => Ok(config_file),
+        false => Err(Error::FileNotFoundError { file_path: config_file }),
+    }
+}
+
 impl ConfigFile {
-    pub fn load() -> Result<ConfigFile> {
-        let config = from_file()?;
+    pub fn from_disk() -> Result<ConfigFile> {
+        let rel_config = Path::new("config").join(CONFIG_FILE_NAME);
+
+        let config_file = match find_file(rel_config) {
+            Ok(v) => v,
+            Err(_) => find_from_home()?,
+        };
+
+        let file_data = fs::read_to_string(config_file)?;
+
+        let config: ConfigFile = toml::from_str(&file_data)?;
 
         Ok(config)
     }
@@ -72,7 +103,21 @@ impl ConfigFile {
         Ok(config)
     }
 
-    pub async fn load_with_url<S>(url: S) -> Result<ConfigFile>
+    pub async fn from_webdis<U, S>(user: U, server: S) -> Result<ConfigFile>
+    where
+        U: AsRef<str>,
+        S: AsRef<str>,
+    {
+        let storage = PersistentStorage::new(&user, server);
+
+        let data = storage.get_raw(user).await?;
+
+        let config: ConfigFile = toml::from_str(&data)?;
+
+        Ok(config)
+    }
+
+    pub async fn from_url<S>(url: S) -> Result<ConfigFile>
     where
         S: AsRef<str>,
     {

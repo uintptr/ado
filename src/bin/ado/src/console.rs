@@ -1,12 +1,12 @@
 use std::{
-    fs,
+    env, fs,
     io::{self, Write},
     path::{Path, PathBuf},
     process::Stdio,
 };
 
 use adolib::{
-    config::file::ConfigFile,
+    config::loader::ConfigFile,
     const_vars::{DOT_DIRECTORY, PKG_NAME, PKG_VERSION},
     data::{AdoData, HttpResponse, ShellExit},
     error::{Error, Result},
@@ -55,7 +55,7 @@ fn init_readline(commands: &UserCommands) -> Result<Editor<MyHelper, FileHistory
 
     let mut rl = Editor::with_config(config)?;
 
-    let home = home::home_dir().ok_or(Error::HomeDirNotFound)?;
+    let home = env::var("HOME")?;
 
     let dot_dir = Path::new(&home).join(DOT_DIRECTORY);
 
@@ -325,7 +325,7 @@ mod tests {
     use std::{fs, path::Path};
 
     use adolib::{
-        config::file::ConfigFile, data::AdoData, logging::logger::setup_logger, shell::AdoShell,
+        config::loader::ConfigFile, data::AdoData, logging::logger::setup_logger, shell::AdoShell,
         ui::commands::UserCommands,
     };
 
@@ -335,7 +335,7 @@ mod tests {
     fn display_text() {
         setup_logger(true).unwrap();
 
-        let config = ConfigFile::load().unwrap();
+        let config = ConfigFile::from_disk().unwrap();
 
         let console = ConsoleUI::new(&config).unwrap();
 
@@ -346,7 +346,7 @@ mod tests {
     async fn arg_parser() {
         setup_logger(true).unwrap();
 
-        let config = ConfigFile::load().unwrap();
+        let config = ConfigFile::from_disk().unwrap();
 
         let mut cmd = UserCommands::new(&config).unwrap();
 
@@ -369,7 +369,7 @@ mod tests {
 
         let json_data = fs::read_to_string(json_file).unwrap();
 
-        let config = ConfigFile::load().unwrap();
+        let config = ConfigFile::from_disk().unwrap();
         let console = ConsoleUI::new(&config).unwrap();
 
         console.display_search(&json_data).unwrap();
@@ -383,7 +383,7 @@ mod tests {
 
         let data = sh.exec("uname -a").unwrap();
 
-        let config = ConfigFile::load().unwrap();
+        let config = ConfigFile::from_disk().unwrap();
         let console = ConsoleUI::new(&config).unwrap();
 
         if let AdoData::Shell(s) = data {

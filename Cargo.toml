@@ -55,7 +55,8 @@ web-sys = { version = "0.3.77", features = [
 ] }
 gloo-utils = "0.2.0"
 rstaples = "0.1.0"
-
+md5 = "0.8.0"
+uuid = { version = "1.17.0", features = ["v4"] }
 
 [profile.release]
 lto = true

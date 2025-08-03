@@ -8,7 +8,6 @@ clap = { workspace = true }
 log = { workspace = true }
 adolib = { workspace = true }
 tokio = { workspace = true }
-home = { workspace = true }
 rustyline = { workspace = true }
 colored = { workspace = true }
 which = { workspace = true }
