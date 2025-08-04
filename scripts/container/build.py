@@ -19,6 +19,8 @@ class UserArgs:
     cert_file: str
     cert_key: str
     output: str
+    debug: bool
+    www_root: str
 
     def __post_init__(self) -> None:
         self.cert_file = os.path.abspath(self.cert_file)
@@ -167,6 +169,9 @@ class DockerBuilder:
         cmd_line = f"{self.wasm_pack} build"
         cmd_line += f" src/lib/adolib/ --target web -d {wasm_pkg_root}"
 
+        if self.args.debug:
+            cmd_line += " --no-opt --debug"
+
         shell_exec(cmd_line, cwd=wd)
 
     def __build_www(self, www_root: str) -> None:
@@ -194,6 +199,17 @@ class DockerBuilder:
                                    "webdis",
                                    "webdis.prod.json")
         shutil.copy2(webdis_json, redis_root)
+
+    def __build_docker_compose(self, container_root: str) -> None:
+
+        template = self.__get_template("docker-compose.yml")
+
+        template = template.replace("__WWW_ROOT__", self.args.www_root)
+
+        compose_file = os.path.join(container_root, "docker-compose.yml")
+
+        with open(compose_file, "w+") as f:
+            f.write(template)
 
     def build(self) -> None:
 
@@ -232,8 +248,7 @@ class DockerBuilder:
             #
             # docker compose file
             #
-            compose_file = os.path.join(self.script_root, "docker-compose.yml")
-            shutil.copy2(compose_file, container_root)
+            self.__build_docker_compose(container_root)
 
             tarball(container_root, self.args.output)
 
@@ -252,11 +267,16 @@ def main() -> int:
 
     def_output = os.path.join(os.getcwd(), "container.tgz")
 
-    parser.add_argument("-d",
+    parser.add_argument("-n",
                         "--domain-name",
                         type=str,
                         required=True,
                         help="Server Domain Name")
+
+    parser.add_argument("-d",
+                        "--debug",
+                        action="store_true",
+                        help="Debug build")
 
     parser.add_argument("-c",
                         "--cert-file",
@@ -276,6 +296,12 @@ def main() -> int:
                         default=def_output,
                         help=f"Output config archive. Default: {def_output}")
 
+    parser.add_argument("-w",
+                        "--www-root",
+                        type=str,
+                        default="./www",
+                        help="Docker www root directory")
+
     try:
 
         args = parser.parse_args()
@@ -286,6 +312,8 @@ def main() -> int:
         printkv("Domain Name", args.domain_name)
         printkv("Certificate File", args.cert_file)
         printkv("Certificate Private Key", args.cert_key)
+        printkv("WWW Root", args.www_root)
+        printkv("Debug Build", args.debug)
 
         assert os.path.isfile(args.cert_file)
         assert os.path.isfile(args.cert_key)

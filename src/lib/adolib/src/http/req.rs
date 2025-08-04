@@ -5,6 +5,7 @@ use reqwest::{Client, Response};
 use crate::{data::HttpResponse, error::Result};
 use log::info;
 
+#[derive(Debug)]
 pub struct Http {
     client: Client,
 }

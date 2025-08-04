@@ -2,13 +2,14 @@ use crate::{
     error::{Error, Result},
     http::req::Http,
 };
-use log::error;
+use log::{error, info};
 use serde::Deserialize;
 
 //
 // https://webd.is/#more
 // https://github.com/nicolasff/webdis
 //
+#[derive(Debug)]
 pub struct PersistentStorage {
     user_id: String,
     url: String,
@@ -34,24 +35,26 @@ impl PersistentStorage {
         }
     }
 
-    fn build_user_key<S>(&self, key: S) -> String
+    fn build_key<K>(&self, realm: &'static str, user_key: K) -> String
     where
-        S: AsRef<str>,
+        K: AsRef<str>,
     {
-        let hex_key_string = format!("{}{}", self.user_id, key.as_ref());
-        let digest = md5::compute(hex_key_string);
-        format!("{digest:x}")
+        let digest = md5::compute(user_key.as_ref());
+        format!("{}_{}_{digest:x}", self.user_id, realm)
     }
 
-    pub async fn get_raw<S>(&self, key: S) -> Result<String>
+    pub async fn get<S>(&self, realm: &'static str, user_key: S) -> Result<String>
     where
         S: AsRef<str>,
     {
-        let get_url = format!("{}/GET/{}", self.url, key.as_ref());
+        let key = self.build_key(realm, user_key);
+        let get_url = format!("{}/GET/{key}", self.url);
 
         match self.client.get(get_url, None).await {
             Ok(v) => match v.is_success() {
                 true => {
+                    info!("found: {key}");
+
                     let data_string = String::from_utf8(v.data.to_vec())?;
                     let data: WebdisData = serde_json::from_str(&data_string)?;
 
@@ -69,24 +72,15 @@ impl PersistentStorage {
         }
     }
 
-    pub async fn get<S>(&self, key: S) -> Result<String>
-    where
-        S: AsRef<str>,
-    {
-        let user_key = self.build_user_key(key);
-
-        self.get_raw(user_key).await
-    }
-
-    pub async fn set<K, V>(&self, key: K, value: V) -> Result<()>
+    pub async fn set<K, V>(&self, realm: &'static str, user_key: K, value: V) -> Result<()>
     where
         K: AsRef<str>,
-        V: AsRef<str>,
+        V: AsRef<[u8]>,
     {
-        let data: Vec<u8> = value.as_ref().into();
+        let data: Vec<u8> = value.as_ref().to_vec();
 
-        let user_key = self.build_user_key(key);
-        let set_url = format!("{}/SET/{}", self.url, user_key);
+        let key = self.build_key(realm, user_key);
+        let set_url = format!("{}/SET/{}", self.url, key);
 
         match self.client.put(set_url, None, data).await {
             Ok(v) => match v.is_success() {
@@ -100,12 +94,12 @@ impl PersistentStorage {
         }
     }
 
-    pub async fn del<S>(&self, key: S) -> Result<()>
+    pub async fn del<S>(&self, realm: &'static str, user_key: S) -> Result<()>
     where
         S: AsRef<str>,
     {
-        let user_key = self.build_user_key(key);
-        let del_url = format!("{}/DEL/{}", self.url, user_key);
+        let key = self.build_key(realm, user_key);
+        let del_url = format!("{}/DEL/{}", self.url, key);
 
         match self.client.get(del_url, None).await {
             Ok(v) => match v.is_success() {

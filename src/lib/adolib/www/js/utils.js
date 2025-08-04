@@ -28,7 +28,6 @@ export async function fetch_as_string(url) {
             console.log(url + " returned " + resp.status);
         }
     } catch (e) {
-        console.log("exception");
         console.log(e);
     }
 
@@ -40,9 +39,15 @@ export async function fetch_as_string(url) {
  * @returns {Promise<object | null>}
  */
 export async function fetch_as_dict(url) {
-    const response = await fetch(url);
-    const data = await response.json();
-    return data;
+
+    try {
+        const response = await fetch(url);
+        const data = await response.json();
+        return data
+    } catch (e) {
+        console.log(e);
+    }
+    return null
 }
 
 /**

@@ -2,14 +2,17 @@ use std::time::Duration;
 
 use crate::{
     config::loader::ConfigFile,
+    data::AdoData,
     error::{Error, Result},
     llm::{openai::chain::AIChain, question::question_detection},
     logging::logger::setup_logger,
     search::google::GoogleCSE,
+    storage::webdis::PersistentStorage,
     ui::commands::UserCommands,
     wasm::reddit::RedditQuery,
 };
 use gloo_utils::format::JsValueSerdeExt;
+use log::info;
 use tokio::time::sleep;
 use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
 
@@ -30,6 +33,7 @@ pub struct AdoWasm {
     chain: AIChain,
     reddit: RedditQuery,
     search: GoogleCSE,
+    cache: PersistentStorage,
 }
 
 // or for your custom error type:
@@ -73,7 +77,7 @@ impl AdoWasm {
     // responsible for querying the config from the webdis server
     //
     #[wasm_bindgen(constructor)]
-    pub fn new(config: &str) -> AdoWasm {
+    pub fn new(user_id: &str, storage_url: &str, config: &str) -> AdoWasm {
         setup_logger(true).unwrap();
 
         console_error_panic_hook::set_once();
@@ -83,24 +87,45 @@ impl AdoWasm {
         let reddit = RedditQuery::new(&config).unwrap();
         let commands = UserCommands::new(&config).unwrap();
         let search = GoogleCSE::new(&config).unwrap();
+        let cache = PersistentStorage::new(user_id, storage_url);
 
         AdoWasm {
             commands,
             chain,
             reddit,
             search,
+            cache,
         }
     }
 
     pub async fn find_sub_reddit(&self, description: &str) -> Result<String> {
-        self.reddit.find_sub(description).await
+        let sub_reddit = match self.cache.get("sub_reddit", description).await {
+            Ok(v) => {
+                info!("cached {description} -> {v}");
+                v
+            }
+            Err(_) => {
+                let data = self.reddit.find_sub(description).await?;
+                let _ = self.cache.set("sub_reddit", description, &data);
+                data
+            }
+        };
+
+        Ok(sub_reddit)
     }
 
     pub async fn query(&mut self, content: &str) -> Result<JsValue> {
-        //
-        // see if it's a command first
-        //
-        let data = self.commands.handler(content).await?;
+        let data = match self.cache.get("query", content).await {
+            Ok(v) => serde_json::from_str::<AdoData>(&v)?,
+            Err(_) => {
+                let data = self.commands.handler(content).await?;
+
+                if let Ok(data_json) = serde_json::to_string(&data) {
+                    let _ = self.cache.set("query", content, &data_json).await;
+                }
+                data
+            }
+        };
 
         let obj = JsValue::from_serde(&data)?;
 
@@ -108,11 +133,29 @@ impl AdoWasm {
     }
 
     pub async fn search(&self, query: &str) -> Result<String> {
-        self.search.query(query).await
+        let search_data = match self.cache.get("search", query).await {
+            Ok(v) => v,
+            Err(_) => {
+                let data = self.search.query(query).await?;
+                let _ = self.cache.set("search", query, &data).await;
+                data
+            }
+        };
+
+        Ok(search_data)
     }
 
     pub async fn lucky(&self, query: &str) -> Result<String> {
-        self.search.lucky(query).await
+        let lucky_data = match self.cache.get("lucky", query).await {
+            Ok(v) => v,
+            Err(_) => {
+                let data = self.search.lucky(query).await?;
+                let _ = self.cache.set("lucky", query, &data).await;
+                data
+            }
+        };
+
+        Ok(lucky_data)
     }
 
     pub fn is_question(&self, query: &str) -> bool {

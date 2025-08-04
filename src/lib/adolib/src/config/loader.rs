@@ -103,14 +103,14 @@ impl ConfigFile {
         Ok(config)
     }
 
-    pub async fn from_webdis<U, S>(user: U, server: S) -> Result<ConfigFile>
+    pub async fn from_webdis<U, S>(user_id: U, server: S) -> Result<ConfigFile>
     where
         U: AsRef<str>,
         S: AsRef<str>,
     {
-        let storage = PersistentStorage::new(&user, server);
+        let storage = PersistentStorage::new(&user_id, server);
 
-        let data = storage.get_raw(user).await?;
+        let data = storage.get("global", "config").await?;
 
         let config: ConfigFile = toml::from_str(&data)?;
 

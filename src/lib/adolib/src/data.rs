@@ -3,7 +3,7 @@ use std::{collections::HashMap, io::Read, process::Child, time::Instant};
 use base64::{Engine, prelude::BASE64_STANDARD};
 
 use reqwest::Response;
-use serde::{Serialize, Serializer};
+use serde::{Deserialize, Serialize, Serializer};
 
 use crate::error::{Error, Result};
 
@@ -14,7 +14,7 @@ where
     serializer.serialize_str(&BASE64_STANDARD.encode(bytes))
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct HttpResponse {
     pub url: String,
     pub code: u16,
@@ -52,7 +52,7 @@ impl HttpResponse {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ShellExit {
     pub stdout: String,
     pub stderr: String,
@@ -103,7 +103,7 @@ impl ShellExit {
     }
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub enum AdoData {
     Empty,
     Reset,
@@ -134,6 +134,26 @@ impl TryFrom<AdoData> for String {
             AdoData::Shell(e) => serde_json::to_string(&e)?,
         };
 
+        Ok(s)
+    }
+}
+
+impl TryFrom<AdoData> for Vec<u8> {
+    type Error = Error;
+
+    fn try_from(value: AdoData) -> Result<Vec<u8>> {
+        let s = match value {
+            AdoData::Empty => vec![],
+            AdoData::Reset => vec![],
+            AdoData::String(s) => s.into_bytes(),
+            AdoData::Json(s) => s.into_bytes(),
+            AdoData::Base64(s) => s.into_bytes(),
+            AdoData::Bytes(b) => b,
+            AdoData::Http(h) => serde_json::to_vec(&h)?,
+            AdoData::SearchData(s) => s.into_bytes(),
+            AdoData::UsageString(s) => s.into_bytes(),
+            AdoData::Shell(e) => serde_json::to_vec(&e)?,
+        };
         Ok(s)
     }
 }

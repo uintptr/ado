@@ -9,6 +9,14 @@ import {
 
 const marked = window["marked"];
 
+class UserConfig {
+    constructor(user_id, storage_url, config_file) {
+        this.user_id = user_id
+        this.storage_url = storage_url
+        this.config_file = config_file
+    }
+}
+
 // Configure loading screen with minimal delays
 configureLoadingScreen({
     enableDelay: false, // Disable artificial delays
@@ -331,48 +339,58 @@ async function search_handler(wctx, search) {
 /**
  * @param {string} user_id
  * @param {string} config_server
- * @returns {Promise<object | null>}
+ * @returns {Promise<string | null>}
  */
 
 async function get_config_file(user_id, config_server) {
 
+    let config_file = null
     const webdis_url = config_server + "/GET/" + user_id
     let config = await utils.fetch_as_dict(webdis_url);
-    return config.GET
+
+    if (null != config) {
+        config_file = config.GET
+    }
+
+    return config_file
 }
 
 /**
- * @returns {Promise<string | null>}
+ * @returns {Promise<string|null>}
  */
-async function get_user_config() {
+async function get_user() {
 
     let config = localStorage.getItem("user_config")
 
-    config = null
-
     if (null == config) {
         config = await utils.fetch_as_string("https://keys.pi/user.json");
+    }
 
-        if (null != config) {
-            localStorage.setItem("user_config", config)
-        }
+    if (null != config) {
+        localStorage.setItem("user_config", config)
     }
 
     return config
 }
 
+/**
+ * @returns {Promise<UserConfig|null>}
+ */
 async function get_config() {
 
-    let config = null
+    let user_json = await get_user()
 
-    let user_config = await get_user_config()
+    if (null != user_json) {
+        let user = JSON.parse(user_json)
 
-    if (null != user_config) {
-        let user = JSON.parse(user_config)
-        config = await get_config_file(user.user_id, user.config_server)
+        const config_file = await get_config_file(user.user_id, user.storage_url)
+
+        if (config_file != null) {
+            return new UserConfig(user.user_id, user.storage_url, config_file)
+        }
     }
 
-    return config
+    return null
 }
 
 async function main() {
@@ -380,10 +398,11 @@ async function main() {
     await init();
 
     // get the config.toml file
-    const config = await get_config()
+    let config = await get_config()
 
     if (config != null) {
-        let wctx = new AdoWasm(config); // global
+
+        let wctx = new AdoWasm(config.user_id, config.storage_url, config.config_file)
 
         init_cmd_line(wctx);
 
@@ -393,6 +412,7 @@ async function main() {
         if (search != null && search.length > 0) {
             search_handler(wctx, search);
         }
+
     } else {
         console.log("not authorized");
         await navigateWithLoading("/login.html");

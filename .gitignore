@@ -3,11 +3,11 @@
 /target
 /src/lib/target/
 /src/lib/adolib/www/opensearch.xml
-/config/config.toml
-/config/config.json
 /docker/certs
 /docker/*.tar
 *pem
 /ok
 container/templates/opensearch.xml
 *.tgz
+user.json
+config.toml
