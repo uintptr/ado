@@ -188,11 +188,18 @@ class DockerBuilder:
         nginx_conf = os.path.join(etc_root, "default.conf")
         self.__build_nginx(nginx_conf)
 
+    def __build_webdis(self, redis_root: str) -> None:
+
+        webdis_json = os.path.join(self.script_root,
+                                   "webdis",
+                                   "webdis.prod.json")
+        shutil.copy2(webdis_json, redis_root)
+
     def build(self) -> None:
 
         with tempfile.TemporaryDirectory(prefix="docker_root_") as td:
 
-            container_root = os.path.join(td, self.args.domain_name)
+            container_root = os.path.join(td, "ado_container")
             os.mkdir(container_root)
 
             #
@@ -215,6 +222,16 @@ class DockerBuilder:
             os.mkdir(conf_d)
             self.__build_conf_d(conf_d)
 
+            #
+            # webdis + redis
+            #
+            webdis_root = os.path.join(container_root, "webdis")
+            os.mkdir(webdis_root)
+            self.__build_webdis(webdis_root)
+
+            #
+            # docker compose file
+            #
             compose_file = os.path.join(self.script_root, "docker-compose.yml")
             shutil.copy2(compose_file, container_root)
 
