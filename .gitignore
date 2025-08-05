@@ -11,3 +11,4 @@ container/templates/opensearch.xml
 *.tgz
 user.json
 config.toml
+.env
