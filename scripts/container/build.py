@@ -220,6 +220,16 @@ class DockerBuilder:
         with open(compose_file, "w+") as f:
             f.write(template)
 
+        dot_env = os.path.join(self.script_root, ".env")
+
+        if False == os.path.isfile(dot_env):
+            #
+            # TODO: generate it if it doesn't exist
+            #
+            raise FileNotFoundError(dot_env)
+
+        shutil.copy2(dot_env, container_root)
+
     def build(self) -> None:
 
         with tempfile.TemporaryDirectory(prefix="docker_root_") as td:
