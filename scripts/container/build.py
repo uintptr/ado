@@ -145,13 +145,22 @@ class DockerBuilder:
         with open(out_file, "w+") as f:
             f.write(config_file)
 
+    def __www_copytree_ignore(self, dir: str, files: list[str]) -> list[str]:
+
+        basename = os.path.basename(dir)
+
+        if basename == "js" and "pkg" in files:
+            return ["pkg"]
+
+        return []
+
     def __copy_static_content(self, out_dir: str) -> None:
 
         www_root = os.path.join(self.script_root, os.pardir, os.pardir)
         www_root = os.path.join(www_root, "src", "lib", "adolib", "www")
         www_root = os.path.abspath(www_root)
 
-        shutil.copytree(www_root, out_dir)
+        shutil.copytree(www_root, out_dir, ignore=self.__www_copytree_ignore)
 
     def __copy_open_search(self, out_file: str) -> None:
 
@@ -181,7 +190,7 @@ class DockerBuilder:
         open_search = os.path.join(www_root, "opensearch.xml")
         self.__copy_open_search(open_search)
 
-        wasm_pkg_root = os.path.join(www_root, "pkg")
+        wasm_pkg_root = os.path.join(www_root, "js", "pkg")
         self.__build_wasm(wasm_pkg_root)
 
     def __build_certs(self, certs_root: str) -> None:
@@ -193,12 +202,12 @@ class DockerBuilder:
         nginx_conf = os.path.join(etc_root, "default.conf")
         self.__build_nginx(nginx_conf)
 
-    def __build_webdis(self, redis_root: str) -> None:
+    def __build_webdis(self, webdis_root: str) -> None:
 
         webdis_json = os.path.join(self.script_root,
                                    "webdis",
                                    "webdis.prod.json")
-        shutil.copy2(webdis_json, redis_root)
+        shutil.copy2(webdis_json, webdis_root)
 
     def __build_docker_compose(self, container_root: str) -> None:
 
@@ -239,7 +248,7 @@ class DockerBuilder:
             self.__build_conf_d(conf_d)
 
             #
-            # webdis + redis
+            # webdis
             #
             webdis_root = os.path.join(container_root, "webdis")
             os.mkdir(webdis_root)

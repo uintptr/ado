@@ -12,7 +12,7 @@ use crate::{
     wasm::reddit::RedditQuery,
 };
 use gloo_utils::format::JsValueSerdeExt;
-use log::info;
+use log::error;
 use tokio::time::sleep;
 use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
 
@@ -68,6 +68,9 @@ impl AdoWasmCommand {
     }
 }
 
+const CACHE_05_DAYS: Duration = Duration::from_secs(5 * 24 * 60 * 60);
+const CACHE_30_DAYS: Duration = Duration::from_secs(30 * 24 * 60 * 60);
+
 #[wasm_bindgen]
 impl AdoWasm {
     //
@@ -100,13 +103,14 @@ impl AdoWasm {
 
     pub async fn find_sub_reddit(&self, description: &str) -> Result<String> {
         let sub_reddit = match self.cache.get("sub_reddit", description).await {
-            Ok(v) => {
-                info!("cached {description} -> {v}");
-                v
-            }
+            Ok(v) => v,
             Err(_) => {
                 let data = self.reddit.find_sub(description).await?;
-                let _ = self.cache.set("sub_reddit", description, &data);
+
+                if let Err(e) = self.cache.set("sub_reddit", description, &data, CACHE_30_DAYS).await {
+                    error!("{e}");
+                }
+
                 data
             }
         };
@@ -121,8 +125,11 @@ impl AdoWasm {
                 let data = self.commands.handler(content).await?;
 
                 if let Ok(data_json) = serde_json::to_string(&data) {
-                    let _ = self.cache.set("query", content, &data_json).await;
+                    if let Err(e) = self.cache.set("query", content, &data_json, CACHE_05_DAYS).await {
+                        error!("{e}");
+                    }
                 }
+
                 data
             }
         };
@@ -137,7 +144,11 @@ impl AdoWasm {
             Ok(v) => v,
             Err(_) => {
                 let data = self.search.query(query).await?;
-                let _ = self.cache.set("search", query, &data).await;
+
+                if let Err(e) = self.cache.set("search", query, &data, CACHE_05_DAYS).await {
+                    error!("{e}");
+                }
+
                 data
             }
         };
@@ -150,7 +161,11 @@ impl AdoWasm {
             Ok(v) => v,
             Err(_) => {
                 let data = self.search.lucky(query).await?;
-                let _ = self.cache.set("lucky", query, &data).await;
+
+                if let Err(e) = self.cache.set("lucky", query, &data, CACHE_05_DAYS).await {
+                    error!("{e}");
+                }
+
                 data
             }
         };

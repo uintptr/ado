@@ -1,8 +1,10 @@
+use std::time::Duration;
+
 use crate::{
     error::{Error, Result},
     http::req::Http,
 };
-use log::{error, info};
+use log::error;
 use serde::Deserialize;
 
 //
@@ -53,8 +55,6 @@ impl PersistentStorage {
         match self.client.get(get_url, None).await {
             Ok(v) => match v.is_success() {
                 true => {
-                    info!("found: {key}");
-
                     let data_string = String::from_utf8(v.data.to_vec())?;
                     let data: WebdisData = serde_json::from_str(&data_string)?;
 
@@ -72,7 +72,7 @@ impl PersistentStorage {
         }
     }
 
-    pub async fn set<K, V>(&self, realm: &'static str, user_key: K, value: V) -> Result<()>
+    pub async fn set<K, V>(&self, realm: &'static str, user_key: K, value: V, life_span: Duration) -> Result<()>
     where
         K: AsRef<str>,
         V: AsRef<[u8]>,
@@ -80,7 +80,11 @@ impl PersistentStorage {
         let data: Vec<u8> = value.as_ref().to_vec();
 
         let key = self.build_key(realm, user_key);
-        let set_url = format!("{}/SET/{}", self.url, key);
+
+        let set_url = match life_span.as_secs() {
+            0 => format!("{}/SET/{}", self.url, key),
+            secs => format!("{}/SETEX/{}/{}", self.url, key, secs),
+        };
 
         match self.client.put(set_url, None, data).await {
             Ok(v) => match v.is_success() {

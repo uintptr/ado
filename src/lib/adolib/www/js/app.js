@@ -57,7 +57,7 @@ function search_new_card(item, name) {
             title.innerHTML = item.title;
 
             if (link.includes("www.reddit.com")) {
-                link = link.replace(/www/, "old");
+                link = link.replace("/www/", "old");
             }
 
             title.setAttribute("href", link);
