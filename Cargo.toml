@@ -24,12 +24,12 @@ tokio = { version = "1.47.1", features = [
     "tokio-macros",
     "test-util",
 ] }
-toml = "0.9.4"
+toml = "0.9.5"
 walkdir = "2.5.0"
 which = "8.0.0"
 whois-rust = "1.6.0"
 x11rb = "0.13.1"
-rustyline = { version = "16.0.0", features = [
+rustyline = { version = "17.0.0", features = [
     "derive",
     "rustyline-derive",
     "termios",
