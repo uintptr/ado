@@ -1,6 +1,6 @@
   services:
     nginx:
-      container_name: ado
+      container_name: nginx
       restart: unless-stopped
       image: nginx:latest
       ports:
@@ -17,6 +17,7 @@
 
     webdis:
       image: nicolas/webdis:latest
+      container_name: webdis
       depends_on:
         - redis
       volumes:
