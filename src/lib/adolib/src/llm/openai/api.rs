@@ -97,4 +97,8 @@ impl LLM {
 
         Ok(output_string)
     }
+
+    pub fn model(&self) -> &str {
+        &self.openai.model
+    }
 }

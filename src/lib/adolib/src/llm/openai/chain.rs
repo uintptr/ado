@@ -60,4 +60,8 @@ impl AIChain {
     pub fn reset(&mut self) {
         self.req.reset_input();
     }
+
+    pub fn model(&self) -> &str {
+        self.llm.model()
+    }
 }

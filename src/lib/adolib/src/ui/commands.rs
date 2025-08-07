@@ -6,6 +6,7 @@ use crate::{
     search::google::GoogleCSE,
 };
 use clap::{CommandFactory, Parser, Subcommand, error::ErrorKind};
+use serde::{Deserialize, Serialize};
 
 #[derive(Parser)]
 struct CommandCli {
@@ -35,6 +36,7 @@ enum Command {
         #[arg(trailing_var_arg = true)]
         query: Vec<String>,
     },
+    Status,
 }
 
 pub struct CommandInfo {
@@ -46,6 +48,11 @@ pub struct CommandInfo {
 pub struct UserCommands {
     search: GoogleCSE,
     chain: AIChain,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct StatusInfo {
+    pub model: String,
 }
 
 impl UserCommands {
@@ -80,6 +87,15 @@ impl UserCommands {
                     let json_str = self.search.query(query.join(" ")).await?;
 
                     Ok(AdoData::SearchData(json_str))
+                }
+                Command::Status => {
+                    let model = self.chain.model();
+
+                    let s = StatusInfo {
+                        model: model.to_string(),
+                    };
+
+                    Ok(AdoData::Status(s))
                 }
             },
             Err(e) => match e.kind() {

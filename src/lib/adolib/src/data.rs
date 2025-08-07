@@ -5,7 +5,10 @@ use base64::{Engine, prelude::BASE64_STANDARD};
 use reqwest::Response;
 use serde::{Deserialize, Serialize, Serializer};
 
-use crate::error::{Error, Result};
+use crate::{
+    error::{Error, Result},
+    ui::commands::StatusInfo,
+};
 
 pub fn base64_serializer<S>(bytes: &Vec<u8>, serializer: S) -> std::result::Result<S::Ok, S::Error>
 where
@@ -115,6 +118,7 @@ pub enum AdoData {
     SearchData(String),
     UsageString(String),
     Shell(ShellExit),
+    Status(StatusInfo),
 }
 
 impl TryFrom<AdoData> for String {
@@ -132,6 +136,7 @@ impl TryFrom<AdoData> for String {
             AdoData::SearchData(s) => s,
             AdoData::UsageString(s) => s,
             AdoData::Shell(e) => serde_json::to_string(&e)?,
+            AdoData::Status(s) => serde_json::to_string(&s)?,
         };
 
         Ok(s)
@@ -153,6 +158,7 @@ impl TryFrom<AdoData> for Vec<u8> {
             AdoData::SearchData(s) => s.into_bytes(),
             AdoData::UsageString(s) => s.into_bytes(),
             AdoData::Shell(e) => serde_json::to_vec(&e)?,
+            AdoData::Status(s) => serde_json::to_vec(&s)?,
         };
         Ok(s)
     }
@@ -175,6 +181,10 @@ impl AdoData {
             AdoData::UsageString(s) => BASE64_STANDARD.encode(s),
             AdoData::Shell(e) => {
                 let json_str = serde_json::to_string(e)?;
+                BASE64_STANDARD.encode(json_str)
+            }
+            AdoData::Status(s) => {
+                let json_str = serde_json::to_string(s)?;
                 BASE64_STANDARD.encode(json_str)
             }
         };

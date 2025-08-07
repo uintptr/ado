@@ -10,7 +10,7 @@ use adolib::{
     const_vars::{DOT_DIRECTORY, PKG_NAME, PKG_VERSION},
     data::{AdoData, HttpResponse, ShellExit},
     error::{Error, Result},
-    ui::commands::UserCommands,
+    ui::commands::{StatusInfo, UserCommands},
 };
 use colored;
 use colored::Colorize;
@@ -293,6 +293,17 @@ impl ConsoleUI {
         unimplemented!()
     }
 
+    fn display_status(&self, status: &StatusInfo) -> Result<()> {
+        let mut lines = Vec::new();
+
+        lines.push("# Status".to_string());
+        lines.push(format!("*  Model: {}", status.model));
+
+        let md = lines.join("\n");
+
+        self.display_string(md)
+    }
+
     fn display(&self, data: &AdoData) -> Result<()> {
         match data {
             AdoData::Empty => Ok(()),
@@ -305,6 +316,7 @@ impl ConsoleUI {
             AdoData::SearchData(s) => self.display_search(s),
             AdoData::UsageString(s) => self.display_usage(s),
             AdoData::Shell(s) => self.display_shell(s),
+            AdoData::Status(s) => self.display_status(s),
         }
     }
 

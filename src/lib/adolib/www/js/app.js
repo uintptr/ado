@@ -110,6 +110,18 @@ async function display_search_results(json_data) {
 }
 
 /**
+ * @param {object} status
+ */
+function display_status(status) {
+
+    let md = " ### Status\n"
+    md += " #### Model: `" + status.model + "`\n"
+    display_string(md)
+}
+
+
+
+/**
  * @param {string} response
  * @param {boolean} markdown
  * @param {string | null} chat_source
@@ -198,6 +210,9 @@ function response_handler(response) {
         display_search_results(json_data);
     } else if (response == "Reset") {
         display_reset();
+    } else if (response.hasOwnProperty("Status")) {
+        let status_object = response.Status
+        display_status(status_object)
     } else {
         console.warn(response);
     }
@@ -360,7 +375,15 @@ async function get_config_file(user_id, config_server) {
  */
 async function get_user() {
 
-    let config = localStorage.getItem("user_config")
+    let config = null
+
+    if (null == config) {
+        config = await utils.fetch_as_string("https://keys.pi/fpc.json");
+    }
+
+    if (null == config) {
+        config = localStorage.getItem("user_config")
+    }
 
     if (null == config) {
         config = await utils.fetch_as_string("https://keys.pi/user.json");
@@ -379,6 +402,8 @@ async function get_user() {
 async function get_config() {
 
     let user_json = await get_user()
+
+    console.log(user_json)
 
     if (null != user_json) {
         let user = JSON.parse(user_json)
@@ -415,7 +440,7 @@ async function main() {
 
     } else {
         console.log("not authorized");
-        await navigateWithLoading("/login.html");
+        // await navigateWithLoading("/login.html");
     }
 }
 
