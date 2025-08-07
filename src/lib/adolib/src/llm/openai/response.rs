@@ -100,6 +100,7 @@ where
                 };
                 OpenAIResponseOutput::FunctionCall(func)
             }
+
             "message" => {
                 let msg: OpenAIOutputMessage = match serde_json::from_value(v) {
                     Ok(v) => v,
@@ -108,6 +109,9 @@ where
                     }
                 };
                 OpenAIResponseOutput::Message(msg)
+            }
+            "reasoning" => {
+                continue;
             }
             _ => {
                 return Err(serde::de::Error::custom(Error::TypeMissing {
