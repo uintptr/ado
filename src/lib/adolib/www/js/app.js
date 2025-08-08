@@ -210,9 +210,6 @@ function response_handler(response) {
     } else if (response == "Reset") {
         display_reset();
     } else if (response.hasOwnProperty("Status")) {
-
-        console.log(response)
-
         let status_object = response.Status
         display_status(status_object)
     } else {
