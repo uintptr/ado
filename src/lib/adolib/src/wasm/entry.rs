@@ -2,7 +2,6 @@ use std::time::Duration;
 
 use crate::{
     config::loader::ConfigFile,
-    data::AdoData,
     error::{Error, Result},
     llm::{openai::chain::AIChain, question::question_detection},
     logging::logger::setup_logger,
@@ -130,20 +129,7 @@ impl AdoWasm {
     }
 
     pub async fn query(&mut self, content: &str) -> Result<JsValue> {
-        let data = match self.cache.get("query", content).await {
-            Ok(v) => serde_json::from_str::<AdoData>(&v)?,
-            Err(_) => {
-                let data = self.commands.handler(content).await?;
-
-                if let Ok(data_json) = serde_json::to_string(&data) {
-                    if let Err(e) = self.cache.set("query", content, &data_json, CACHE_05_DAYS).await {
-                        error!("{e}");
-                    }
-                }
-
-                data
-            }
-        };
+        let data = self.commands.handler(content).await?;
 
         let obj = JsValue::from_serde(&data)?;
 

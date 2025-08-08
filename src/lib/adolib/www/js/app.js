@@ -210,6 +210,9 @@ function response_handler(response) {
     } else if (response == "Reset") {
         display_reset();
     } else if (response.hasOwnProperty("Status")) {
+
+        console.log(response)
+
         let status_object = response.Status
         display_status(status_object)
     } else {
@@ -403,16 +406,10 @@ async function get_config() {
         }
     }
 
-    return null
-}
 
-/**
- * @returns {Promise<UserConfig|null>}
- */
-async function get_local_config() {
-    return await utils.fetch_as_dict("/test_config.json");
+    // in case it was burned in at build time ( for testing purposes )
+    return await utils.fetch_as_dict("/test_config.json")
 }
-
 
 async function main() {
     // loading the wasm bits
@@ -420,17 +417,6 @@ async function main() {
 
     // get the config.toml file
     let config = await get_config()
-
-    if (null == config) {
-        //
-        // was there a burned in config (build.py)
-        //
-        config = await get_local_config()
-
-        console.log("--------------------------------------------")
-        console.log(config)
-        console.log("--------------------------------------------")
-    }
 
     if (config != null) {
 
@@ -447,7 +433,7 @@ async function main() {
 
     } else {
         console.log("not authorized");
-        // await navigateWithLoading("/login.html");
+        await navigateWithLoading("/login.html");
     }
 }
 

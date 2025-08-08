@@ -121,6 +121,12 @@ pub enum AdoData {
     Status(StatusInfo),
 }
 
+impl AdoData {
+    pub fn to_markdown(&self) -> Result<String> {
+        Ok("MD".to_string())
+    }
+}
+
 impl TryFrom<AdoData> for String {
     type Error = Error;
 

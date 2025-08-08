@@ -12,3 +12,4 @@ container/templates/opensearch.xml
 user.json
 config.toml
 .env
+test_config.json

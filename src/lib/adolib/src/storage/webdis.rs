@@ -72,7 +72,7 @@ impl PersistentStorage {
         }
     }
 
-    pub async fn set<K, V>(&self, realm: &'static str, user_key: K, value: V, life_span: Duration) -> Result<()>
+    pub async fn set<K, V>(&self, realm: &'static str, user_key: K, value: V, ttl: Duration) -> Result<()>
     where
         K: AsRef<str>,
         V: AsRef<[u8]>,
@@ -81,9 +81,9 @@ impl PersistentStorage {
 
         let key = self.build_key(realm, user_key);
 
-        let set_url = match life_span.as_secs() {
+        let set_url = match ttl.as_secs() {
             0 => format!("{}/SET/{}", self.url, key),
-            secs => format!("{}/SETEX/{}/{}", self.url, key, secs),
+            ttl_sec => format!("{}/SETEX/{}/{}", self.url, key, ttl_sec),
         };
 
         match self.client.put(set_url, None, data).await {

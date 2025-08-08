@@ -14,6 +14,9 @@ from dataclasses import asdict, dataclass
 from typing import Any
 
 
+WWW_IGNORE_LIST = ["config.toml", "test_config.json"]
+
+
 @dataclass
 class UserArgs:
     domain_name: str
@@ -152,6 +155,17 @@ class DockerBuilder:
 
         if basename == "js" and "pkg" in files:
             return ["pkg"]
+
+        if basename == "www":
+
+            ignores: list[str] = []
+
+            for file_name in WWW_IGNORE_LIST:
+
+                if file_name in files:
+                    ignores.append(file_name)
+
+            return ignores
 
         return []
 

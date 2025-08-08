@@ -1,4 +1,4 @@
-use crate::{error::Result, wasm::main::log};
+use crate::{error::Result, wasm::entry::log};
 
 pub fn setup_wasm_logger(verbose: bool) -> Result<()> {
     let log_level = match verbose {
