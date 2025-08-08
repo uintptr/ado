@@ -3,7 +3,7 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Command Search</title>
+        <title>Command Search Terminal | Professional CLI Interface</title>
         
         <!-- Resource hints for better performance -->
         <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
@@ -21,6 +21,9 @@
         <!-- External CSS files -->
         <link rel="stylesheet" href="/css/main.css" />
         <link rel="stylesheet" href="/css/loading-screen.css" />
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
         <link
             rel="stylesheet"
             href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/atom-one-dark.min.css"
@@ -41,13 +44,31 @@
     </head>
 
     <body>
+        <header class="app-header">
+            <div class="header-content">
+                <div class="brand">
+                    <i class="fas fa-terminal brand-icon"></i>
+                    <h1 class="brand-title">Command Terminal</h1>
+                    <span class="version-tag">v2.1</span>
+                </div>
+                <div class="status-indicator">
+                    <span class="status-text">ONLINE</span>
+                    <div class="status-dot"></div>
+                </div>
+            </div>
+        </header>
+
         <div class="content-wrapper">
             <div class="container">
                 <div id="results" class="results" style="display: none">
                     <!-- Results will be populated here -->
                 </div>
                 <div id="empty-state" class="empty-state">
-                    <i class="fas fa-terminal"></i>
+                    <div class="terminal-art">
+                        <i class="fas fa-terminal"></i>
+                        <div class="scan-line"></div>
+                    </div>
+                    <h2>Command Interface Ready</h2>
                     <p>Enter a command to begin your search</p>
                     <div class="hint">
                         Try typing a keyword or command below
@@ -58,7 +79,12 @@
 
         <div class="command-line">
             <div class="command-input-container">
-                <i class="fas fa-chevron-right command-icon"></i>
+                <div class="prompt-indicator">
+                    <span class="user-prefix">user@terminal</span>
+                    <span class="path-separator">:</span>
+                    <span class="current-path">~</span>
+                    <span class="command-prompt">$</span>
+                </div>
                 <input
                     id="cmd_line"
                     autofocus

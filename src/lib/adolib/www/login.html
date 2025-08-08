@@ -3,7 +3,7 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Login - Command Search</title>
+        <title>Secure Login | Command Search Terminal</title>
         
         <!-- Resource hints for better performance -->
         <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin />
@@ -11,6 +11,9 @@
         
         <!-- External CSS files -->
         <link rel="stylesheet" href="/css/login.css" />
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
         <link
             rel="stylesheet"
             href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
@@ -26,10 +29,13 @@
     </head>
     <body>
         <div class="login-wrapper">
-            <i class="fas fa-user-circle login-icon"></i>
-            <div class="login-title">Sign In</div>
+            <div class="login-header">
+                <i class="fas fa-shield-alt login-icon"></i>
+                <div class="security-badge">SECURE</div>
+            </div>
+            <div class="login-title">Authentication Required</div>
             <div class="login-subtitle">
-                Enter your credentials to access Command Search
+                Enter your credentials to access the terminal
             </div>
             <form class="login-form" method="POST" action="/login">
                 <div class="input-group">
@@ -58,17 +64,14 @@
                 <button class="login-btn" type="submit">Login</button>
             </form>
             <div class="login-hint">
-                <span
-                    >Forgot your password?
-                    <a
-                        href="#"
-                        style="
-                            color: var(--accent-color);
-                            text-decoration: none;
-                        "
-                        >Contact support</a
-                    ></span
-                >
+                <div class="support-info">
+                    <i class="fas fa-question-circle"></i>
+                    <span>Need assistance? <a href="#">Contact Support</a></span>
+                </div>
+                <div class="security-notice">
+                    <i class="fas fa-lock"></i>
+                    <span>Secure connection established</span>
+                </div>
             </div>
         </div>
     </body>
