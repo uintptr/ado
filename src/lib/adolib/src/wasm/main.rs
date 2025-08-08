@@ -15,6 +15,7 @@ use gloo_utils::format::JsValueSerdeExt;
 use log::error;
 use tokio::time::sleep;
 use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
+use web_sys::window;
 
 #[wasm_bindgen]
 extern "C" {
@@ -71,6 +72,14 @@ impl AdoWasmCommand {
 const CACHE_05_DAYS: Duration = Duration::from_secs(5 * 24 * 60 * 60);
 const CACHE_30_DAYS: Duration = Duration::from_secs(30 * 24 * 60 * 60);
 
+fn build_storage_url() -> Result<String> {
+    let window = window().ok_or(Error::NotFound)?;
+
+    let href = window.location().href().unwrap();
+
+    Ok(format!("{href}/webdis"))
+}
+
 #[wasm_bindgen]
 impl AdoWasm {
     //
@@ -80,10 +89,12 @@ impl AdoWasm {
     // responsible for querying the config from the webdis server
     //
     #[wasm_bindgen(constructor)]
-    pub fn new(user_id: &str, storage_url: &str, config: &str) -> AdoWasm {
+    pub fn new(user_id: &str, config: &str) -> AdoWasm {
         setup_logger(true).unwrap();
 
         console_error_panic_hook::set_once();
+
+        let storage_url = build_storage_url().unwrap();
 
         let config = ConfigFile::from_string(config).unwrap();
         let chain = AIChain::new(&config).unwrap();

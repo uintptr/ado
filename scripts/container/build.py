@@ -8,8 +8,9 @@ import subprocess
 import shutil
 import hashlib
 import tarfile
-
-from dataclasses import dataclass
+import uuid
+import json
+from dataclasses import asdict, dataclass
 from typing import Any
 
 
@@ -21,11 +22,21 @@ class UserArgs:
     output: str
     debug: bool
     www_root: str
+    test_config: str | None
 
     def __post_init__(self) -> None:
         self.cert_file = os.path.abspath(self.cert_file)
         self.cert_key = os.path.abspath(self.cert_key)
         self.output = os.path.abspath(self.output)
+
+        if self.test_config is not None:
+            self.test_config = os.path.abspath(self.test_config)
+
+
+@dataclass
+class TestConfig:
+    user_id: str
+    config_file: str
 
 
 def printkv(k: str, v: object) -> None:
@@ -135,16 +146,6 @@ class DockerBuilder:
         with open(file_path) as f:
             return f.read()
 
-    def __build_nginx(self, out_file: str) -> None:
-
-        config_file = self.__get_template("nginx.conf")
-
-        config_file = config_file.replace("__DOMAIN_NAME__",
-                                          self.args.domain_name)
-
-        with open(out_file, "w+") as f:
-            f.write(config_file)
-
     def __www_copytree_ignore(self, dir: str, files: list[str]) -> list[str]:
 
         basename = os.path.basename(dir)
@@ -198,9 +199,18 @@ class DockerBuilder:
         shutil.copy2(self.args.cert_file, certs_root)
         shutil.copy2(self.args.cert_key, certs_root)
 
-    def __build_conf_d(self, etc_root: str) -> None:
-        nginx_conf = os.path.join(etc_root, "default.conf")
-        self.__build_nginx(nginx_conf)
+    def __build_nginx(self, container_root: str) -> None:
+
+        template = self.__get_template("nginx.conf")
+        template = template.replace("__DOMAIN_NAME__", self.args.domain_name)
+
+        conf_d_dir = os.path.join(container_root, "conf.d")
+        os.mkdir(conf_d_dir)
+
+        nginx_conf = os.path.join(conf_d_dir, "default.conf")
+
+        with open(nginx_conf, "w+") as f:
+            f.write(template)
 
     def __build_webdis(self, webdis_root: str) -> None:
 
@@ -220,6 +230,22 @@ class DockerBuilder:
         with open(compose_file, "w+") as f:
             f.write(template)
 
+    def __build_test_config(self, config_path: str, www_root: str) -> None:
+
+        with open(config_path) as f:
+            config_file = f.read()
+
+        user_id = str(uuid.uuid4())
+
+        config = TestConfig(user_id, config_file)
+
+        config_json = json.dumps(asdict(config), indent=4)
+
+        www_config = os.path.join(www_root, "test_config.json")
+
+        with open(www_config, "w+") as f:
+            f.write(config_json)
+
     def build(self) -> None:
 
         with tempfile.TemporaryDirectory(prefix="docker_root_") as td:
@@ -234,6 +260,12 @@ class DockerBuilder:
             self.__build_www(www_root)
 
             #
+            # build test config
+            #
+            if self.args.test_config is not None:
+                self.__build_test_config(self.args.test_config, www_root)
+
+            #
             # /etc/certs
             #
             certs_root = os.path.join(container_root, "certs")
@@ -243,9 +275,7 @@ class DockerBuilder:
             #
             # /etc/nginx/conf.d/
             #
-            conf_d = os.path.join(container_root, "conf.d")
-            os.mkdir(conf_d)
-            self.__build_conf_d(conf_d)
+            self.__build_nginx(container_root)
 
             #
             # webdis
@@ -311,6 +341,10 @@ def main() -> int:
                         default="./www",
                         help="Docker www root directory")
 
+    parser.add_argument("--test-config",
+                        type=str,
+                        help="/path/to/test/config.toml")
+
     try:
 
         args = parser.parse_args()
@@ -323,6 +357,7 @@ def main() -> int:
         printkv("Certificate Private Key", args.cert_key)
         printkv("WWW Root", args.www_root)
         printkv("Debug Build", args.debug)
+        printkv("Test Config", args.test_config)
 
         assert os.path.isfile(args.cert_file)
         assert os.path.isfile(args.cert_key)

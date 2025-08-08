@@ -10,9 +10,8 @@ import {
 const marked = window["marked"];
 
 class UserConfig {
-    constructor(user_id, storage_url, config_file) {
+    constructor(user_id, config_file) {
         this.user_id = user_id
-        this.storage_url = storage_url
         this.config_file = config_file
     }
 }
@@ -341,7 +340,7 @@ async function search_handler(wctx, search) {
                 let lucky_url = await wctx.lucky(q);
 
                 if (lucky_url.includes("www.reddit.com")) {
-                    lucky_url = lucky_url.replace(/www/, "old");
+                    lucky_url = lucky_url.replace("/www/", "old");
                 }
 
                 await navigateWithLoading(lucky_url);
@@ -353,14 +352,13 @@ async function search_handler(wctx, search) {
 
 /**
  * @param {string} user_id
- * @param {string} config_server
  * @returns {Promise<string | null>}
  */
 
-async function get_config_file(user_id, config_server) {
+async function get_config_file(user_id) {
 
     let config_file = null
-    const webdis_url = config_server + "/GET/" + user_id
+    const webdis_url = "/webdis//GET/" + user_id
     let config = await utils.fetch_as_dict(webdis_url);
 
     if (null != config) {
@@ -375,15 +373,7 @@ async function get_config_file(user_id, config_server) {
  */
 async function get_user() {
 
-    let config = null
-
-    if (null == config) {
-        config = await utils.fetch_as_string("https://keys.pi/fpc.json");
-    }
-
-    if (null == config) {
-        config = localStorage.getItem("user_config")
-    }
+    let config = localStorage.getItem("user_config")
 
     if (null == config) {
         config = await utils.fetch_as_string("https://keys.pi/user.json");
@@ -403,20 +393,26 @@ async function get_config() {
 
     let user_json = await get_user()
 
-    console.log(user_json)
-
     if (null != user_json) {
         let user = JSON.parse(user_json)
 
-        const config_file = await get_config_file(user.user_id, user.storage_url)
+        const config_file = await get_config_file(user.user_id)
 
         if (config_file != null) {
-            return new UserConfig(user.user_id, user.storage_url, config_file)
+            return new UserConfig(user.user_id, config_file)
         }
     }
 
     return null
 }
+
+/**
+ * @returns {Promise<UserConfig|null>}
+ */
+async function get_local_config() {
+    return await utils.fetch_as_dict("/test_config.json");
+}
+
 
 async function main() {
     // loading the wasm bits
@@ -425,9 +421,20 @@ async function main() {
     // get the config.toml file
     let config = await get_config()
 
+    if (null == config) {
+        //
+        // was there a burned in config (build.py)
+        //
+        config = await get_local_config()
+
+        console.log("--------------------------------------------")
+        console.log(config)
+        console.log("--------------------------------------------")
+    }
+
     if (config != null) {
 
-        let wctx = new AdoWasm(config.user_id, config.storage_url, config.config_file)
+        let wctx = new AdoWasm(config.user_id, config.config_file)
 
         init_cmd_line(wctx);
 
