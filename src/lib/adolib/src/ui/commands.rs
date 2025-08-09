@@ -1,9 +1,9 @@
 use crate::{
     config_file::loader::ConfigFile,
-    data::{search::GoogleSearchData, types::AdoData},
+    data::types::AdoData,
     error::{Error, Result},
     llm::openai::chain::AIChain,
-    search::google::GoogleCSE,
+    search::google::{GoogleCSE, GoogleSearchResults},
     ui::status::StatusInfo,
 };
 use clap::{CommandFactory, Parser, Subcommand, error::ErrorKind};
@@ -81,7 +81,7 @@ impl UserCommands {
                 Command::Search { query } => {
                     let json_str = self.search.query(query.join(" ")).await?;
 
-                    Ok(AdoData::SearchData(GoogleSearchData::new(json_str)))
+                    Ok(AdoData::SearchData(GoogleSearchResults::new(json_str)))
                 }
                 Command::Status => {
                     let s = StatusInfo::new(&self.chain);

@@ -249,11 +249,8 @@ mod tests {
     use std::{fs, path::Path};
 
     use adolib::{
-        config_file::loader::ConfigFile,
-        data::{search::GoogleSearchData, types::AdoData},
-        logging::logger::setup_logger,
-        shell::AdoShell,
-        ui::commands::UserCommands,
+        config_file::loader::ConfigFile, data::types::AdoData, logging::logger::setup_logger,
+        search::google::GoogleSearchResults, shell::AdoShell, ui::commands::UserCommands,
     };
 
     use super::ConsoleUI;
@@ -299,7 +296,7 @@ mod tests {
         let config = ConfigFile::from_disk().unwrap();
         let console = ConsoleUI::new(&config).unwrap();
 
-        let data = AdoData::SearchData(GoogleSearchData { json_string: json_data });
+        let data = AdoData::SearchData(GoogleSearchResults { json_string: json_data });
 
         console.display(data).unwrap();
     }

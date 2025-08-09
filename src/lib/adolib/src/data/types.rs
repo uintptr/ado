@@ -2,9 +2,9 @@ use base64::{Engine, prelude::BASE64_STANDARD};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    data::search::GoogleSearchData,
     error::{Error, Result},
     http::req::HttpResponse,
+    search::google::GoogleSearchResults,
     shell::ShellExit,
     ui::status::StatusInfo,
 };
@@ -28,7 +28,7 @@ pub enum AdoData {
     Json(String),
     Base64(String),
     Http(HttpResponse),
-    SearchData(GoogleSearchData),
+    SearchData(GoogleSearchResults),
     UsageString(String),
     Shell(ShellExit),
     Status(StatusInfo),
