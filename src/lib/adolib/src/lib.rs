@@ -1,4 +1,4 @@
-pub mod config;
+pub mod config_file;
 pub mod const_vars;
 pub mod data;
 pub mod error;

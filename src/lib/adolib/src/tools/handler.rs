@@ -1,7 +1,7 @@
 use log::{error, info};
 
 use crate::{
-    config::loader::ConfigFile,
+    config_file::loader::ConfigFile,
     data::types::AdoData,
     error::{Error, Result},
     tools::{function_args::FunctionArgs, ip_address::FunctionsIp},

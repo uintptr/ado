@@ -2,7 +2,7 @@ use reqwest::Client;
 use serde_json::Value;
 
 use crate::{
-    config::loader::{ConfigFile, GoogleConfig},
+    config_file::loader::{ConfigFile, GoogleConfig},
     error::{Error, Result},
 };
 

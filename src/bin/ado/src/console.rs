@@ -6,8 +6,8 @@ use std::{
 };
 
 use adolib::{
-    config::loader::ConfigFile,
-    const_vars::{DOT_DIRECTORY, PKG_NAME, PKG_VERSION},
+    config_file::loader::ConfigFile,
+    const_vars::{DOT_DIRECTORY, PKG_NAME, PKG_VERSION, VERGEN_BUILD_DATE, VERGEN_RUSTC_COMMIT_HASH},
     data::types::{AdoData, AdoDataMarkdown},
     error::{Error, Result},
     ui::commands::UserCommands,
@@ -108,7 +108,7 @@ impl ConsoleUI {
 
         // pretty start
         clear_console()?;
-        let banner = format!("{PKG_NAME} {PKG_VERSION}");
+        let banner = format!("{PKG_NAME} {PKG_VERSION} {VERGEN_RUSTC_COMMIT_HASH} ({VERGEN_BUILD_DATE})");
         println!("{}", banner.bold().yellow());
 
         Ok(Self {
@@ -249,7 +249,7 @@ mod tests {
     use std::{fs, path::Path};
 
     use adolib::{
-        config::loader::ConfigFile,
+        config_file::loader::ConfigFile,
         data::{search::GoogleSearchData, types::AdoData},
         logging::logger::setup_logger,
         shell::AdoShell,

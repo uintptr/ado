@@ -1,5 +1,5 @@
 use crate::{
-    config::loader::{ConfigFile, OpenAiConfig},
+    config_file::loader::{ConfigFile, OpenAiConfig},
     data::types::AdoData,
     error::{Error, Result},
     tools::handler::FunctionHandler,

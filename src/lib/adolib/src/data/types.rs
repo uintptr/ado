@@ -6,7 +6,7 @@ use crate::{
     error::{Error, Result},
     http::req::HttpResponse,
     shell::ShellExit,
-    ui::commands::StatusInfo,
+    ui::status::StatusInfo,
 };
 
 pub trait AdoDataMarkdown {

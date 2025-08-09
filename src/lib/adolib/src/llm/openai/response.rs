@@ -189,7 +189,7 @@ mod tests {
 
     use rstaples::staples::find_file;
 
-    use crate::config::loader::ConfigFile;
+    use crate::config_file::loader::ConfigFile;
 
     use super::*;
 

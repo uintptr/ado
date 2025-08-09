@@ -6,7 +6,7 @@ use std::{
 
 use ado::console::ConsoleUI;
 use adolib::{
-    config::loader::ConfigFile,
+    config_file::loader::ConfigFile,
     error::{Error, Result},
     llm::question::question_detection,
     logging::logger::setup_logger,

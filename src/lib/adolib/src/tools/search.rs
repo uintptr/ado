@@ -1,6 +1,6 @@
 use log::info;
 
-use crate::{config::loader::ConfigFile, data::types::AdoData, error::Result, search::google::GoogleCSE};
+use crate::{config_file::loader::ConfigFile, data::types::AdoData, error::Result, search::google::GoogleCSE};
 
 use super::function_args::FunctionArgs;
 

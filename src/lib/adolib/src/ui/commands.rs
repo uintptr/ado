@@ -1,15 +1,12 @@
 use crate::{
-    config::loader::ConfigFile,
-    data::{
-        search::GoogleSearchData,
-        types::{AdoData, AdoDataMarkdown},
-    },
+    config_file::loader::ConfigFile,
+    data::{search::GoogleSearchData, types::AdoData},
     error::{Error, Result},
     llm::openai::chain::AIChain,
     search::google::GoogleCSE,
+    ui::status::StatusInfo,
 };
 use clap::{CommandFactory, Parser, Subcommand, error::ErrorKind};
-use serde::{Deserialize, Serialize};
 
 #[derive(Parser)]
 struct CommandCli {
@@ -53,22 +50,6 @@ pub struct UserCommands {
     chain: AIChain,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct StatusInfo {
-    pub model: String,
-}
-
-impl AdoDataMarkdown for StatusInfo {
-    fn to_markdown(self) -> Result<String> {
-        let mut lines = Vec::new();
-
-        lines.push("# Status".to_string());
-        lines.push(format!("*  Model: {}", self.model));
-
-        Ok(lines.join("\n"))
-    }
-}
-
 impl UserCommands {
     pub fn new(config: &ConfigFile) -> Result<UserCommands> {
         let search = GoogleCSE::new(config)?;
@@ -103,11 +84,7 @@ impl UserCommands {
                     Ok(AdoData::SearchData(GoogleSearchData::new(json_str)))
                 }
                 Command::Status => {
-                    let model = self.chain.model();
-
-                    let s = StatusInfo {
-                        model: model.to_string(),
-                    };
+                    let s = StatusInfo::new(&self.chain);
 
                     Ok(AdoData::Status(s))
                 }
@@ -153,7 +130,7 @@ impl UserCommands {
 
 #[cfg(test)]
 mod tests {
-    use crate::{config::loader::ConfigFile, ui::commands::UserCommands};
+    use crate::{config_file::loader::ConfigFile, ui::commands::UserCommands};
 
     #[test]
     fn test_handler() {
