@@ -4,14 +4,12 @@ resolver = "2"
 
 
 [workspace.dependencies]
-clap = { version = "4.5.42", features = ["derive"] }
+clap = { version = "4.5.43", features = ["derive"] }
 log = "0.4.27"
 base64 = "0.22.1"
 bytes = "1.10.1"
-chrono = "0.4.41"
 colored = "3.0.0"
 derive_more = { version = "2.0.1", features = ["debug", "from"] }
-fern = "0.7.1"
 glob = "0.3.2"
 reqwest = { version = "0.12.22" }
 rust-embed = { version = "8.7.2", features = ["debug-embed"] }

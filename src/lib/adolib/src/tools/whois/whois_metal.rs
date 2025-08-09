@@ -2,7 +2,7 @@ use log::info;
 use whois_rust::{WhoIs, WhoIsLookupOptions};
 
 use crate::{
-    data::AdoData,
+    data::types::AdoData,
     error::{Error, Result},
     tools::{assets::WhoisAssets, function_args::FunctionArgs},
 };

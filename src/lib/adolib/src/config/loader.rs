@@ -15,7 +15,7 @@ use crate::{
 };
 
 const DEF_OPENAI_URL: &str = "https://api.openai.com/v1/responses";
-const DEF_OPENAI_MODEL: &str = "gpt-5";
+const DEF_OPENAI_MODEL: &str = "gpt-5-mini";
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct OpenAiConfig {

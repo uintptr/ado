@@ -74,9 +74,17 @@ const CACHE_30_DAYS: Duration = Duration::from_secs(30 * 24 * 60 * 60);
 fn build_storage_url() -> Result<String> {
     let window = window().ok_or(Error::NotFound)?;
 
-    let href = window.location().href().unwrap();
+    let hostname = match window.location().hostname() {
+        Ok(v) => v,
+        Err(_) => return Err(Error::NotFound),
+    };
 
-    Ok(format!("{href}/webdis"))
+    let proto = match window.location().protocol() {
+        Ok(v) => v,
+        Err(_) => return Err(Error::NotFound),
+    };
+
+    Ok(format!("{proto}{hostname}/webdis"))
 }
 
 #[wasm_bindgen]

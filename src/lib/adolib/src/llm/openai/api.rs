@@ -1,6 +1,6 @@
 use crate::{
     config::loader::{ConfigFile, OpenAiConfig},
-    data::AdoData,
+    data::types::AdoData,
     error::{Error, Result},
     tools::handler::FunctionHandler,
 };

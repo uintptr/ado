@@ -2,7 +2,7 @@ use serde::{Deserialize, Deserializer};
 use serde_json::Value;
 
 use crate::{
-    data::AdoData,
+    data::types::AdoData,
     error::{Error, Result},
     tools::handler::FunctionHandler,
 };

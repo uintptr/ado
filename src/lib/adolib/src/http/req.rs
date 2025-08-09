@@ -2,8 +2,63 @@ use std::collections::HashMap;
 
 use reqwest::{Client, Response};
 
-use crate::{data::HttpResponse, error::Result};
+use crate::error::Result;
 use log::info;
+
+use serde::{Deserialize, Serialize};
+
+use crate::data::types::AdoDataMarkdown;
+
+use crate::data::base64_serializer::base64_serializer;
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct HttpResponse {
+    pub url: String,
+    pub code: u16,
+    pub headers: HashMap<String, String>,
+    #[serde(serialize_with = "base64_serializer")]
+    pub data: Vec<u8>,
+}
+
+impl HttpResponse {
+    pub async fn from_response(res: Response) -> Result<HttpResponse> {
+        let mut headers = HashMap::new();
+        for (k, ov) in res.headers().iter() {
+            if let Ok(v) = ov.to_str() {
+                headers.insert(k.as_str().to_string(), v.to_string());
+            }
+        }
+
+        let url = res.url().to_string();
+        let code = res.status().as_u16();
+
+        let data = res.bytes().await?;
+
+        let local_res = HttpResponse {
+            url,
+            code,
+            headers,
+            data: data.to_vec(),
+        };
+
+        Ok(local_res)
+    }
+
+    pub fn is_success(&self) -> bool {
+        matches!(self.code, 200..299)
+    }
+}
+
+impl AdoDataMarkdown for HttpResponse {
+    fn to_markdown(self) -> Result<String> {
+        let mut lines = Vec::new();
+        lines.push("# Http Results".to_string());
+        lines.push(format!(" * url: {}", self.url));
+        lines.push(format!(" * code: {}", self.code));
+
+        Ok(lines.join("\n"))
+    }
+}
 
 #[derive(Debug)]
 pub struct Http {

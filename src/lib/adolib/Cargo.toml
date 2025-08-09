@@ -6,9 +6,7 @@ edition = "2024"
 [dependencies]
 base64 = { workspace = true }
 bytes = { workspace = true }
-chrono = { workspace = true }
 derive_more = { workspace = true }
-fern = { workspace = true }
 glob = { workspace = true }
 log = { workspace = true }
 reqwest = { workspace = true }

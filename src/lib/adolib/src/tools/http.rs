@@ -1,4 +1,4 @@
-use crate::{data::AdoData, error::Result, http::req::Http};
+use crate::{data::types::AdoData, error::Result, http::req::Http};
 use log::info;
 
 use super::function_args::FunctionArgs;

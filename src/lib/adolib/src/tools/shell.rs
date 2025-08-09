@@ -1,31 +1,14 @@
-use base64::{Engine, prelude::BASE64_STANDARD};
-use serde::{Serialize, Serializer};
 use std::process::{Command, Stdio};
 
 use log::info;
 
 use crate::{
-    data::{AdoData, ShellExit},
+    data::types::AdoData,
     error::{Error, Result},
+    shell::ShellExit,
 };
 
 use super::function_args::FunctionArgs;
-
-#[derive(Serialize)]
-pub struct ShellOutput {
-    exit_code: i32,
-    #[serde(serialize_with = "base64_serializer")]
-    b64_stdout: Vec<u8>,
-    #[serde(serialize_with = "base64_serializer")]
-    b64_stderr: Vec<u8>,
-}
-
-pub fn base64_serializer<S>(bytes: &Vec<u8>, serializer: S) -> core::result::Result<S::Ok, S::Error>
-where
-    S: Serializer,
-{
-    serializer.serialize_str(&BASE64_STANDARD.encode(bytes))
-}
 
 pub struct FunctionsShell {}
 

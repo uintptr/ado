@@ -104,6 +104,8 @@ pub enum Error {
     Readline(rustyline::error::ReadlineError),
     #[from]
     Http(reqwest::Error),
+    #[from]
+    Staples(rstaples::error::Error),
 }
 
 impl core::fmt::Display for Error {

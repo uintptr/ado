@@ -1,6 +1,9 @@
 use crate::{
     config::loader::ConfigFile,
-    data::AdoData,
+    data::{
+        search::GoogleSearchData,
+        types::{AdoData, AdoDataMarkdown},
+    },
     error::{Error, Result},
     llm::openai::chain::AIChain,
     search::google::GoogleCSE,
@@ -55,6 +58,17 @@ pub struct StatusInfo {
     pub model: String,
 }
 
+impl AdoDataMarkdown for StatusInfo {
+    fn to_markdown(self) -> Result<String> {
+        let mut lines = Vec::new();
+
+        lines.push("# Status".to_string());
+        lines.push(format!("*  Model: {}", self.model));
+
+        Ok(lines.join("\n"))
+    }
+}
+
 impl UserCommands {
     pub fn new(config: &ConfigFile) -> Result<UserCommands> {
         let search = GoogleCSE::new(config)?;
@@ -86,7 +100,7 @@ impl UserCommands {
                 Command::Search { query } => {
                     let json_str = self.search.query(query.join(" ")).await?;
 
-                    Ok(AdoData::SearchData(json_str))
+                    Ok(AdoData::SearchData(GoogleSearchData::new(json_str)))
                 }
                 Command::Status => {
                     let model = self.chain.model();

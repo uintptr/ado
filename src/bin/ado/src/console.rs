@@ -8,14 +8,13 @@ use std::{
 use adolib::{
     config::loader::ConfigFile,
     const_vars::{DOT_DIRECTORY, PKG_NAME, PKG_VERSION},
-    data::{AdoData, HttpResponse, ShellExit},
+    data::types::{AdoData, AdoDataMarkdown},
     error::{Error, Result},
-    ui::commands::{StatusInfo, UserCommands},
+    ui::commands::UserCommands,
 };
 use colored;
 use colored::Colorize;
 use log::{error, info, warn};
-use serde_json::Value;
 use which::which;
 
 use rustyline::completion::FilenameCompleter;
@@ -195,51 +194,6 @@ impl ConsoleUI {
         }
     }
 
-    fn display_search<S>(&self, data: S) -> Result<()>
-    where
-        S: AsRef<str>,
-    {
-        let value: Value = serde_json::from_str(data.as_ref())?;
-
-        let items = value.get("items").ok_or(Error::InvalidFormat)?;
-
-        let items = items.as_array().ok_or(Error::InvalidFormat)?;
-
-        let mut md_lines = Vec::new();
-
-        md_lines.push("# Search Results".to_string());
-
-        for (i, item) in items.iter().enumerate() {
-            let title = match item.get("title").and_then(|v| v.as_str()) {
-                Some(v) => v,
-                None => continue,
-            };
-
-            let link = match item.get("link").and_then(|v| v.as_str()) {
-                Some(v) => v,
-                None => continue,
-            };
-
-            let link_display = match item.get("displayLink").and_then(|v| v.as_str()) {
-                Some(v) => v,
-                None => continue,
-            };
-
-            let snippet = match item.get("snippet").and_then(|v| v.as_str()) {
-                Some(v) => v,
-                None => continue,
-            };
-
-            md_lines.push(format!("## {i} {title}"));
-            md_lines.push(format!(" * [{link_display}]({link})"));
-            md_lines.push(format!("> {snippet}"));
-        }
-
-        let md = md_lines.join("\n");
-
-        self.display_string(md)
-    }
-
     fn display_usage<S>(&self, usage: S) -> Result<()>
     where
         S: AsRef<str>,
@@ -247,34 +201,11 @@ impl ConsoleUI {
         self.display_string(usage)
     }
 
-    fn display_shell(&self, exit: &ShellExit) -> Result<()> {
-        let mut lines = Vec::new();
-
-        lines.push("# Shell Execution".to_string());
-
-        lines.push(format!(" * status: {}", exit.exit_code));
-        lines.push(format!(" * time: {}", exit.execution_time));
-
-        if !exit.stdout.is_empty() {
-            lines.push("## stdout".to_string());
-            lines.push(format!("```\n{}\n```", exit.stdout));
-        }
-
-        if !exit.stderr.is_empty() {
-            lines.push("## stderr".to_string());
-            lines.push(format!("```\n{}\n```", exit.stderr));
-        }
-
-        let md = lines.join("\n");
-
-        self.display_string(md)
-    }
-
-    fn display_json<S>(&self, data: S) -> Result<()>
+    fn display_md<M>(&self, data: M) -> Result<()>
     where
-        S: AsRef<str>,
+        M: AdoDataMarkdown,
     {
-        let md = format!("```json\n{}\n```", data.as_ref());
+        let md = data.to_markdown()?;
         self.display_string(md)
     }
 
@@ -285,42 +216,23 @@ impl ConsoleUI {
         unimplemented!()
     }
 
-    fn display_bytes(&self, _data: &[u8]) -> Result<()> {
-        unimplemented!()
-    }
-
-    fn display_http(&self, _resp: &HttpResponse) -> Result<()> {
-        unimplemented!()
-    }
-
-    fn display_status(&self, status: &StatusInfo) -> Result<()> {
-        let mut lines = Vec::new();
-
-        lines.push("# Status".to_string());
-        lines.push(format!("*  Model: {}", status.model));
-
-        let md = lines.join("\n");
-
-        self.display_string(md)
-    }
-
-    fn display(&self, data: &AdoData) -> Result<()> {
+    fn display(&self, data: AdoData) -> Result<()> {
         match data {
             AdoData::Empty => Ok(()),
             AdoData::Reset => clear_console(),
-            AdoData::Json(s) => self.display_json(s),
-            AdoData::String(s) => self.display_string(s),
+            AdoData::Json(s) => self.display_md(s),
+            AdoData::String(s) => self.display_md(s),
             AdoData::Base64(s) => self.display_base64(s),
-            AdoData::Bytes(b) => self.display_bytes(b),
-            AdoData::Http(s) => self.display_http(s),
-            AdoData::SearchData(s) => self.display_search(s),
+            AdoData::Http(s) => self.display_md(s),
+            AdoData::SearchData(s) => self.display_md(s),
             AdoData::UsageString(s) => self.display_usage(s),
-            AdoData::Shell(s) => self.display_shell(s),
-            AdoData::Status(s) => self.display_status(s),
+            AdoData::Shell(s) => self.display_md(s),
+            AdoData::Status(s) => self.display_md(s),
+            _ => unimplemented!(),
         }
     }
 
-    pub fn display_messages(&self, data: &AdoData) -> Result<()> {
+    pub fn display_messages(&self, data: AdoData) -> Result<()> {
         self.display(data)
     }
 
@@ -337,7 +249,10 @@ mod tests {
     use std::{fs, path::Path};
 
     use adolib::{
-        config::loader::ConfigFile, data::AdoData, logging::logger::setup_logger, shell::AdoShell,
+        config::loader::ConfigFile,
+        data::{search::GoogleSearchData, types::AdoData},
+        logging::logger::setup_logger,
+        shell::AdoShell,
         ui::commands::UserCommands,
     };
 
@@ -351,7 +266,7 @@ mod tests {
 
         let console = ConsoleUI::new(&config).unwrap();
 
-        console.display(&AdoData::String("Hello, World!".to_string())).unwrap();
+        console.display(AdoData::String("Hello, World!".to_string())).unwrap();
     }
 
     #[tokio::test]
@@ -384,7 +299,9 @@ mod tests {
         let config = ConfigFile::from_disk().unwrap();
         let console = ConsoleUI::new(&config).unwrap();
 
-        console.display_search(&json_data).unwrap();
+        let data = AdoData::SearchData(GoogleSearchData { json_string: json_data });
+
+        console.display(data).unwrap();
     }
 
     #[test]
@@ -398,8 +315,6 @@ mod tests {
         let config = ConfigFile::from_disk().unwrap();
         let console = ConsoleUI::new(&config).unwrap();
 
-        if let AdoData::Shell(s) = data {
-            console.display_shell(&s).unwrap();
-        }
+        console.display(data).unwrap();
     }
 }

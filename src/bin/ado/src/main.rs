@@ -74,7 +74,7 @@ async fn main_loop(mut console: ConsoleUI, mut command: UserCommands, opt_input:
         io::stdout().flush()?;
 
         match ret {
-            Ok(v) => console.display_messages(&v)?,
+            Ok(v) => console.display_messages(v)?,
             Err(Error::Usage { help }) => console.display_string(help)?,
             Err(e @ Error::CommandNotFound { command: _ }) => console.display_error(e)?,
             Err(Error::EOF) => return Ok(()),
