@@ -13,6 +13,7 @@ use adolib::{
     ui::commands::UserCommands,
 };
 use clap::Parser;
+use log::error;
 use spinner::SpinnerBuilder;
 
 #[derive(Parser, Debug)]
@@ -26,13 +27,9 @@ struct UserArgs {
     #[arg(short, long)]
     verbose: bool,
 
-    /// user id
-    #[arg(short, long)]
-    user_id: Option<String>,
-
-    // config server
-    #[arg(short, long)]
-    config_server: Option<String>,
+    /// remote config
+    #[arg(short, long, default_value = "http://10.0.0.2/config.toml")]
+    remote_config: Option<String>,
 
     /// bash command_not_found_handle
     #[arg(short, long)]
@@ -108,9 +105,16 @@ async fn main() -> Result<()> {
         },
     };
 
-    let config = match (args.user_id, args.config_server) {
-        (Some(user), Some(server)) => ConfigFile::from_webdis(user, server).await?,
-        _ => ConfigFile::from_disk()?,
+    let config = match args.remote_config {
+        Some(v) => match ConfigFile::from_url(v).await {
+            Ok(v) => v,
+            Err(e) => {
+                error!("{e}");
+                // fallback on disk
+                ConfigFile::from_disk()?
+            }
+        },
+        None => ConfigFile::from_disk()?,
     };
 
     let console = ConsoleUI::new(&config)?;
