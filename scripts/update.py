@@ -150,7 +150,7 @@ def update_container(args: UserArgs) -> bool:
 
     # replace the files
     with tarfile.open(args.archive_file, 'r|gz') as tar:
-        tar.extractall(os.path.dirname(args.install_directory), filter="data")
+        tar.extractall(os.path.dirname(args.install_directory))
 
     compose.start()
 
