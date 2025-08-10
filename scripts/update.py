@@ -1,0 +1,230 @@
+#!/usr/bin/env python3
+import os
+import sys
+import json
+import subprocess
+import argparse
+import shutil
+import tarfile
+
+from typing import Any
+from dataclasses import dataclass, asdict
+
+DEF_ARCHIVE_NAME = "container.tgz"
+CONFIG_FILE_NAME = "ado-update.json"
+
+
+@dataclass
+class UserArgs:
+    archive_file: str
+    install_directory: str
+    force: bool
+
+    def __post_init__(self) -> None:
+        self.archive_file = os.path.abspath(self.archive_file)
+        self.install_directory = os.path.abspath(self.install_directory)
+
+
+@dataclass
+class UpdateConfig:
+    archive_mod_ts: float
+
+
+class UpdateFile:
+
+    def __init__(self) -> None:
+        script_root = os.path.abspath(os.path.dirname(sys.argv[0]))
+        self.config_file = os.path.join(script_root, CONFIG_FILE_NAME)
+
+    def get_last_update(self) -> float:
+
+        if False == os.path.isfile(self.config_file):
+            return 0
+
+        with open(self.config_file) as f:
+            config_dict = json.load(f)
+
+        config = UpdateConfig(**config_dict)
+
+        return config.archive_mod_ts
+
+    def update_ts(self, ts: float) -> None:
+
+        config = UpdateConfig(ts)
+
+        with open(self.config_file, "w+") as f:
+            f.write(json.dumps(asdict(config), indent=4))
+
+
+def shell_exec(cmd_line: str,
+               cwd: str | None = None,
+               env: dict[str, Any] | None = None,
+               check: bool = True) -> tuple[int, str, str]:
+
+    out_str = ""
+    out_err = ""
+
+    env_copy = os.environ.copy()
+
+    if env is not None:
+        env_copy |= env
+
+    p = subprocess.Popen(cmd_line,
+                         shell=True,
+                         text=True,
+                         env=env_copy,
+                         stdout=subprocess.PIPE,
+                         stderr=subprocess.PIPE,
+                         cwd=cwd)
+
+    out_str, out_err = p.communicate()
+
+    if p.returncode is not None:
+        ret = p.returncode
+    else:
+        ret = 1
+
+    if True == check and 0 != ret:
+        raise AssertionError(cmd_line, ret, out_str, out_err)
+
+    return ret, out_str, out_err
+
+
+class DockerCompose:
+
+    def __init__(self, directory: str) -> None:
+
+        self.directory = directory
+        self.docker_compose = shutil.which("docker-compose")
+
+        if self.docker_compose is None:
+            raise FileNotFoundError("docker-compose is missing")
+
+        compose_file = os.path.join(directory, "docker-compose.yml")
+
+        if False == os.path.isfile(compose_file):
+            raise FileNotFoundError(f"{compose_file} is missing")
+
+    def stop(self) -> None:
+
+        cmd_line = "docker-compose stop"
+
+        # this'll work even if the container(s) isn't running
+        shell_exec(cmd_line, cwd=self.directory)
+
+    def start(self, background: bool = True) -> None:
+
+        cmd_line = "docker-compose up"
+
+        if True == background:
+            cmd_line += " -d"
+
+        shell_exec(cmd_line, cwd=self.directory)
+
+
+def printkv(k: str, v: object) -> None:
+
+    k = f"{k}:"
+    print(f"    {k:<35}{v}")
+
+
+def update_container(args: UserArgs) -> bool:
+
+    uf = UpdateFile()
+    file_mod_ts = os.stat(args.archive_file).st_mtime
+
+    # we ignoring the file ?
+    if False == args.force:
+
+        last_mod_ts = uf.get_last_update()
+
+        if last_mod_ts >= file_mod_ts:
+            # same file no need to update
+            return False
+
+    # update is required
+
+    compose = DockerCompose(args.install_directory)
+
+    compose.stop()
+
+    # replace the files
+    with tarfile.open(args.archive_file, 'r|gz') as tar:
+        tar.extractall(os.path.dirname(args.install_directory), filter="data")
+
+    compose.start()
+
+    # update the config file if everything worked
+    uf.update_ts(file_mod_ts)
+
+    return True
+
+
+def env_check() -> None:
+
+    if 0 == os.getuid() or 0 == os.geteuid():
+        raise AssertionError("shouldn't run as root")
+
+    docker_compose = shutil.which("docker-compose")
+
+    if docker_compose is None:
+        raise FileNotFoundError("docker-compose was not found")
+
+
+def main() -> int:
+
+    status = 1
+
+    def_archive = os.path.expanduser(f"~/{DEF_ARCHIVE_NAME}")
+
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("-a",
+                        "--archive-file",
+                        type=str,
+                        default=def_archive,
+                        help=f"Archive file path. Default: {def_archive}")
+
+    parser.add_argument("-i",
+                        "--install-directory",
+                        type=str,
+                        required=True,
+                        help=f"/path/to/ado_container")
+
+    parser.add_argument("-f",
+                        "--force",
+                        action="store_true",
+                        help=f"Force the update even if the pkg is the same")
+
+    try:
+        env_check()
+
+        args = UserArgs(**vars(parser.parse_args()))
+
+        print("Container Updater:")
+        printkv("Archive File", args.archive_file)
+        printkv("Install Directory", args.install_directory)
+        printkv("Force Update", args.force)
+
+        if True == os.path.isfile(args.archive_file):
+            updated = update_container(args)
+        else:
+            updated = False
+
+        printkv("Updated", updated)
+
+        status = 0
+    except KeyboardInterrupt:
+        pass
+    except FileNotFoundError as e:
+        print(e)
+
+    return status
+
+
+if __name__ == '__main__':
+
+    status = main()
+
+    if 0 != status:
+        sys.exit(status)
