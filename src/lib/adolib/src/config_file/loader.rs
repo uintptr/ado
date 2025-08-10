@@ -29,6 +29,12 @@ pub struct OpenAiConfig {
 }
 
 #[derive(Debug, Deserialize, Clone)]
+pub struct ConfigLlmLlama {
+    pub endpoint: String,
+    pub model: String,
+}
+
+#[derive(Debug, Deserialize, Clone)]
 pub struct GoogleConfig {
     pub cx: String,
     pub geo: String,
@@ -36,9 +42,16 @@ pub struct GoogleConfig {
     pub url: String,
 }
 
-#[derive(Debug, Deserialize)]
-pub struct ConfigFile {
+#[derive(Debug, Deserialize, Clone)]
+pub struct ConfigLlm {
     openai: Option<OpenAiConfig>,
+    llama: Option<ConfigLlmLlama>,
+    provider: String,
+}
+
+#[derive(Debug, Deserialize, Clone)]
+pub struct ConfigFile {
+    llm: ConfigLlm,
     search: Option<GoogleConfig>,
 }
 
@@ -80,7 +93,18 @@ fn find_from_home() -> Result<PathBuf> {
 }
 
 impl ConfigFile {
-    pub fn from_disk() -> Result<ConfigFile> {
+    pub fn from_path<P>(path: P) -> Result<ConfigFile>
+    where
+        P: AsRef<Path>,
+    {
+        let file_data = fs::read_to_string(path)?;
+
+        let config: ConfigFile = toml::from_str(&file_data)?;
+
+        Ok(config)
+    }
+
+    pub fn from_default() -> Result<ConfigFile> {
         let rel_config = Path::new("config").join(CONFIG_FILE_NAME);
 
         let config_file = match find_file(rel_config) {
@@ -88,11 +112,7 @@ impl ConfigFile {
             Err(_) => find_from_home()?,
         };
 
-        let file_data = fs::read_to_string(config_file)?;
-
-        let config: ConfigFile = toml::from_str(&file_data)?;
-
-        Ok(config)
+        ConfigFile::from_path(config_file)
     }
 
     pub fn from_string<S>(value: S) -> Result<ConfigFile>
@@ -136,8 +156,19 @@ impl ConfigFile {
         Ok(config)
     }
 
+    pub fn llm_provider(&self) -> &str {
+        &self.llm.provider
+    }
+
+    pub fn llama(&self) -> Result<&ConfigLlmLlama> {
+        match &self.llm.llama {
+            Some(v) => Ok(v),
+            None => Err(Error::ConfigNotFound),
+        }
+    }
+
     pub fn openai(&self) -> Result<&OpenAiConfig> {
-        match &self.openai {
+        match &self.llm.openai {
             Some(v) => Ok(v),
             None => Err(Error::ConfigNotFound),
         }

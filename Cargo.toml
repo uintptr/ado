@@ -59,6 +59,8 @@ uuid = { version = "1.17.0", features = ["v4"] }
 vergen-git2 = { version = "1.0.7", features = ["build"] }
 fern = "0.7.1"
 strfmt = "0.2.5"
+async-trait = "0.1.88"
+
 
 [profile.release]
 lto = true

@@ -2,7 +2,7 @@ use crate::{
     config_file::loader::ConfigFile,
     data::types::AdoData,
     error::{Error, Result},
-    llm::openai::chain::AIChain,
+    llm::provider::LLMChain,
     search::google::{GoogleCSE, GoogleSearchResults},
     ui::status::StatusInfo,
 };
@@ -46,16 +46,21 @@ pub struct CommandInfo {
 }
 
 pub struct UserCommands {
+    config: ConfigFile,
     search: GoogleCSE,
-    chain: AIChain,
+    chain: LLMChain,
 }
 
 impl UserCommands {
     pub fn new(config: &ConfigFile) -> Result<UserCommands> {
         let search = GoogleCSE::new(config)?;
-        let chain = AIChain::new(config)?;
+        let chain = LLMChain::new(config)?;
 
-        Ok(UserCommands { search, chain })
+        Ok(UserCommands {
+            config: config.clone(),
+            search,
+            chain,
+        })
     }
 
     pub async fn handler<S>(&mut self, line: S) -> Result<AdoData>
@@ -71,7 +76,7 @@ impl UserCommands {
                 Command::Query { input } => {
                     let input_str = input.join(" ");
 
-                    self.chain.query(input_str).await
+                    self.chain.query(&input_str).await
                 }
                 Command::Quit => Err(Error::EOF),
                 Command::Reset => {
@@ -84,7 +89,7 @@ impl UserCommands {
                     Ok(AdoData::SearchData(GoogleSearchResults::new(json_str)))
                 }
                 Command::Status => {
-                    let s = StatusInfo::new(&self.chain);
+                    let s = StatusInfo::new(&self.config, &self.chain);
 
                     Ok(AdoData::Status(s))
                 }
@@ -97,7 +102,7 @@ impl UserCommands {
                     //
                     // assuming this is query
                     //
-                    self.chain.query(&line).await
+                    self.chain.query(line.as_ref()).await
                 }
             },
         }
@@ -134,7 +139,7 @@ mod tests {
 
     #[test]
     fn test_handler() {
-        let config = ConfigFile::from_disk().unwrap();
+        let config = ConfigFile::from_default().unwrap();
 
         let mut cmd = UserCommands::new(&config).unwrap();
 

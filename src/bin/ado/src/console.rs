@@ -259,7 +259,7 @@ mod tests {
     fn display_text() {
         setup_logger(true).unwrap();
 
-        let config = ConfigFile::from_disk().unwrap();
+        let config = ConfigFile::from_default().unwrap();
 
         let console = ConsoleUI::new(&config).unwrap();
 
@@ -270,7 +270,7 @@ mod tests {
     async fn arg_parser() {
         setup_logger(true).unwrap();
 
-        let config = ConfigFile::from_disk().unwrap();
+        let config = ConfigFile::from_default().unwrap();
 
         let mut cmd = UserCommands::new(&config).unwrap();
 
@@ -293,7 +293,7 @@ mod tests {
 
         let json_data = fs::read_to_string(json_file).unwrap();
 
-        let config = ConfigFile::from_disk().unwrap();
+        let config = ConfigFile::from_default().unwrap();
         let console = ConsoleUI::new(&config).unwrap();
 
         let data = AdoData::SearchData(GoogleSearchResults { json_string: json_data });
@@ -309,7 +309,7 @@ mod tests {
 
         let data = sh.exec("uname -a").unwrap();
 
-        let config = ConfigFile::from_disk().unwrap();
+        let config = ConfigFile::from_default().unwrap();
         let console = ConsoleUI::new(&config).unwrap();
 
         console.display(data).unwrap();

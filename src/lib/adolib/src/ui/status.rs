@@ -4,10 +4,11 @@ use serde::{Deserialize, Serialize};
 use strfmt::strfmt;
 
 use crate::{
+    config_file::loader::ConfigFile,
     const_vars::{PKG_VERSION, VERGEN_BUILD_DATE, VERGEN_RUSTC_COMMIT_HASH},
     data::types::AdoDataMarkdown,
     error::Result,
-    llm::openai::chain::AIChain,
+    llm::provider::LLMChain,
 };
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -16,10 +17,11 @@ pub struct StatusInfo {
     pub version: String,
     pub build_date: String,
     pub commit_hash: String,
+    pub llm_provider: String,
 }
 
 impl StatusInfo {
-    pub fn new(chain: &AIChain) -> Self {
+    pub fn new(config_file: &ConfigFile, chain: &LLMChain) -> Self {
         let model = chain.model();
 
         StatusInfo {
@@ -27,6 +29,7 @@ impl StatusInfo {
             version: PKG_VERSION.into(),
             build_date: VERGEN_BUILD_DATE.into(),
             commit_hash: VERGEN_RUSTC_COMMIT_HASH.into(),
+            llm_provider: config_file.llm_provider().to_string(),
         }
     }
 }
@@ -38,12 +41,13 @@ impl AdoDataMarkdown for StatusInfo {
         lines.push("# Status".into());
 
         let fmt = r#"
-|             |                   |
-|-------------|-------------------|
-| Model       |  `{model}`        |
-| Version     |  `{version}`      |
-| Build Date  |  `{build_date}`   |
-| Commit Hash |  `{commit_hash}`  |"#;
+|             |                     |
+|-------------|---------------------|
+| Model       |  `{model}`          |
+| Version     |  `{version}`        |
+| Build Date  |  `{build_date}`     |
+| Commit Hash |  `{commit_hash}`    |
+| LLM         |  `{llm}`            |"#;
 
         let mut vars: HashMap<String, String> = HashMap::new();
 
@@ -51,6 +55,7 @@ impl AdoDataMarkdown for StatusInfo {
         vars.insert("version".into(), self.version);
         vars.insert("build_date".into(), self.build_date);
         vars.insert("commit_hash".into(), self.commit_hash);
+        vars.insert("llm".into(), self.llm_provider);
 
         let table = strfmt(fmt, &vars)?;
 

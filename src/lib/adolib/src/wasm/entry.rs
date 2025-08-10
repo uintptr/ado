@@ -4,7 +4,7 @@ use crate::{
     config_file::loader::ConfigFile,
     data::types::{AdoData, AdoDataMarkdown},
     error::{Error, Result},
-    llm::{openai::chain::AIChain, question::question_detection},
+    llm::{provider::LLMChain, question::question_detection},
     logging::logger::setup_logger,
     search::google::GoogleCSE,
     storage::webdis::PersistentStorage,
@@ -32,7 +32,7 @@ pub async fn log_n_sleep(s: &str) {
 #[wasm_bindgen]
 pub struct AdoWasm {
     commands: UserCommands,
-    chain: AIChain,
+    chain: LLMChain,
     reddit: RedditQuery,
     search: GoogleCSE,
     cache: PersistentStorage,
@@ -112,8 +112,8 @@ impl AdoWasm {
         let storage_url = build_storage_url().unwrap();
 
         let config = ConfigFile::from_string(config).unwrap();
-        let chain = AIChain::new(&config).unwrap();
-        let reddit = RedditQuery::new(&config).unwrap();
+        let chain = LLMChain::new(&config).unwrap();
+        let reddit = RedditQuery::new();
         let commands = UserCommands::new(&config).unwrap();
         let search = GoogleCSE::new(&config).unwrap();
         let cache = PersistentStorage::new(user_id, storage_url);
@@ -131,7 +131,7 @@ impl AdoWasm {
         let sub_reddit = match self.cache.get("sub_reddit", description).await {
             Ok(v) => v,
             Err(_) => {
-                let data = self.reddit.find_sub(description).await?;
+                let data = self.reddit.find_sub(&self.chain, description).await?;
 
                 if let Err(e) = self.cache.set("sub_reddit", description, &data, CACHE_30_DAYS).await {
                     error!("{e}");

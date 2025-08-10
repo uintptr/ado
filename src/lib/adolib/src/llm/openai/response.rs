@@ -1,3 +1,4 @@
+#![allow(dead_code)]
 use serde::{Deserialize, Deserializer};
 use serde_json::Value;
 
@@ -203,7 +204,7 @@ mod tests {
 
         let res = OpenAIResponse::from_string(&resp_json).unwrap();
 
-        let config = ConfigFile::from_disk().unwrap();
+        let config = ConfigFile::from_default().unwrap();
 
         let handler = FunctionHandler::new(&config).unwrap();
 

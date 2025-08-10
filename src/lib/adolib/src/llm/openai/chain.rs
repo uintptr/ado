@@ -1,15 +1,23 @@
 use log::info;
 
-use crate::{config_file::loader::ConfigFile, data::types::AdoData, error::Result, tools::config::ConfigFunctions};
+use crate::{
+    config_file::loader::ConfigFile,
+    data::types::AdoData,
+    error::Result,
+    llm::{openai::api::OpenAIAPI, provider::LLMChainTrait},
+    tools::config::ConfigFunctions,
+};
 
-use super::{api::LLM, request::OpenAIRequest};
+use async_trait::async_trait;
+
+use super::request::OpenAIRequest;
 
 const FUNC_PROMPT_PRE: &str = r#"Dont forget that you have access series of
 tools and functions to call to give the user the best possible answer. Here's
 the list of functions"#;
 
-pub struct AIChain {
-    llm: LLM,
+pub struct OpenAIChain {
+    api: OpenAIAPI,
     req: OpenAIRequest,
 }
 
@@ -25,11 +33,11 @@ fn build_functions_prompt(functions: &ConfigFunctions) -> String {
     format!("{FUNC_PROMPT_PRE}: {func_names_str}")
 }
 
-impl AIChain {
-    pub fn new(config: &ConfigFile) -> Result<AIChain> {
+impl OpenAIChain {
+    pub fn new(config: &ConfigFile) -> Result<Self> {
         let functions = ConfigFunctions::load()?;
 
-        let llm = LLM::new(config)?;
+        let api = OpenAIAPI::new(config)?;
 
         let openai = config.openai()?;
 
@@ -45,23 +53,27 @@ impl AIChain {
 
         req.with_input_role("user", function_prompt);
 
-        Ok(AIChain { llm, req })
+        Ok(Self { api, req })
     }
+}
 
-    pub async fn query<S>(&mut self, content: S) -> Result<AdoData>
-    where
-        S: AsRef<str>,
-    {
-        info!("query: {}", content.as_ref());
+#[async_trait(?Send)]
+impl LLMChainTrait for OpenAIChain {
+    async fn query(&mut self, content: &str) -> Result<AdoData> {
+        info!("query: {}", content);
         self.req.with_input_role("user", content);
-        self.llm.query(&mut self.req).await
+        self.api.query(&mut self.req).await
     }
 
-    pub fn reset(&mut self) {
+    async fn message(&self, content: &str) -> Result<String> {
+        self.api.message(content).await
+    }
+
+    fn reset(&mut self) {
         self.req.reset_input();
     }
 
-    pub fn model(&self) -> &str {
-        self.llm.model()
+    fn model(&self) -> &str {
+        self.api.model()
     }
 }

@@ -10,21 +10,21 @@ use reqwest::Client;
 
 use super::{request::OpenAIRequest, response::OpenAIResponse};
 
-pub struct LLM {
+pub struct OpenAIAPI {
     client: Client,
     openai: OpenAiConfig,
     handler: FunctionHandler,
 }
 
-impl LLM {
-    pub fn new(config: &ConfigFile) -> Result<LLM> {
+impl OpenAIAPI {
+    pub fn new(config: &ConfigFile) -> Result<Self> {
         let openai = config.openai()?;
 
         if openai.key.is_empty() {
             return Err(Error::ApiKeyNotFound);
         }
 
-        Ok(LLM {
+        Ok(Self {
             client: Client::new(),
             openai: openai.clone(),
             handler: FunctionHandler::new(config)?,

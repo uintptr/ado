@@ -131,7 +131,7 @@ mod tests {
     async fn test_lucky() {
         setup_logger(true).unwrap();
 
-        let config = ConfigFile::from_disk().unwrap();
+        let config = ConfigFile::from_default().unwrap();
 
         let search = GoogleCSE::new(&config).unwrap();
 

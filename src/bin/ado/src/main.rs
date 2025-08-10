@@ -13,7 +13,6 @@ use adolib::{
     ui::commands::UserCommands,
 };
 use clap::Parser;
-use log::error;
 use spinner::SpinnerBuilder;
 
 #[derive(Parser, Debug)]
@@ -27,8 +26,12 @@ struct UserArgs {
     #[arg(short, long)]
     verbose: bool,
 
+    /// verbose
+    #[arg(short, long)]
+    local_config: Option<String>,
+
     /// remote config
-    #[arg(short, long, default_value = "http://10.0.0.2/config.toml")]
+    #[arg(short, long)]
     remote_config: Option<String>,
 
     /// bash command_not_found_handle
@@ -82,6 +85,13 @@ async fn main_loop(mut console: ConsoleUI, mut command: UserCommands, opt_input:
     }
 }
 
+fn load_config_local(local_config: &Option<String>) -> Result<ConfigFile> {
+    match local_config {
+        Some(v) => ConfigFile::from_path(v),
+        None => ConfigFile::from_default(),
+    }
+}
+
 #[tokio::main]
 async fn main() -> Result<()> {
     let args = UserArgs::parse();
@@ -108,18 +118,16 @@ async fn main() -> Result<()> {
     let config = match args.remote_config {
         Some(v) => match ConfigFile::from_url(v).await {
             Ok(v) => v,
-            Err(e) => {
-                error!("{e}");
-                // fallback on disk
-                ConfigFile::from_disk()?
-            }
+            Err(e) => return Err(e),
         },
-        None => ConfigFile::from_disk()?,
+        None => load_config_local(&args.local_config)?,
     };
 
-    let console = ConsoleUI::new(&config)?;
+    dbg!(&config);
 
     let command = UserCommands::new(&config)?;
+
+    let console = ConsoleUI::new(&config)?;
 
     match main_loop(console, command, query_opt).await {
         Ok(_) | Err(Error::EOF) => Ok(()),

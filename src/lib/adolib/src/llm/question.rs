@@ -1,4 +1,9 @@
-pub fn question_detection(query: &str) -> bool {
+pub fn question_detection<S>(query: S) -> bool
+where
+    S: AsRef<str>,
+{
+    let query = query.as_ref();
+
     if query.starts_with("how ")
         || query.starts_with("how's ")
         || query.starts_with("does ")
