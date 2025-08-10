@@ -212,7 +212,7 @@ function response_handler(response) {
         display_search_results(object.json_string);
     } else if (data == "Reset") {
         display_reset();
-    } else if (data.data.hasOwnProperty("Status")) {
+    } else if (data.hasOwnProperty("Status")) {
         display_string(response.markdown)
     } else {
         console.warn("--------------------------------------------------------")

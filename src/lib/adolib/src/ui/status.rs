@@ -38,12 +38,12 @@ impl AdoDataMarkdown for StatusInfo {
         lines.push("# Status".into());
 
         let fmt = r#"
-| Key         | Value           |
-|-------------|-----------------|
-| Model       |  {model}        |
-| Version     |  {version}      |
-| Build Date  |  {build_date}   |
-| Commit Hash |  {commit_hash}  |"#;
+|             |                   |
+|-------------|-------------------|
+| Model       |  `{model}`        |
+| Version     |  `{version}`      |
+| Build Date  |  `{build_date}`   |
+| Commit Hash |  `{commit_hash}`  |"#;
 
         let mut vars: HashMap<String, String> = HashMap::new();
 
