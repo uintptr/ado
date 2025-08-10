@@ -106,6 +106,8 @@ pub enum Error {
     Http(reqwest::Error),
     #[from]
     Staples(rstaples::error::Error),
+    #[from]
+    FmtError(strfmt::FmtError),
 }
 
 impl core::fmt::Display for Error {

@@ -129,7 +129,7 @@ function display_string(response, markdown = true, chat_source = null) {
     const container = document.getElementById("results");
 
     if (container == null || !(container instanceof HTMLElement)) {
-        console.log("result not found", container);
+        console.warn("result not found", container);
         return;
     }
 
@@ -199,21 +199,27 @@ function display_reset() {
  * @param {object} response
  */
 function response_handler(response) {
-    if (response.hasOwnProperty("UsageString")) {
-        let usage = "```\n" + response.UsageString + "\n```";
+
+    const data = response.data
+
+    if (data.hasOwnProperty("UsageString")) {
+        let usage = "```\n" + data.UsageString + "\n```";
         display_string(usage);
-    } else if (response.hasOwnProperty("String")) {
-        display_string(response.String);
-    } else if (response.hasOwnProperty("SearchData")) {
-        let json_data = response.SearchData;
-        display_search_results(json_data);
-    } else if (response == "Reset") {
+    } else if (data.hasOwnProperty("String")) {
+        display_string(data.String);
+    } else if (data.hasOwnProperty("SearchData")) {
+        const object = data.SearchData
+        display_search_results(object.json_string);
+    } else if (data == "Reset") {
         display_reset();
-    } else if (response.hasOwnProperty("Status")) {
-        let status_object = response.Status
-        display_status(status_object)
+    } else if (data.data.hasOwnProperty("Status")) {
+        display_string(response.markdown)
     } else {
-        console.warn(response);
+        console.warn("--------------------------------------------------------")
+        console.warn("unknown response type")
+        console.warn(response)
+        console.warn("--------------------------------------------------------")
+
     }
 }
 
@@ -334,7 +340,7 @@ async function search_handler(wctx, search) {
                 response_handler(res);
             } else {
                 //
-                // fallback to google I'm feeling lucky url. In most
+                // fallback to google "I'm Feeling Lucky" url. In most
                 // cases this is better than a search result
                 //
                 let lucky_url = await wctx.lucky(q);
@@ -348,7 +354,6 @@ async function search_handler(wctx, search) {
         }
     }
 }
-
 
 /**
  * @param {string} user_id
@@ -429,7 +434,6 @@ async function main() {
         }
 
     } else {
-        console.log("not authorized");
         await navigateWithLoading("/login.html");
     }
 }

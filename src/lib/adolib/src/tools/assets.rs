@@ -14,6 +14,7 @@ pub struct FunctionAssetsPlatform;
 #[folder = "config/functions/all"]
 pub struct FunctionAssets;
 
+#[cfg(not(target_arch = "wasm32"))]
 #[derive(Embed)]
 #[folder = "config/whois"]
 pub struct WhoisAssets;

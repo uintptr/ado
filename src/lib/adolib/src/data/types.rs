@@ -19,7 +19,7 @@ pub trait AdoDataBase64 {
 
 pub trait AdoDataDisplay: AdoDataMarkdown + AdoDataBase64 {}
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum AdoData {
     Empty,
     Reset,
@@ -43,9 +43,17 @@ impl AdoDataMarkdown for String {
 impl AdoDataMarkdown for AdoData {
     fn to_markdown(self) -> Result<String> {
         let md = match self {
+            AdoData::Empty => "".to_string(),
+            AdoData::Reset => "".to_string(),
+            AdoData::String(s) => s.to_markdown()?,
+            AdoData::Bytes(_) => unimplemented!(),
+            AdoData::Json(s) => s.to_markdown()?,
+            AdoData::Base64(b) => b.to_markdown()?,
             AdoData::SearchData(d) => d.to_markdown()?,
+            AdoData::Http(h) => h.to_markdown()?,
+            AdoData::UsageString(s) => s.to_markdown()?,
             AdoData::Shell(s) => s.to_markdown()?,
-            d => d.to_markdown()?,
+            AdoData::Status(s) => s.to_markdown()?,
         };
 
         Ok(md)

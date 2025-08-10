@@ -11,7 +11,7 @@ use crate::data::types::AdoDataMarkdown;
 
 use crate::data::base64_serializer::base64_serializer;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct HttpResponse {
     pub url: String,
     pub code: u16,

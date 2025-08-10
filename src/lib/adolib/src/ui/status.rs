@@ -1,4 +1,7 @@
+use std::collections::HashMap;
+
 use serde::{Deserialize, Serialize};
+use strfmt::strfmt;
 
 use crate::{
     const_vars::{PKG_VERSION, VERGEN_BUILD_DATE, VERGEN_RUSTC_COMMIT_HASH},
@@ -7,7 +10,7 @@ use crate::{
     llm::openai::chain::AIChain,
 };
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct StatusInfo {
     pub model: String,
     pub version: String,
@@ -33,10 +36,25 @@ impl AdoDataMarkdown for StatusInfo {
         let mut lines = Vec::new();
 
         lines.push("# Status".into());
-        lines.push(format!("*  LLM Model: `{}`", self.model));
-        lines.push(format!("*  Version: `{}`", self.version));
-        lines.push(format!("*  Build Date: `{}`", self.build_date));
-        lines.push(format!("*  Commit Hash: `{}`", self.commit_hash));
+
+        let fmt = r#"
+| Key         | Value           |
+|-------------|-----------------|
+| Model       |  {model}        |
+| Version     |  {version}      |
+| Build Date  |  {build_date}   |
+| Commit Hash |  {commit_hash}  |"#;
+
+        let mut vars: HashMap<String, String> = HashMap::new();
+
+        vars.insert("model".into(), self.model);
+        vars.insert("version".into(), self.version);
+        vars.insert("build_date".into(), self.build_date);
+        vars.insert("commit_hash".into(), self.commit_hash);
+
+        let table = strfmt(fmt, &vars)?;
+
+        lines.push(table);
 
         Ok(lines.join("\n"))
     }

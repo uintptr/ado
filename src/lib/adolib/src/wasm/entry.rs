@@ -1,7 +1,8 @@
 use std::time::Duration;
 
 use crate::{
-    config::loader::ConfigFile,
+    config_file::loader::ConfigFile,
+    data::types::{AdoData, AdoDataMarkdown},
     error::{Error, Result},
     llm::{openai::chain::AIChain, question::question_detection},
     logging::logger::setup_logger,
@@ -12,6 +13,7 @@ use crate::{
 };
 use gloo_utils::format::JsValueSerdeExt;
 use log::error;
+use serde::Serialize;
 use tokio::time::sleep;
 use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
 use web_sys::window;
@@ -48,6 +50,12 @@ pub struct AdoWasmCommand {
     name: String,
     short: String,
     desc: String,
+}
+
+#[derive(Serialize)]
+pub struct AdoWasmQueryResponse {
+    pub data: AdoData,
+    pub markdown: String,
 }
 
 #[wasm_bindgen]
@@ -139,7 +147,12 @@ impl AdoWasm {
     pub async fn query(&mut self, content: &str) -> Result<JsValue> {
         let data = self.commands.handler(content).await?;
 
-        let obj = JsValue::from_serde(&data)?;
+        let resp = AdoWasmQueryResponse {
+            data: data.clone(),
+            markdown: data.to_markdown()?,
+        };
+
+        let obj = JsValue::from_serde(&resp)?;
 
         Ok(obj)
     }

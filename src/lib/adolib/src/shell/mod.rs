@@ -13,7 +13,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::data::types::AdoDataMarkdown;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ShellExit {
     pub stdout: String,
     pub stderr: String,

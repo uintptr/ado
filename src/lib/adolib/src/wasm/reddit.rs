@@ -1,4 +1,4 @@
-use crate::{config::loader::ConfigFile, error::Result, llm::openai::api::LLM};
+use crate::{config_file::loader::ConfigFile, error::Result, llm::openai::api::LLM};
 
 pub struct RedditQuery {
     llm: LLM,

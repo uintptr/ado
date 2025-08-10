@@ -15,7 +15,7 @@ pub struct GoogleCSE {
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct GoogleSearchResults {
     pub json_string: String,
 }
