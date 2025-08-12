@@ -45,7 +45,7 @@ pub struct GoogleConfig {
 #[derive(Debug, Deserialize, Clone)]
 pub struct ConfigLlm {
     openai: Option<OpenAiConfig>,
-    llama: Option<ConfigLlmLlama>,
+    ollama: Option<ConfigLlmLlama>,
     provider: String,
 }
 
@@ -160,8 +160,8 @@ impl ConfigFile {
         &self.llm.provider
     }
 
-    pub fn llama(&self) -> Result<&ConfigLlmLlama> {
-        match &self.llm.llama {
+    pub fn ollama(&self) -> Result<&ConfigLlmLlama> {
+        match &self.llm.ollama {
             Some(v) => Ok(v),
             None => Err(Error::ConfigNotFound),
         }

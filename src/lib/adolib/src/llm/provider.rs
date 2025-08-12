@@ -5,7 +5,7 @@ use crate::{
     config_file::loader::ConfigFile,
     data::types::AdoData,
     error::{Error, Result},
-    llm::openai::chain::OpenAIChain,
+    llm::{ollama::ollama_chain::OllamaChain, openai::chain::OpenAIChain},
 };
 
 use log::error;
@@ -20,6 +20,7 @@ pub trait LLMChainTrait {
 
 pub enum LLMChain {
     OpenAI(OpenAIChain),
+    Ollama(OllamaChain),
 }
 
 impl LLMChain {
@@ -28,6 +29,10 @@ impl LLMChain {
             "openai" => {
                 let chain = OpenAIChain::new(config)?;
                 LLMChain::OpenAI(chain)
+            }
+            "ollama" => {
+                let chain = OllamaChain::new(config)?;
+                LLMChain::Ollama(chain)
             }
             unk => {
                 error!("Unknown provider: {unk}");
@@ -41,24 +46,28 @@ impl LLMChain {
     pub async fn message(&self, content: &str) -> Result<String> {
         match self {
             LLMChain::OpenAI(openai) => openai.message(content).await,
+            LLMChain::Ollama(ollama) => ollama.message(content).await,
         }
     }
 
     pub async fn query(&mut self, content: &str) -> Result<AdoData> {
         match self {
             LLMChain::OpenAI(openai) => openai.query(content).await,
+            LLMChain::Ollama(ollama) => ollama.query(content).await,
         }
     }
 
     pub fn reset(&mut self) {
         match self {
             LLMChain::OpenAI(openai) => openai.reset(),
+            LLMChain::Ollama(ollama) => ollama.reset(),
         }
     }
 
     pub fn model(&self) -> &str {
         match self {
             LLMChain::OpenAI(openai) => openai.model(),
+            LLMChain::Ollama(ollama) => ollama.model(),
         }
     }
 }

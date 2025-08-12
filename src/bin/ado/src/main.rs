@@ -123,8 +123,6 @@ async fn main() -> Result<()> {
         None => load_config_local(&args.local_config)?,
     };
 
-    dbg!(&config);
-
     let command = UserCommands::new(&config)?;
 
     let console = ConsoleUI::new(&config)?;
