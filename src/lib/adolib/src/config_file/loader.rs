@@ -11,8 +11,10 @@ use serde::Deserialize;
 use crate::{
     const_vars::DOT_DIRECTORY,
     error::{Error, Result},
-    storage::webdis::PersistentStorage,
 };
+
+#[cfg(target_arch = "wasm32")]
+use crate::{storage::PersistentStorageTrait, storage::persistent::PersistentStorage};
 
 const DEF_OPENAI_URL: &str = "https://api.openai.com/v1/responses";
 const DEF_OPENAI_MODEL: &str = "gpt-5-mini";
@@ -123,6 +125,7 @@ impl ConfigFile {
         Ok(config)
     }
 
+    #[cfg(target_arch = "wasm32")]
     pub async fn from_webdis<U, S>(user_id: U, server: S) -> Result<ConfigFile>
     where
         U: AsRef<str>,

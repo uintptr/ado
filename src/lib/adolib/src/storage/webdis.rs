@@ -3,7 +3,9 @@ use std::time::Duration;
 use crate::{
     error::{Error, Result},
     http::req::Http,
+    storage::PersistentStorageTrait,
 };
+use async_trait::async_trait;
 use log::error;
 use serde::Deserialize;
 
@@ -12,7 +14,7 @@ use serde::Deserialize;
 // https://github.com/nicolasff/webdis
 //
 #[derive(Debug)]
-pub struct PersistentStorage {
+pub struct WebdisStorage {
     user_id: String,
     url: String,
     client: Http,
@@ -24,8 +26,8 @@ struct WebdisData {
     get: Option<String>,
 }
 
-impl PersistentStorage {
-    pub fn new<S, U>(user_id: U, url: S) -> PersistentStorage
+impl WebdisStorage {
+    pub fn new<S, U>(user_id: U, url: S) -> Self
     where
         S: AsRef<str>,
         U: AsRef<str>,
@@ -44,10 +46,13 @@ impl PersistentStorage {
         let digest = md5::compute(user_key.as_ref());
         format!("{}_{}_{digest:x}", self.user_id, realm)
     }
+}
 
-    pub async fn get<S>(&self, realm: &'static str, user_key: S) -> Result<String>
+#[async_trait]
+impl PersistentStorageTrait for WebdisStorage {
+    async fn get<S>(&self, realm: &'static str, user_key: S) -> Result<String>
     where
-        S: AsRef<str>,
+        S: AsRef<str> + Send,
     {
         let key = self.build_key(realm, user_key);
         let get_url = format!("{}/GET/{key}", self.url);
@@ -72,10 +77,10 @@ impl PersistentStorage {
         }
     }
 
-    pub async fn set<K, V>(&self, realm: &'static str, user_key: K, value: V, ttl: Duration) -> Result<()>
+    async fn set<K, V>(&self, realm: &'static str, user_key: K, value: V, ttl: Duration) -> Result<()>
     where
-        K: AsRef<str>,
-        V: AsRef<[u8]>,
+        K: AsRef<str> + Send,
+        V: AsRef<[u8]> + Send,
     {
         let data: Vec<u8> = value.as_ref().to_vec();
 
@@ -98,9 +103,9 @@ impl PersistentStorage {
         }
     }
 
-    pub async fn del<S>(&self, realm: &'static str, user_key: S) -> Result<()>
+    async fn del<S>(&self, realm: &'static str, user_key: S) -> Result<()>
     where
-        S: AsRef<str>,
+        S: AsRef<str> + Send,
     {
         let key = self.build_key(realm, user_key);
         let del_url = format!("{}/DEL/{}", self.url, key);
@@ -117,6 +122,7 @@ impl PersistentStorage {
         }
     }
 }
+
 #[cfg(test)]
 mod tests {
 
