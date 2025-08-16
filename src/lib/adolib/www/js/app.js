@@ -284,6 +284,12 @@ async function search_handler(wctx, search) {
             //
             let res = await wctx.query("search " + q)
             response_handler(res)
+        } else if (q.startsWith("i ")) {
+            //
+            // Google image search
+            //
+            let google_image_url = "https://www.google.com/search?q=" + q_plus_two + "&tbm=isch"
+            await navigateWithLoading(google_image_url);
         } else if (q.startsWith("a ")) {
             //
             // amazon search
