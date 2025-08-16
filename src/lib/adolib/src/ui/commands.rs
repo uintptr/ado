@@ -52,6 +52,7 @@ enum Command {
         #[arg(trailing_var_arg = true)]
         query: Vec<String>,
     },
+    /// Print status information
     Status,
 }
 
