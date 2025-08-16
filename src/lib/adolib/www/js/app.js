@@ -343,7 +343,7 @@ async function search_handler(wctx, search) {
                 // fallback to google "I'm Feeling Lucky" url. In most
                 // cases this is better than a search result
                 //
-                await navigate_to_lucky(wctx, "wikipedia " + q)
+                await navigate_to_lucky(wctx, q)
             }
         }
     }
