@@ -34,7 +34,7 @@ impl LocalStorage {
             fs::create_dir(&ado_dir)?;
         }
 
-        let cache_file = ado_dir.join("cache.db");
+        let cache_file = ado_dir.join("cache");
 
         LocalStorage::from_path(cache_file)
     }

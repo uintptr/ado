@@ -16,7 +16,7 @@ struct CommandCli {
     commands: Command,
 }
 
-use log::error;
+use log::{error, info};
 
 #[derive(Debug, Subcommand)]
 enum Command {
@@ -74,9 +74,14 @@ impl UserCommands {
         S: AsRef<str>,
     {
         let search_data = match self.cache.get("search", query.as_ref()).await {
-            Ok(v) => v,
+            Ok(v) => {
+                info!("query was cached");
+                v
+            }
             Err(_) => {
                 let data = self.search.query(query.as_ref()).await?;
+
+                let data = data.replace("www.reddit.com", "old.reddit.com");
 
                 if let Err(e) = self.cache.set("search", query.as_ref(), &data, CACHE_05_DAYS).await {
                     error!("{e}");
