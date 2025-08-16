@@ -177,6 +177,8 @@ def main() -> int:
 
     def_archive = os.path.expanduser(f"~/{DEF_ARCHIVE_NAME}")
 
+    def_install = os.path.join(os.getcwd(), "ado_container")
+
     parser = argparse.ArgumentParser()
 
     parser.add_argument("-a",
@@ -188,7 +190,7 @@ def main() -> int:
     parser.add_argument("-i",
                         "--install-directory",
                         type=str,
-                        required=True,
+                        default=def_install,
                         help=f"/path/to/ado_container")
 
     parser.add_argument("-f",
