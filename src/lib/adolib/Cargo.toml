@@ -22,6 +22,7 @@ rstaples = { workspace = true }
 md5 = { workspace = true }
 strfmt = { workspace = true }
 async-trait = { workspace = true }
+sled = { workspace = true }
 
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
@@ -38,11 +39,12 @@ wasm-bindgen-futures = { workspace = true }
 console_error_panic_hook = { workspace = true }
 web-sys = { workspace = true }
 gloo-utils = { workspace = true }
-fern  = { workspace = true }
-chrono  = { workspace = true }
+fern = { workspace = true }
+chrono = { workspace = true }
 
 [dev-dependencies]
 uuid = { workspace = true }
+tempfile = { workspace = true }
 
 [build-dependencies]
 chrono = { workspace = true }

@@ -1,48 +1,111 @@
-use std::time::Duration;
+use std::{path::Path, time::Duration};
 
 use crate::{
     error::{Error, Result},
     storage::PersistentStorageTrait,
 };
 use async_trait::async_trait;
+use sled::Db;
 
 #[derive(Debug)]
-pub struct LocalStorage {}
+pub struct LocalStorage {
+    tree: Db,
+}
 
 impl LocalStorage {
-    pub fn new() -> Self {
-        Self {}
+    pub fn new<P>(file_path: P) -> Result<Self>
+    where
+        P: AsRef<Path>,
+    {
+        let tree = sled::open(file_path)?;
+
+        Ok(Self { tree })
+    }
+
+    fn build_key<K>(&self, realm: &'static str, user_key: K) -> String
+    where
+        K: AsRef<str>,
+    {
+        let digest = md5::compute(user_key.as_ref());
+        format!("{realm}_{digest:x}")
     }
 }
 
 #[async_trait]
 impl PersistentStorageTrait for LocalStorage {
-    async fn get<S>(&self, _realm: &'static str, _user_key: S) -> Result<String>
+    async fn get<S>(&self, realm: &'static str, user_key: S) -> Result<String>
     where
         S: AsRef<str> + Send,
     {
-        Err(Error::NotFound)
+        let key = self.build_key(realm, user_key);
+
+        let data = match self.tree.get(key)? {
+            Some(v) => v,
+            None => {
+                return Err(Error::NotFound);
+            }
+        };
+
+        let data_string = String::from_utf8(data.to_vec())?;
+
+        Ok(data_string)
     }
 
-    async fn set<K, V>(&self, _realm: &'static str, _user_key: K, _value: V, _ttl: Duration) -> Result<()>
+    async fn set<K, V>(&self, realm: &'static str, user_key: K, value: V, _ttl: Duration) -> Result<()>
     where
         K: AsRef<str> + Send,
         V: AsRef<[u8]> + Send,
     {
-        Err(Error::NotFound)
+        let key = self.build_key(realm, user_key);
+
+        let data: Vec<u8> = value.as_ref().to_vec();
+
+        self.tree.insert(key, data)?;
+
+        Ok(())
     }
 
-    async fn del<S>(&self, _realm: &'static str, _user_key: S) -> Result<()>
+    async fn del<S>(&self, realm: &'static str, user_key: S) -> Result<()>
     where
         S: AsRef<str> + Send,
     {
-        Err(Error::NotFound)
+        let key = self.build_key(realm, user_key);
+
+        self.tree.remove(key)?;
+
+        Ok(())
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use std::time::Duration;
+
+    use crate::storage::{PersistentStorageTrait, local::LocalStorage};
 
     #[tokio::test]
-    async fn test_local() {}
+    async fn test_local() {
+        crate::logging::logger::setup_logger(true).unwrap();
+
+        let td = tempfile::Builder::new().prefix("ls_test_").tempdir().unwrap();
+
+        let db_file = td.path().join("test.sled");
+
+        let ls = LocalStorage::new(db_file).unwrap();
+
+        let ret = ls.get("test", "hello").await;
+        assert!(ret.is_err());
+
+        let ret = ls.set("test", "hello", "world", Duration::from_secs(0)).await;
+        assert!(ret.is_ok());
+
+        let ret = ls.get("test", "hello").await;
+        assert!(ret.is_ok());
+
+        let ret = ls.del("test", "hello").await;
+        assert!(ret.is_ok());
+
+        let ret = ls.get("test", "hello").await;
+        assert!(ret.is_err());
+    }
 }

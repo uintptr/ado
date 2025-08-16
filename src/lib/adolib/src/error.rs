@@ -108,6 +108,8 @@ pub enum Error {
     Staples(rstaples::error::Error),
     #[from]
     FmtError(strfmt::FmtError),
+    #[from]
+    SledError(sled::Error),
 }
 
 impl core::fmt::Display for Error {
