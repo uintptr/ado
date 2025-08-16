@@ -1,24 +1,21 @@
 #!/usr/bin/env python3
 import os
 import sys
-import json
 import subprocess
 import argparse
 import shutil
 import tarfile
 
 from typing import Any
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 
 DEF_ARCHIVE_NAME = "container.tgz"
-CONFIG_FILE_NAME = "ado-update.json"
 
 
 @dataclass
 class UserArgs:
     archive_file: str
     install_directory: str
-    force: bool
 
     def __post_init__(self) -> None:
         self.archive_file = os.path.abspath(self.archive_file)
@@ -28,32 +25,6 @@ class UserArgs:
 @dataclass
 class UpdateConfig:
     archive_mod_ts: float
-
-
-class UpdateFile:
-
-    def __init__(self) -> None:
-        script_root = os.path.abspath(os.path.dirname(sys.argv[0]))
-        self.config_file = os.path.join(script_root, CONFIG_FILE_NAME)
-
-    def get_last_update(self) -> float:
-
-        if False == os.path.isfile(self.config_file):
-            return 0
-
-        with open(self.config_file) as f:
-            config_dict = json.load(f)
-
-        config = UpdateConfig(**config_dict)
-
-        return config.archive_mod_ts
-
-    def update_ts(self, ts: float) -> None:
-
-        config = UpdateConfig(ts)
-
-        with open(self.config_file, "w+") as f:
-            f.write(json.dumps(asdict(config), indent=4))
 
 
 def shell_exec(cmd_line: str,
@@ -130,20 +101,6 @@ def printkv(k: str, v: object) -> None:
 
 def update_container(args: UserArgs) -> bool:
 
-    uf = UpdateFile()
-    file_mod_ts = os.stat(args.archive_file).st_mtime
-
-    # we ignoring the file ?
-    if False == args.force:
-
-        last_mod_ts = uf.get_last_update()
-
-        if last_mod_ts >= file_mod_ts:
-            # same file no need to update
-            return False
-
-    # update is required
-
     compose = DockerCompose(args.install_directory)
 
     compose.stop()
@@ -153,9 +110,6 @@ def update_container(args: UserArgs) -> bool:
         tar.extractall(os.path.dirname(args.install_directory))
 
     compose.start()
-
-    # update the config file if everything worked
-    uf.update_ts(file_mod_ts)
 
     return True
 
@@ -193,11 +147,6 @@ def main() -> int:
                         default=def_install,
                         help=f"/path/to/ado_container")
 
-    parser.add_argument("-f",
-                        "--force",
-                        action="store_true",
-                        help=f"Force the update even if the pkg is the same")
-
     try:
         env_check()
 
@@ -206,10 +155,10 @@ def main() -> int:
         print("Container Updater:")
         printkv("Archive File", args.archive_file)
         printkv("Install Directory", args.install_directory)
-        printkv("Force Update", args.force)
 
         if True == os.path.isfile(args.archive_file):
             updated = update_container(args)
+            os.unlink(args.archive_file)
         else:
             updated = False
 
