@@ -170,22 +170,6 @@ function display_string(response, markdown = true, chat_source = null) {
     }
 }
 
-/**
- * @param {AdoWasm} wctx
- * @param {string} q
- */
-async function search_issue_query(wctx, q) {
-    const container = document.getElementById("results");
-
-    if (container != null && container instanceof HTMLElement) {
-        let results_str = await wctx.search(q);
-
-        if (results_str != null) {
-            display_search_results(results_str);
-        }
-    }
-}
-
 function display_reset() {
     const results = document.getElementById("results");
 
@@ -270,6 +254,17 @@ function init_cmd_line(wctx) {
     }
 }
 
+
+/**
+ * @param {AdoWasm} wctx
+ * @param {string} query
+ */
+async function navigate_to_lucky(wctx, query) {
+    let res = await wctx.query("lucky " + query);
+    await navigateWithLoading(res.data.String);
+}
+
+
 /**
  * @param {AdoWasm} wctx
  * @param {string} search
@@ -287,7 +282,8 @@ async function search_handler(wctx, search) {
             //
             // assume this is a search
             //
-            search_issue_query(wctx, q_plus_two);
+            let res = await wctx.query("search " + q)
+            response_handler(res)
         } else if (q.startsWith("a ")) {
             //
             // amazon search
@@ -310,14 +306,13 @@ async function search_handler(wctx, search) {
             //
             // I'm feeling lucky google search
             //
-            let lucky_url = await wctx.lucky(q_plus_two);
-            await navigateWithLoading(lucky_url);
+            await navigate_to_lucky(wctx, q_plus_two)
         } else if (q.startsWith("r ")) {
             //
             // Find the associated subreddit
             //
-            let sub = await wctx.find_sub_reddit(q_plus_two);
-            let reddit_url = "https://old.reddit.com" + sub + "/";
+            let res = await wctx.query("reddit " + q_plus_two)
+            let reddit_url = "https://old.reddit.com" + res.data.String + "/";
             await navigateWithLoading(reddit_url);
         } else if (q.startsWith("t ")) {
             //
@@ -329,8 +324,7 @@ async function search_handler(wctx, search) {
             //
             // wikipedia
             //
-            let wikipedia_url = await wctx.lucky("wikipedia " + q_plus_two);
-            await navigateWithLoading(wikipedia_url);
+            await navigate_to_lucky(wctx, "wikipedia " + q_plus_two)
         } else {
             //
             // detect if this is a question
@@ -343,13 +337,7 @@ async function search_handler(wctx, search) {
                 // fallback to google "I'm Feeling Lucky" url. In most
                 // cases this is better than a search result
                 //
-                let lucky_url = await wctx.lucky(q);
-
-                if (lucky_url.includes("www.reddit.com")) {
-                    lucky_url = lucky_url.replace("/www/", "old");
-                }
-
-                await navigateWithLoading(lucky_url);
+                await navigate_to_lucky(wctx, "wikipedia " + q)
             }
         }
     }

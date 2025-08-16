@@ -6,7 +6,7 @@ use crate::{
     llm::provider::LLMChain,
     search::google::{GoogleCSE, GoogleSearchResults},
     storage::{PersistentStorageTrait, persistent::PersistentStorage},
-    ui::status::StatusInfo,
+    ui::{reddit::RedditQuery, status::StatusInfo},
 };
 use clap::{CommandFactory, Parser, Subcommand, error::ErrorKind};
 
@@ -40,6 +40,18 @@ enum Command {
         #[arg(trailing_var_arg = true)]
         query: Vec<String>,
     },
+    /// Find a sub reddit from description
+    Reddit {
+        /// query string
+        #[arg(trailing_var_arg = true)]
+        query: Vec<String>,
+    },
+    /// Return the first URL from the search result
+    Lucky {
+        /// query string
+        #[arg(trailing_var_arg = true)]
+        query: Vec<String>,
+    },
     Status,
 }
 
@@ -54,18 +66,21 @@ pub struct UserCommands {
     search: GoogleCSE,
     chain: LLMChain,
     cache: PersistentStorage,
+    reddit: RedditQuery,
 }
 
 impl UserCommands {
     pub fn new(config: &ConfigFile, cache: PersistentStorage) -> Result<UserCommands> {
         let search = GoogleCSE::new(config)?;
         let chain = LLMChain::new(config)?;
+        let reddit = RedditQuery::new();
 
         Ok(UserCommands {
             config: config.clone(),
             search,
             chain,
             cache,
+            reddit,
         })
     }
 
@@ -73,7 +88,7 @@ impl UserCommands {
     where
         S: AsRef<str>,
     {
-        let search_data = match self.cache.get("search", query.as_ref()).await {
+        let search_data = match self.cache.get("cmd_search", query.as_ref()).await {
             Ok(v) => {
                 info!("query was cached");
                 v
@@ -83,7 +98,7 @@ impl UserCommands {
 
                 let data = data.replace("www.reddit.com", "old.reddit.com");
 
-                if let Err(e) = self.cache.set("search", query.as_ref(), &data, CACHE_05_DAYS).await {
+                if let Err(e) = self.cache.set("cmd_search", query.as_ref(), &data, CACHE_05_DAYS).await {
                     error!("{e}");
                 }
 
@@ -92,6 +107,52 @@ impl UserCommands {
         };
 
         Ok(search_data)
+    }
+
+    async fn cached_reddit<S>(&self, query: S) -> Result<String>
+    where
+        S: AsRef<str>,
+    {
+        let sub_reddit = match self.cache.get("cmd_reddit", query.as_ref()).await {
+            Ok(v) => {
+                info!("query was cached");
+                v
+            }
+            Err(_) => {
+                let data = self.reddit.find_sub(&self.chain, query.as_ref()).await?;
+
+                if let Err(e) = self.cache.set("cmd_reddit", query.as_ref(), &data, CACHE_05_DAYS).await {
+                    error!("{e}");
+                }
+
+                data
+            }
+        };
+
+        Ok(sub_reddit)
+    }
+
+    async fn cached_lucky<S>(&self, query: S) -> Result<String>
+    where
+        S: AsRef<str>,
+    {
+        let sub_reddit = match self.cache.get("cmd_lucky", query.as_ref()).await {
+            Ok(v) => {
+                info!("query was cached");
+                v
+            }
+            Err(_) => {
+                let data = self.search.lucky(query.as_ref()).await?;
+
+                if let Err(e) = self.cache.set("cmd_lucky", query.as_ref(), &data, CACHE_05_DAYS).await {
+                    error!("{e}");
+                }
+
+                data
+            }
+        };
+
+        Ok(sub_reddit)
     }
 
     pub async fn handler<S>(&mut self, line: S) -> Result<AdoData>
@@ -120,6 +181,16 @@ impl UserCommands {
                     let json_str = self.cached_search(query).await?;
 
                     Ok(AdoData::SearchData(GoogleSearchResults::new(json_str)))
+                }
+                Command::Reddit { query } => {
+                    let query = query.join(" ");
+                    let sub = self.cached_reddit(query).await?;
+                    Ok(AdoData::String(sub))
+                }
+                Command::Lucky { query } => {
+                    let query = query.join(" ");
+                    let url = self.cached_lucky(query).await?;
+                    Ok(AdoData::String(url))
                 }
                 Command::Status => {
                     let s = StatusInfo::new(&self.config, &self.chain);

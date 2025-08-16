@@ -2,19 +2,14 @@ use std::time::Duration;
 
 use crate::{
     config_file::loader::ConfigFile,
-    const_vars::{CACHE_05_DAYS, CACHE_30_DAYS},
     data::types::{AdoData, AdoDataMarkdown},
     error::{Error, Result},
     llm::{provider::LLMChain, question::question_detection},
     logging::logger::setup_logger,
-    search::google::GoogleCSE,
-    storage::PersistentStorageTrait,
     storage::persistent::PersistentStorage,
     ui::commands::UserCommands,
-    wasm::reddit::RedditQuery,
 };
 use gloo_utils::format::JsValueSerdeExt;
-use log::error;
 use serde::Serialize;
 use tokio::time::sleep;
 use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
@@ -35,9 +30,6 @@ pub async fn log_n_sleep(s: &str) {
 pub struct AdoWasm {
     commands: UserCommands,
     chain: LLMChain,
-    reddit: RedditQuery,
-    search: GoogleCSE,
-    cache: PersistentStorage,
 }
 
 // or for your custom error type:
@@ -112,35 +104,10 @@ impl AdoWasm {
 
         let config = ConfigFile::from_string(config).unwrap();
         let chain = LLMChain::new(&config).unwrap();
-        let reddit = RedditQuery::new();
-        let search = GoogleCSE::new(&config).unwrap();
         let cache = PersistentStorage::new(user_id, storage_url);
-        let commands = UserCommands::new(&config, cache.clone()).unwrap();
+        let commands = UserCommands::new(&config, cache).unwrap();
 
-        AdoWasm {
-            commands,
-            chain,
-            reddit,
-            search,
-            cache,
-        }
-    }
-
-    pub async fn find_sub_reddit(&self, description: &str) -> Result<String> {
-        let sub_reddit = match self.cache.get("sub_reddit", description).await {
-            Ok(v) => v,
-            Err(_) => {
-                let data = self.reddit.find_sub(&self.chain, description).await?;
-
-                if let Err(e) = self.cache.set("sub_reddit", description, &data, CACHE_30_DAYS).await {
-                    error!("{e}");
-                }
-
-                data
-            }
-        };
-
-        Ok(sub_reddit)
+        AdoWasm { commands, chain }
     }
 
     pub async fn query(&mut self, content: &str) -> Result<JsValue> {
@@ -154,40 +121,6 @@ impl AdoWasm {
         let obj = JsValue::from_serde(&resp)?;
 
         Ok(obj)
-    }
-
-    pub async fn search(&self, query: &str) -> Result<String> {
-        let search_data = match self.cache.get("search", query).await {
-            Ok(v) => v,
-            Err(_) => {
-                let data = self.search.query(query).await?;
-
-                if let Err(e) = self.cache.set("search", query, &data, CACHE_05_DAYS).await {
-                    error!("{e}");
-                }
-
-                data
-            }
-        };
-
-        Ok(search_data)
-    }
-
-    pub async fn lucky(&self, query: &str) -> Result<String> {
-        let lucky_data = match self.cache.get("lucky", query).await {
-            Ok(v) => v,
-            Err(_) => {
-                let data = self.search.lucky(query).await?;
-
-                if let Err(e) = self.cache.set("lucky", query, &data, CACHE_05_DAYS).await {
-                    error!("{e}");
-                }
-
-                data
-            }
-        };
-
-        Ok(lucky_data)
     }
 
     pub fn is_question(&self, query: &str) -> bool {
