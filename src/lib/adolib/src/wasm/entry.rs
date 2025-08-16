@@ -1,5 +1,3 @@
-use std::time::Duration;
-
 use crate::{
     config_file::loader::ConfigFile,
     data::types::{AdoData, AdoDataMarkdown},
@@ -11,7 +9,6 @@ use crate::{
 };
 use gloo_utils::format::JsValueSerdeExt;
 use serde::Serialize;
-use tokio::time::sleep;
 use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
 use web_sys::window;
 
@@ -19,11 +16,6 @@ use web_sys::window;
 extern "C" {
     #[wasm_bindgen(js_namespace = console)]
     pub fn log(s: &str);
-}
-
-pub async fn log_n_sleep(s: &str) {
-    log(s);
-    sleep(Duration::from_millis(500)).await
 }
 
 #[wasm_bindgen]
@@ -39,35 +31,10 @@ impl From<Error> for JsValue {
     }
 }
 
-#[wasm_bindgen]
-pub struct AdoWasmCommand {
-    name: String,
-    short: String,
-    desc: String,
-}
-
 #[derive(Serialize)]
-pub struct AdoWasmQueryResponse {
+pub struct WasmQueryResponse {
     pub data: AdoData,
     pub markdown: String,
-}
-
-#[wasm_bindgen]
-impl AdoWasmCommand {
-    #[wasm_bindgen(getter)]
-    pub fn name(&self) -> String {
-        self.name.clone()
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn short(&self) -> String {
-        self.short.clone()
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn desc(&self) -> String {
-        self.desc.clone()
-    }
 }
 
 fn build_storage_url() -> Result<String> {
@@ -113,7 +80,7 @@ impl AdoWasm {
     pub async fn query(&mut self, content: &str) -> Result<JsValue> {
         let data = self.commands.handler(content).await?;
 
-        let resp = AdoWasmQueryResponse {
+        let resp = WasmQueryResponse {
             data: data.clone(),
             markdown: data.to_markdown()?,
         };
