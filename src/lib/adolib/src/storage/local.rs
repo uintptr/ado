@@ -1,6 +1,12 @@
-use std::{path::Path, time::Duration};
+use std::{
+    env::{self, home_dir},
+    fs,
+    path::{Path, PathBuf},
+    time::Duration,
+};
 
 use crate::{
+    const_vars::DOT_DIRECTORY,
     error::{Error, Result},
     storage::PersistentStorageTrait,
 };
@@ -13,7 +19,27 @@ pub struct LocalStorage {
 }
 
 impl LocalStorage {
-    pub fn new<P>(file_path: P) -> Result<Self>
+    pub fn new() -> Result<Self> {
+        let home = match home_dir() {
+            Some(v) => v,
+            None => {
+                let home_env = env::var("HOME")?;
+                PathBuf::from(home_env)
+            }
+        };
+
+        let ado_dir = home.join(DOT_DIRECTORY);
+
+        if !ado_dir.exists() {
+            fs::create_dir(&ado_dir)?;
+        }
+
+        let cache_file = ado_dir.join("cache.db");
+
+        LocalStorage::from_path(cache_file)
+    }
+
+    pub fn from_path<P>(file_path: P) -> Result<Self>
     where
         P: AsRef<Path>,
     {
@@ -91,7 +117,7 @@ mod tests {
 
         let db_file = td.path().join("test.sled");
 
-        let ls = LocalStorage::new(db_file).unwrap();
+        let ls = LocalStorage::from_path(db_file).unwrap();
 
         let ret = ls.get("test", "hello").await;
         assert!(ret.is_err());

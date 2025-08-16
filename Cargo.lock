@@ -30,6 +30,7 @@ dependencies = [
  "rustyline",
  "serde_json",
  "spinner",
+ "tempfile",
  "tokio",
  "which",
 ]

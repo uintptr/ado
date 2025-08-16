@@ -12,7 +12,7 @@ pub struct OllamaMessage {
     pub content: String,
 }
 
-impl<'a> OllamaMessage {
+impl OllamaMessage {
     pub fn new<R, C>(role: R, content: C) -> Self
     where
         R: AsRef<str>,

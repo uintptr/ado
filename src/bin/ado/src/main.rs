@@ -10,6 +10,7 @@ use adolib::{
     error::{Error, Result},
     llm::question::question_detection,
     logging::logger::setup_logger,
+    storage::persistent::PersistentStorage,
     ui::commands::UserCommands,
 };
 use clap::Parser;
@@ -50,7 +51,7 @@ where
     Ok(data)
 }
 
-async fn main_loop(mut console: ConsoleUI, mut command: UserCommands, opt_input: Option<String>) -> Result<()> {
+async fn main_loop(mut console: ConsoleUI, mut command: UserCommands<'_>, opt_input: Option<String>) -> Result<()> {
     let mut init_query = opt_input;
 
     loop {
@@ -123,9 +124,11 @@ async fn main() -> Result<()> {
         None => load_config_local(&args.local_config)?,
     };
 
-    let command = UserCommands::new(&config)?;
+    let cache = PersistentStorage::new()?;
 
-    let console = ConsoleUI::new(&config)?;
+    let command = UserCommands::new(&config, &cache)?;
+
+    let console = ConsoleUI::new(&command)?;
 
     match main_loop(console, command, query_opt).await {
         Ok(_) | Err(Error::EOF) => Ok(()),

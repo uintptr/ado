@@ -19,7 +19,7 @@ pub trait LLMChainTrait {
 }
 
 pub enum LLMChain {
-    OpenAI(OpenAIChain),
+    OpenAI(Box<OpenAIChain>), // box because it gros the union/enum unnecessarily
     Ollama(OllamaChain),
 }
 
@@ -28,7 +28,7 @@ impl LLMChain {
         let chain = match config.llm_provider() {
             "openai" => {
                 let chain = OpenAIChain::new(config)?;
-                LLMChain::OpenAI(chain)
+                LLMChain::OpenAI(Box::new(chain))
             }
             "ollama" => {
                 let chain = OllamaChain::new(config)?;

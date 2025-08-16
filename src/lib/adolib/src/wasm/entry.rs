@@ -76,9 +76,6 @@ impl AdoWasmCommand {
     }
 }
 
-const CACHE_05_DAYS: Duration = Duration::from_secs(5 * 24 * 60 * 60);
-const CACHE_30_DAYS: Duration = Duration::from_secs(30 * 24 * 60 * 60);
-
 fn build_storage_url() -> Result<String> {
     let window = window().ok_or(Error::NotFound)?;
 
@@ -114,9 +111,9 @@ impl AdoWasm {
         let config = ConfigFile::from_string(config).unwrap();
         let chain = LLMChain::new(&config).unwrap();
         let reddit = RedditQuery::new();
-        let commands = UserCommands::new(&config).unwrap();
         let search = GoogleCSE::new(&config).unwrap();
         let cache = PersistentStorage::new(user_id, storage_url);
+        let commands = UserCommands::new(&config).unwrap();
 
         AdoWasm {
             commands,

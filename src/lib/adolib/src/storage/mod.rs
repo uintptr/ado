@@ -24,7 +24,7 @@ pub trait PersistentStorageTrait {
 pub mod webdis;
 
 #[cfg(not(target_arch = "wasm32"))]
-pub mod local;
+mod local;
 
 pub mod persistent {
     #[cfg(not(target_arch = "wasm32"))]

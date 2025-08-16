@@ -6,7 +6,6 @@ use std::{
 };
 
 use adolib::{
-    config_file::loader::ConfigFile,
     const_vars::{DOT_DIRECTORY, PKG_NAME, PKG_VERSION, VERGEN_BUILD_DATE, VERGEN_RUSTC_COMMIT_HASH},
     data::types::{AdoData, AdoDataMarkdown},
     error::{Error, Result},
@@ -92,7 +91,7 @@ fn init_readline(commands: &UserCommands) -> Result<Editor<MyHelper, FileHistory
 }
 
 impl ConsoleUI {
-    pub fn new(config: &ConfigFile) -> Result<Self> {
+    pub fn new(commands: &UserCommands) -> Result<Self> {
         let glow = match which("glow") {
             Ok(v) => {
                 info!("glow is @ {}", v.display());
@@ -104,8 +103,6 @@ impl ConsoleUI {
             }
         };
 
-        let commands = UserCommands::new(config)?;
-
         // pretty start
         clear_console()?;
         let banner = format!("{PKG_NAME} {PKG_VERSION} {VERGEN_RUSTC_COMMIT_HASH} ({VERGEN_BUILD_DATE})");
@@ -113,7 +110,7 @@ impl ConsoleUI {
 
         Ok(Self {
             glow,
-            rl: init_readline(&commands)?,
+            rl: init_readline(commands)?,
         })
     }
 
@@ -253,6 +250,8 @@ mod tests {
         search::google::GoogleSearchResults, shell::AdoShell, ui::commands::UserCommands,
     };
 
+    use adolib::storage::persistent::PersistentStorage;
+
     use super::ConsoleUI;
 
     #[test]
@@ -261,8 +260,11 @@ mod tests {
 
         let config = ConfigFile::from_default().unwrap();
 
-        let console = ConsoleUI::new(&config).unwrap();
-
+        let td = tempfile::Builder::new().prefix("console_test_").tempdir().unwrap();
+        let cache_file = td.path().join("cache.db");
+        let cache = PersistentStorage::from_path(cache_file).unwrap();
+        let command = UserCommands::new(&config, &cache).unwrap();
+        let console = ConsoleUI::new(&command).unwrap();
         console.display(AdoData::String("Hello, World!".to_string())).unwrap();
     }
 
@@ -272,7 +274,11 @@ mod tests {
 
         let config = ConfigFile::from_default().unwrap();
 
-        let mut cmd = UserCommands::new(&config).unwrap();
+        let td = tempfile::Builder::new().prefix("console_test_").tempdir().unwrap();
+        let cache_file = td.path().join("cache.db");
+        let cache = PersistentStorage::from_path(cache_file).unwrap();
+
+        let mut cmd = UserCommands::new(&config, &cache).unwrap();
 
         cmd.handler("/quit").await.unwrap();
     }
@@ -294,7 +300,12 @@ mod tests {
         let json_data = fs::read_to_string(json_file).unwrap();
 
         let config = ConfigFile::from_default().unwrap();
-        let console = ConsoleUI::new(&config).unwrap();
+
+        let td = tempfile::Builder::new().prefix("console_test_").tempdir().unwrap();
+        let cache_file = td.path().join("cache.db");
+        let cache = PersistentStorage::from_path(cache_file).unwrap();
+        let command = UserCommands::new(&config, &cache).unwrap();
+        let console = ConsoleUI::new(&command).unwrap();
 
         let data = AdoData::SearchData(GoogleSearchResults { json_string: json_data });
 
@@ -310,7 +321,14 @@ mod tests {
         let data = sh.exec("uname -a").unwrap();
 
         let config = ConfigFile::from_default().unwrap();
-        let console = ConsoleUI::new(&config).unwrap();
+
+        let td = tempfile::Builder::new().prefix("console_test_").tempdir().unwrap();
+        let cache_file = td.path().join("cache.db");
+        let cache = PersistentStorage::from_path(cache_file).unwrap();
+
+        let command = UserCommands::new(&config, &cache).unwrap();
+
+        let console = ConsoleUI::new(&command).unwrap();
 
         console.display(data).unwrap();
     }

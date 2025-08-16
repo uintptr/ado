@@ -1,9 +1,11 @@
 use crate::{
     config_file::loader::ConfigFile,
+    const_vars::CACHE_05_DAYS,
     data::types::AdoData,
     error::{Error, Result},
     llm::provider::LLMChain,
     search::google::{GoogleCSE, GoogleSearchResults},
+    storage::{PersistentStorageTrait, persistent::PersistentStorage},
     ui::status::StatusInfo,
 };
 use clap::{CommandFactory, Parser, Subcommand, error::ErrorKind};
@@ -13,6 +15,8 @@ struct CommandCli {
     #[command(subcommand)]
     commands: Command,
 }
+
+use log::error;
 
 #[derive(Debug, Subcommand)]
 enum Command {
@@ -45,14 +49,15 @@ pub struct CommandInfo {
     pub about: Option<String>,
 }
 
-pub struct UserCommands {
+pub struct UserCommands<'a> {
     config: ConfigFile,
     search: GoogleCSE,
     chain: LLMChain,
+    cache: &'a PersistentStorage,
 }
 
-impl UserCommands {
-    pub fn new(config: &ConfigFile) -> Result<UserCommands> {
+impl<'a> UserCommands<'a> {
+    pub fn new(config: &ConfigFile, cache: &'a PersistentStorage) -> Result<UserCommands<'a>> {
         let search = GoogleCSE::new(config)?;
         let chain = LLMChain::new(config)?;
 
@@ -60,7 +65,28 @@ impl UserCommands {
             config: config.clone(),
             search,
             chain,
+            cache,
         })
+    }
+
+    async fn cached_search<S>(&self, query: S) -> Result<String>
+    where
+        S: AsRef<str>,
+    {
+        let search_data = match self.cache.get("search", query.as_ref()).await {
+            Ok(v) => v,
+            Err(_) => {
+                let data = self.search.query(query.as_ref()).await?;
+
+                if let Err(e) = self.cache.set("search", query.as_ref(), &data, CACHE_05_DAYS).await {
+                    error!("{e}");
+                }
+
+                data
+            }
+        };
+
+        Ok(search_data)
     }
 
     pub async fn handler<S>(&mut self, line: S) -> Result<AdoData>
@@ -84,7 +110,9 @@ impl UserCommands {
                     Ok(AdoData::Reset)
                 }
                 Command::Search { query } => {
-                    let json_str = self.search.query(query.join(" ")).await?;
+                    let query = query.join(" ");
+
+                    let json_str = self.cached_search(query).await?;
 
                     Ok(AdoData::SearchData(GoogleSearchResults::new(json_str)))
                 }
@@ -135,13 +163,20 @@ impl UserCommands {
 
 #[cfg(test)]
 mod tests {
+    use crate::storage::persistent::PersistentStorage;
     use crate::{config_file::loader::ConfigFile, ui::commands::UserCommands};
 
     #[test]
     fn test_handler() {
         let config = ConfigFile::from_default().unwrap();
 
-        let mut cmd = UserCommands::new(&config).unwrap();
+        let td = tempfile::Builder::new().prefix("console_test_").tempdir().unwrap();
+
+        let cache_file = td.path().join("cache.db");
+
+        let cache = PersistentStorage::from_path(cache_file).unwrap();
+
+        let mut cmd = UserCommands::new(&config, &cache).unwrap();
 
         let _ret = cmd.handler("/help");
     }
