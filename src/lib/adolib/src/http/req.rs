@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::data::types::AdoDataMarkdown;
 
-use crate::data::base64_serializer::base64_serializer;
+use crate::data::serializers::base64_serializer;
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct HttpResponse {

@@ -1,2 +1,2 @@
-pub mod base64_serializer;
+pub mod serializers;
 pub mod types;
