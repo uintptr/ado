@@ -13,7 +13,7 @@ use serde::Deserialize;
 // https://webd.is/#more
 // https://github.com/nicolasff/webdis
 //
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct WebdisStorage {
     user_id: String,
     url: String,
@@ -48,11 +48,11 @@ impl WebdisStorage {
     }
 }
 
-#[async_trait]
+#[async_trait(?Send)]
 impl PersistentStorageTrait for WebdisStorage {
     async fn get<S>(&self, realm: &'static str, user_key: S) -> Result<String>
     where
-        S: AsRef<str> + Send,
+        S: AsRef<str>,
     {
         let key = self.build_key(realm, user_key);
         let get_url = format!("{}/GET/{key}", self.url);
@@ -79,8 +79,8 @@ impl PersistentStorageTrait for WebdisStorage {
 
     async fn set<K, V>(&self, realm: &'static str, user_key: K, value: V, ttl: Duration) -> Result<()>
     where
-        K: AsRef<str> + Send,
-        V: AsRef<[u8]> + Send,
+        K: AsRef<str>,
+        V: AsRef<[u8]>,
     {
         let data: Vec<u8> = value.as_ref().to_vec();
 
@@ -105,7 +105,7 @@ impl PersistentStorageTrait for WebdisStorage {
 
     async fn del<S>(&self, realm: &'static str, user_key: S) -> Result<()>
     where
-        S: AsRef<str> + Send,
+        S: AsRef<str>,
     {
         let key = self.build_key(realm, user_key);
         let del_url = format!("{}/DEL/{}", self.url, key);

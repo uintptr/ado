@@ -49,15 +49,15 @@ pub struct CommandInfo {
     pub about: Option<String>,
 }
 
-pub struct UserCommands<'a> {
+pub struct UserCommands {
     config: ConfigFile,
     search: GoogleCSE,
     chain: LLMChain,
-    cache: &'a PersistentStorage,
+    cache: PersistentStorage,
 }
 
-impl<'a> UserCommands<'a> {
-    pub fn new(config: &ConfigFile, cache: &'a PersistentStorage) -> Result<UserCommands<'a>> {
+impl UserCommands {
+    pub fn new(config: &ConfigFile, cache: PersistentStorage) -> Result<UserCommands> {
         let search = GoogleCSE::new(config)?;
         let chain = LLMChain::new(config)?;
 
@@ -176,7 +176,7 @@ mod tests {
 
         let cache = PersistentStorage::from_path(cache_file).unwrap();
 
-        let mut cmd = UserCommands::new(&config, &cache).unwrap();
+        let mut cmd = UserCommands::new(&config, cache).unwrap();
 
         let _ret = cmd.handler("/help");
     }

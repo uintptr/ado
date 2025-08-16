@@ -263,7 +263,7 @@ mod tests {
         let td = tempfile::Builder::new().prefix("console_test_").tempdir().unwrap();
         let cache_file = td.path().join("cache.db");
         let cache = PersistentStorage::from_path(cache_file).unwrap();
-        let command = UserCommands::new(&config, &cache).unwrap();
+        let command = UserCommands::new(&config, cache).unwrap();
         let console = ConsoleUI::new(&command).unwrap();
         console.display(AdoData::String("Hello, World!".to_string())).unwrap();
     }
@@ -278,7 +278,7 @@ mod tests {
         let cache_file = td.path().join("cache.db");
         let cache = PersistentStorage::from_path(cache_file).unwrap();
 
-        let mut cmd = UserCommands::new(&config, &cache).unwrap();
+        let mut cmd = UserCommands::new(&config, cache).unwrap();
 
         cmd.handler("/quit").await.unwrap();
     }
@@ -304,7 +304,7 @@ mod tests {
         let td = tempfile::Builder::new().prefix("console_test_").tempdir().unwrap();
         let cache_file = td.path().join("cache.db");
         let cache = PersistentStorage::from_path(cache_file).unwrap();
-        let command = UserCommands::new(&config, &cache).unwrap();
+        let command = UserCommands::new(&config, cache).unwrap();
         let console = ConsoleUI::new(&command).unwrap();
 
         let data = AdoData::SearchData(GoogleSearchResults { json_string: json_data });
@@ -326,7 +326,7 @@ mod tests {
         let cache_file = td.path().join("cache.db");
         let cache = PersistentStorage::from_path(cache_file).unwrap();
 
-        let command = UserCommands::new(&config, &cache).unwrap();
+        let command = UserCommands::new(&config, cache).unwrap();
 
         let console = ConsoleUI::new(&command).unwrap();
 

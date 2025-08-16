@@ -57,11 +57,11 @@ impl LocalStorage {
     }
 }
 
-#[async_trait]
+#[async_trait(?Send)]
 impl PersistentStorageTrait for LocalStorage {
     async fn get<S>(&self, realm: &'static str, user_key: S) -> Result<String>
     where
-        S: AsRef<str> + Send,
+        S: AsRef<str>,
     {
         let key = self.build_key(realm, user_key);
 
@@ -79,8 +79,8 @@ impl PersistentStorageTrait for LocalStorage {
 
     async fn set<K, V>(&self, realm: &'static str, user_key: K, value: V, _ttl: Duration) -> Result<()>
     where
-        K: AsRef<str> + Send,
-        V: AsRef<[u8]> + Send,
+        K: AsRef<str>,
+        V: AsRef<[u8]>,
     {
         let key = self.build_key(realm, user_key);
 
@@ -93,7 +93,7 @@ impl PersistentStorageTrait for LocalStorage {
 
     async fn del<S>(&self, realm: &'static str, user_key: S) -> Result<()>
     where
-        S: AsRef<str> + Send,
+        S: AsRef<str>,
     {
         let key = self.build_key(realm, user_key);
 

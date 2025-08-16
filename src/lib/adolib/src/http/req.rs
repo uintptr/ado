@@ -60,7 +60,7 @@ impl AdoDataMarkdown for HttpResponse {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Http {
     client: Client,
 }

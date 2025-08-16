@@ -2,12 +2,14 @@ use std::time::Duration;
 
 use crate::{
     config_file::loader::ConfigFile,
+    const_vars::{CACHE_05_DAYS, CACHE_30_DAYS},
     data::types::{AdoData, AdoDataMarkdown},
     error::{Error, Result},
     llm::{provider::LLMChain, question::question_detection},
     logging::logger::setup_logger,
     search::google::GoogleCSE,
-    storage::webdis::PersistentStorage,
+    storage::PersistentStorageTrait,
+    storage::persistent::PersistentStorage,
     ui::commands::UserCommands,
     wasm::reddit::RedditQuery,
 };
@@ -113,7 +115,7 @@ impl AdoWasm {
         let reddit = RedditQuery::new();
         let search = GoogleCSE::new(&config).unwrap();
         let cache = PersistentStorage::new(user_id, storage_url);
-        let commands = UserCommands::new(&config).unwrap();
+        let commands = UserCommands::new(&config, cache.clone()).unwrap();
 
         AdoWasm {
             commands,

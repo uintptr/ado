@@ -51,7 +51,7 @@ where
     Ok(data)
 }
 
-async fn main_loop(mut console: ConsoleUI, mut command: UserCommands<'_>, opt_input: Option<String>) -> Result<()> {
+async fn main_loop(mut console: ConsoleUI, mut command: UserCommands, opt_input: Option<String>) -> Result<()> {
     let mut init_query = opt_input;
 
     loop {
@@ -126,7 +126,7 @@ async fn main() -> Result<()> {
 
     let cache = PersistentStorage::new()?;
 
-    let command = UserCommands::new(&config, &cache)?;
+    let command = UserCommands::new(&config, cache)?;
 
     let console = ConsoleUI::new(&command)?;
 
