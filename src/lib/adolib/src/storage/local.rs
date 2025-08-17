@@ -13,9 +13,11 @@ use crate::{
 use async_trait::async_trait;
 use sled::Db;
 
+use log::error;
+
 #[derive(Debug, Clone)]
 pub struct LocalStorage {
-    tree: Db,
+    tree: Option<Db>,
 }
 
 impl LocalStorage {
@@ -43,7 +45,13 @@ impl LocalStorage {
     where
         P: AsRef<Path>,
     {
-        let tree = sled::open(file_path)?;
+        let tree = match sled::open(file_path) {
+            Ok(v) => Some(v),
+            Err(e) => {
+                error!("{e}");
+                None
+            }
+        };
 
         Ok(Self { tree })
     }
@@ -63,18 +71,23 @@ impl PersistentStorageTrait for LocalStorage {
     where
         S: AsRef<str>,
     {
-        let key = self.build_key(realm, user_key);
+        match &self.tree {
+            Some(tree) => {
+                let key = self.build_key(realm, user_key);
 
-        let data = match self.tree.get(key)? {
-            Some(v) => v,
-            None => {
-                return Err(Error::NotFound);
+                let data = match tree.get(key)? {
+                    Some(v) => v,
+                    None => {
+                        return Err(Error::NotFound);
+                    }
+                };
+
+                let data_string = String::from_utf8(data.to_vec())?;
+
+                Ok(data_string)
             }
-        };
-
-        let data_string = String::from_utf8(data.to_vec())?;
-
-        Ok(data_string)
+            None => Err(Error::NotInitialized),
+        }
     }
 
     async fn set<K, V>(&self, realm: &'static str, user_key: K, value: V, _ttl: Duration) -> Result<()>
@@ -82,24 +95,34 @@ impl PersistentStorageTrait for LocalStorage {
         K: AsRef<str>,
         V: AsRef<[u8]>,
     {
-        let key = self.build_key(realm, user_key);
+        match &self.tree {
+            Some(tree) => {
+                let key = self.build_key(realm, user_key);
 
-        let data: Vec<u8> = value.as_ref().to_vec();
+                let data: Vec<u8> = value.as_ref().to_vec();
 
-        self.tree.insert(key, data)?;
+                tree.insert(key, data)?;
 
-        Ok(())
+                Ok(())
+            }
+            None => Err(Error::NotInitialized),
+        }
     }
 
     async fn del<S>(&self, realm: &'static str, user_key: S) -> Result<()>
     where
         S: AsRef<str>,
     {
-        let key = self.build_key(realm, user_key);
+        match &self.tree {
+            Some(tree) => {
+                let key = self.build_key(realm, user_key);
 
-        self.tree.remove(key)?;
+                tree.remove(key)?;
 
-        Ok(())
+                Ok(())
+            }
+            None => Err(Error::NotInitialized),
+        }
     }
 }
 
