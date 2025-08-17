@@ -3,23 +3,20 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use log::error;
-use reqwest::Client;
+use log::{error, info};
 use rstaples::staples::find_file;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 
 use crate::{
-    const_vars::DOT_DIRECTORY,
+    const_vars::{DOT_DIRECTORY, STORE_PERMANENT},
     error::{Error, Result},
+    storage::{PersistentStorageTrait, persistent::PersistentStorage},
 };
-
-#[cfg(target_arch = "wasm32")]
-use crate::{storage::PersistentStorageTrait, storage::persistent::PersistentStorage};
 
 const DEF_OPENAI_URL: &str = "https://api.openai.com/v1/responses";
 const DEF_OPENAI_MODEL: &str = "gpt-5-mini";
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct OpenAiConfig {
     #[serde(default = "openai_default_key")]
     pub key: String,
@@ -30,13 +27,13 @@ pub struct OpenAiConfig {
     pub prompt: Option<String>,
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ConfigLlmLlama {
     pub endpoint: String,
     pub model: String,
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct GoogleConfig {
     pub cx: String,
     pub geo: String,
@@ -44,17 +41,30 @@ pub struct GoogleConfig {
     pub url: String,
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ConfigLlm {
     openai: Option<OpenAiConfig>,
     ollama: Option<ConfigLlmLlama>,
     provider: String,
 }
 
-#[derive(Debug, Deserialize, Clone)]
-pub struct ConfigFile {
+#[derive(Debug, Serialize, Deserialize, Clone)]
+struct ConfigFile {
     llm: ConfigLlm,
     search: Option<GoogleConfig>,
+}
+
+#[derive(Clone)]
+pub enum AdoConfigSource {
+    File { path: PathBuf },
+    Webdis { storage: PersistentStorage },
+    String,
+}
+
+#[derive(Clone)]
+pub struct AdoConfig {
+    source: AdoConfigSource,
+    config_file: ConfigFile,
 }
 
 fn openai_default_url() -> String {
@@ -94,19 +104,46 @@ fn find_from_home() -> Result<PathBuf> {
     }
 }
 
-impl ConfigFile {
-    pub fn from_path<P>(path: P) -> Result<ConfigFile>
+impl ConfigFile {}
+
+impl AdoConfig {
+    fn new(source: AdoConfigSource, config_file: ConfigFile) -> Self {
+        Self { source, config_file }
+    }
+
+    pub async fn sync(&self) -> Result<()> {
+        let toml_file = toml::to_string(&self.config_file)?;
+
+        //
+        // Update th config file
+        //
+        match &self.source {
+            AdoConfigSource::File { path } => {
+                info!("syncing {}", path.display());
+                fs::write(path, toml_file.as_bytes())?
+            }
+            AdoConfigSource::Webdis { storage } => storage.set("global", "config", toml_file, STORE_PERMANENT).await?,
+            _ => return Err(Error::NotImplemented),
+        }
+
+        Ok(())
+    }
+
+    pub fn from_path<P>(path: P) -> Result<Self>
     where
         P: AsRef<Path>,
     {
-        let file_data = fs::read_to_string(path)?;
+        let source = AdoConfigSource::File {
+            path: path.as_ref().into(),
+        };
 
-        let config: ConfigFile = toml::from_str(&file_data)?;
+        let file_data = fs::read_to_string(&path)?;
+        let config_file: ConfigFile = toml::from_str(&file_data)?;
 
-        Ok(config)
+        Ok(AdoConfig::new(source, config_file))
     }
 
-    pub fn from_default() -> Result<ConfigFile> {
+    pub fn from_default() -> Result<Self> {
         let rel_config = Path::new("config").join(CONFIG_FILE_NAME);
 
         let config_file = match find_file(rel_config) {
@@ -114,19 +151,21 @@ impl ConfigFile {
             Err(_) => find_from_home()?,
         };
 
-        ConfigFile::from_path(config_file)
+        AdoConfig::from_path(config_file)
     }
 
-    pub fn from_string<S>(value: S) -> Result<ConfigFile>
+    // only used for testing
+    pub fn from_string<S>(value: S) -> Result<Self>
     where
         S: AsRef<str>,
     {
-        let config: ConfigFile = toml::from_str(value.as_ref())?;
-        Ok(config)
+        let config_file: ConfigFile = toml::from_str(value.as_ref())?;
+
+        Ok(AdoConfig::new(AdoConfigSource::String, config_file))
     }
 
     #[cfg(target_arch = "wasm32")]
-    pub async fn from_webdis<U, S>(user_id: U, server: S) -> Result<ConfigFile>
+    pub async fn from_webdis<U, S>(user_id: U, server: S) -> Result<Self>
     where
         U: AsRef<str>,
         S: AsRef<str>,
@@ -135,50 +174,40 @@ impl ConfigFile {
 
         let data = storage.get("global", "config").await?;
 
-        let config: ConfigFile = toml::from_str(&data)?;
+        let source = AdoConfigSource::Webdis { storage: storage };
 
-        Ok(config)
-    }
+        let config_file: ConfigFile = toml::from_str(&data)?;
 
-    pub async fn from_url<S>(url: S) -> Result<ConfigFile>
-    where
-        S: AsRef<str>,
-    {
-        //
-        // this is a bit of a hack so we still use a cookie-less browser
-        //
-        let res = Client::new().get(url.as_ref()).send().await?;
-
-        let data = match res.status().is_success() {
-            true => res.text().await?,
-            false => return Err(Error::HttpGetFailure),
-        };
-
-        let config: ConfigFile = toml::from_str(&data)?;
-
-        Ok(config)
+        Ok(AdoConfig::new(source, config_file))
     }
 
     pub fn llm_provider(&self) -> &str {
-        &self.llm.provider
+        &self.config_file.llm.provider
+    }
+
+    pub fn update_llm<S>(&mut self, llm: S)
+    where
+        S: AsRef<str>,
+    {
+        self.config_file.llm.provider = llm.as_ref().to_string();
     }
 
     pub fn ollama(&self) -> Result<&ConfigLlmLlama> {
-        match &self.llm.ollama {
+        match &self.config_file.llm.ollama {
             Some(v) => Ok(v),
             None => Err(Error::ConfigNotFound),
         }
     }
 
     pub fn openai(&self) -> Result<&OpenAiConfig> {
-        match &self.llm.openai {
+        match &self.config_file.llm.openai {
             Some(v) => Ok(v),
             None => Err(Error::ConfigNotFound),
         }
     }
 
     pub fn search(&self) -> Result<&GoogleConfig> {
-        match &self.search {
+        match &self.config_file.search {
             Some(v) => Ok(v),
             None => Err(Error::ConfigNotFound),
         }

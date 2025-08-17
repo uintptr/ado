@@ -1,5 +1,5 @@
 use crate::{
-    config_file::loader::ConfigFile,
+    config::loader::AdoConfig,
     data::types::{AdoData, AdoDataMarkdown},
     error::{Error, Result},
     llm::{provider::LLMChain, question::question_detection},
@@ -69,7 +69,7 @@ impl AdoWasm {
 
         let storage_url = build_storage_url().unwrap();
 
-        let config = ConfigFile::from_string(config).unwrap();
+        let config = AdoConfig::from_string(config).unwrap();
         let chain = LLMChain::new(&config).unwrap();
         let cache = PersistentStorage::new(user_id, storage_url);
         let commands = UserCommands::new(&config, cache).unwrap();

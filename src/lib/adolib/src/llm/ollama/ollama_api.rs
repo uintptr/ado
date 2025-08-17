@@ -4,7 +4,7 @@ use log::{error, info};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 
-use crate::{config_file::loader::ConfigLlmLlama, error::Result};
+use crate::{config::loader::ConfigLlmLlama, error::Result};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct OllamaMessage {

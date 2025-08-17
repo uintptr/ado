@@ -1,7 +1,7 @@
 use log::info;
 
 use crate::{
-    config_file::loader::ConfigFile,
+    config::loader::AdoConfig,
     data::types::AdoData,
     error::Result,
     llm::{openai::api::OpenAIAPI, provider::LLMChainTrait},
@@ -34,7 +34,7 @@ fn build_functions_prompt(functions: &ConfigFunctions) -> String {
 }
 
 impl OpenAIChain {
-    pub fn new(config: &ConfigFile) -> Result<Self> {
+    pub fn new(config: &AdoConfig) -> Result<Self> {
         let functions = ConfigFunctions::load()?;
 
         let api = OpenAIAPI::new(config)?;

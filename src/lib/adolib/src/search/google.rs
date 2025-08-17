@@ -2,7 +2,7 @@ use reqwest::Client;
 use serde_json::Value;
 
 use crate::{
-    config_file::loader::{ConfigFile, GoogleConfig},
+    config::loader::{AdoConfig, GoogleConfig},
     data::types::AdoDataMarkdown,
     error::{Error, Result},
 };
@@ -69,7 +69,7 @@ impl AdoDataMarkdown for GoogleSearchResults {
 }
 
 impl GoogleCSE {
-    pub fn new(config: &ConfigFile) -> Result<Self> {
+    pub fn new(config: &AdoConfig) -> Result<Self> {
         let google = config.search()?.clone();
 
         Ok(Self {
@@ -131,7 +131,7 @@ mod tests {
     async fn test_lucky() {
         setup_logger(true).unwrap();
 
-        let config = ConfigFile::from_default().unwrap();
+        let config = AdoConfig::from_default().unwrap();
 
         let search = GoogleCSE::new(&config).unwrap();
 

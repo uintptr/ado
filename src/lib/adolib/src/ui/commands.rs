@@ -1,5 +1,5 @@
 use crate::{
-    config_file::loader::ConfigFile,
+    config::loader::AdoConfig,
     const_vars::CACHE_05_DAYS,
     data::types::AdoData,
     error::{Error, Result},
@@ -54,6 +54,8 @@ enum Command {
     },
     /// Print status information
     Status,
+    /// Model
+    LLM { name: Option<String> },
 }
 
 pub struct CommandInfo {
@@ -63,7 +65,7 @@ pub struct CommandInfo {
 }
 
 pub struct UserCommands {
-    config: ConfigFile,
+    config: AdoConfig,
     search: GoogleCSE,
     chain: LLMChain,
     cache: PersistentStorage,
@@ -71,7 +73,7 @@ pub struct UserCommands {
 }
 
 impl UserCommands {
-    pub fn new(config: &ConfigFile, cache: PersistentStorage) -> Result<UserCommands> {
+    pub fn new(config: &AdoConfig, cache: PersistentStorage) -> Result<UserCommands> {
         let search = GoogleCSE::new(config)?;
         let chain = LLMChain::new(config)?;
         let reddit = RedditQuery::new();
@@ -156,6 +158,26 @@ impl UserCommands {
         Ok(sub_reddit)
     }
 
+    async fn update_llm<S>(&mut self, llm: S) -> Result<()>
+    where
+        S: AsRef<str>,
+    {
+        let mut new_config = self.config.clone();
+
+        new_config.update_llm(llm);
+
+        let new_chain = LLMChain::new(&new_config)?;
+
+        self.config = new_config;
+        self.chain = new_chain;
+
+        if let Err(e) = self.config.sync().await {
+            error!("{e}");
+        }
+
+        Ok(())
+    }
+
     pub async fn handler<S>(&mut self, line: S) -> Result<AdoData>
     where
         S: AsRef<str>,
@@ -197,6 +219,18 @@ impl UserCommands {
                     let s = StatusInfo::new(&self.config, &self.chain);
 
                     Ok(AdoData::Status(s))
+                }
+                Command::LLM { name } => {
+                    if let Some(model_name) = name {
+                        let cur_llm = self.config.llm_provider();
+
+                        if cur_llm != model_name {
+                            self.update_llm(model_name).await?;
+                        }
+                    }
+
+                    let model = self.chain.model();
+                    Ok(AdoData::String(model.into()))
                 }
             },
             Err(e) => match e.kind() {
@@ -240,12 +274,13 @@ impl UserCommands {
 
 #[cfg(test)]
 mod tests {
+    use crate::config::loader::AdoConfig;
     use crate::storage::persistent::PersistentStorage;
-    use crate::{config_file::loader::ConfigFile, ui::commands::UserCommands};
+    use crate::ui::commands::UserCommands;
 
     #[test]
     fn test_handler() {
-        let config = ConfigFile::from_default().unwrap();
+        let config = AdoConfig::from_default().unwrap();
 
         let td = tempfile::Builder::new().prefix("console_test_").tempdir().unwrap();
 

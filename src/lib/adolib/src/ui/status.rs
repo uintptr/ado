@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use strfmt::strfmt;
 
 use crate::{
-    config_file::loader::ConfigFile,
+    config::loader::AdoConfig,
     const_vars::{PKG_VERSION, VERGEN_BUILD_DATE, VERGEN_RUSTC_COMMIT_HASH},
     data::types::AdoDataMarkdown,
     error::Result,
@@ -21,7 +21,7 @@ pub struct StatusInfo {
 }
 
 impl StatusInfo {
-    pub fn new(config_file: &ConfigFile, chain: &LLMChain) -> Self {
+    pub fn new(config_file: &AdoConfig, chain: &LLMChain) -> Self {
         let model = chain.model();
 
         StatusInfo {

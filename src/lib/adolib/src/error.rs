@@ -82,7 +82,9 @@ pub enum Error {
     // 3rd party
     //
     #[from]
-    TomlDeserialize(toml::de::Error),
+    TomlDe(toml::de::Error),
+    #[from]
+    TomlSer(toml::ser::Error),
     #[from]
     JsonDeserialize(serde_json::Error),
     #[from]

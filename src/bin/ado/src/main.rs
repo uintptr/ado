@@ -6,7 +6,7 @@ use std::{
 
 use ado::console::ConsoleUI;
 use adolib::{
-    config_file::loader::ConfigFile,
+    config::loader::AdoConfig,
     error::{Error, Result},
     llm::question::question_detection,
     logging::logger::setup_logger,
@@ -29,11 +29,7 @@ struct UserArgs {
 
     /// verbose
     #[arg(short, long)]
-    local_config: Option<String>,
-
-    /// remote config
-    #[arg(short, long)]
-    remote_config: Option<String>,
+    config_file: Option<String>,
 
     /// bash command_not_found_handle
     #[arg(short, long)]
@@ -79,17 +75,17 @@ async fn main_loop(mut console: ConsoleUI, mut command: UserCommands, opt_input:
             Err(Error::Usage { help }) => console.display_string(help)?,
             Err(e @ Error::CommandNotFound { command: _ }) => console.display_error(e)?,
             Err(Error::EOF) => return Ok(()),
-            Err(e) => return Err(e),
+            Err(e) => console.display_error(e)?,
         }
 
         init_query = None
     }
 }
 
-fn load_config_local(local_config: &Option<String>) -> Result<ConfigFile> {
+fn load_config_local(local_config: &Option<String>) -> Result<AdoConfig> {
     match local_config {
-        Some(v) => ConfigFile::from_path(v),
-        None => ConfigFile::from_default(),
+        Some(v) => AdoConfig::from_path(v),
+        None => AdoConfig::from_default(),
     }
 }
 
@@ -116,13 +112,7 @@ async fn main() -> Result<()> {
         },
     };
 
-    let config = match args.remote_config {
-        Some(v) => match ConfigFile::from_url(v).await {
-            Ok(v) => v,
-            Err(e) => return Err(e),
-        },
-        None => load_config_local(&args.local_config)?,
-    };
+    let config = load_config_local(&args.config_file)?;
 
     let cache = PersistentStorage::new()?;
 

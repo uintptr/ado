@@ -1,7 +1,7 @@
 use log::{error, info};
 
 use crate::{
-    config_file::loader::ConfigFile,
+    config::loader::AdoConfig,
     data::types::AdoData,
     error::{Error, Result},
     tools::{function_args::FunctionArgs, ip_address::FunctionsIp},
@@ -23,7 +23,7 @@ pub struct FunctionHandler {
 }
 
 impl FunctionHandler {
-    pub fn new(config: &ConfigFile) -> Result<FunctionHandler> {
+    pub fn new(config: &AdoConfig) -> Result<FunctionHandler> {
         Ok(FunctionHandler {
             files: FunctionsFiles::new(),
             http: FunctionsHttp::new(),

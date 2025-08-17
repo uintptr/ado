@@ -1,5 +1,5 @@
 use crate::{
-    config_file::loader::{ConfigFile, OpenAiConfig},
+    config::loader::{AdoConfig, OpenAiConfig},
     data::types::AdoData,
     error::{Error, Result},
     tools::handler::FunctionHandler,
@@ -17,7 +17,7 @@ pub struct OpenAIAPI {
 }
 
 impl OpenAIAPI {
-    pub fn new(config: &ConfigFile) -> Result<Self> {
+    pub fn new(config: &AdoConfig) -> Result<Self> {
         let openai = config.openai()?;
 
         if openai.key.is_empty() {

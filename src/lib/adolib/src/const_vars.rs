@@ -8,3 +8,4 @@ pub const VERGEN_RUSTC_COMMIT_HASH: &str = env!("VERGEN_GIT_SHA");
 
 pub const CACHE_05_DAYS: Duration = Duration::from_secs(5 * 24 * 60 * 60);
 pub const CACHE_30_DAYS: Duration = Duration::from_secs(30 * 24 * 60 * 60);
+pub const STORE_PERMANENT: Duration = Duration::from_secs(0);

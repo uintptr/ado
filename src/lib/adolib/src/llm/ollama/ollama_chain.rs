@@ -1,5 +1,5 @@
 use crate::{
-    config_file::loader::ConfigFile,
+    config::loader::AdoConfig,
     data::types::AdoData,
     error::Result,
     llm::{
@@ -16,7 +16,7 @@ pub struct OllamaChain {
 }
 
 impl OllamaChain {
-    pub fn new(config: &ConfigFile) -> Result<Self> {
+    pub fn new(config: &AdoConfig) -> Result<Self> {
         let ollama = config.ollama()?;
 
         Ok(Self {
@@ -59,7 +59,7 @@ mod ollama_tests {
     use rstaples::logging::StaplesLogger;
 
     use crate::{
-        config_file::loader::ConfigFile,
+        config::loader::AdoConfig,
         llm::{ollama::ollama_chain::OllamaChain, provider::LLMChainTrait},
     };
 
@@ -67,7 +67,7 @@ mod ollama_tests {
     async fn test_message() {
         StaplesLogger::new().with_stdout().start().unwrap();
 
-        let config_file = ConfigFile::from_default().unwrap();
+        let config_file = AdoConfig::from_default().unwrap();
 
         let chain = OllamaChain::new(&config_file).unwrap();
 
@@ -78,7 +78,7 @@ mod ollama_tests {
     async fn test_chain() {
         StaplesLogger::new().with_stdout().start().unwrap();
 
-        let config_file = ConfigFile::from_default().unwrap();
+        let config_file = AdoConfig::from_default().unwrap();
 
         let mut chain = OllamaChain::new(&config_file).unwrap();
 

@@ -2,7 +2,7 @@
 use async_trait::async_trait;
 
 use crate::{
-    config_file::loader::ConfigFile,
+    config::loader::AdoConfig,
     data::types::AdoData,
     error::{Error, Result},
     llm::{ollama::ollama_chain::OllamaChain, openai::chain::OpenAIChain},
@@ -24,7 +24,7 @@ pub enum LLMChain {
 }
 
 impl LLMChain {
-    pub fn new(config: &ConfigFile) -> Result<LLMChain> {
+    pub fn new(config: &AdoConfig) -> Result<LLMChain> {
         let chain = match config.llm_provider() {
             "openai" => {
                 let chain = OpenAIChain::new(config)?;

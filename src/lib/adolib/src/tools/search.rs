@@ -1,6 +1,6 @@
 use log::info;
 
-use crate::{config_file::loader::ConfigFile, data::types::AdoData, error::Result, search::google::GoogleCSE};
+use crate::{config::loader::AdoConfig, data::types::AdoData, error::Result, search::google::GoogleCSE};
 
 use super::function_args::FunctionArgs;
 
@@ -9,7 +9,7 @@ pub struct FunctionsSearch {
 }
 
 impl FunctionsSearch {
-    pub fn new(config: &ConfigFile) -> Result<Self> {
+    pub fn new(config: &AdoConfig) -> Result<Self> {
         let search = GoogleCSE::new(config)?;
 
         Ok(Self { search })

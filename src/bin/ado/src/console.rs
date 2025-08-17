@@ -246,7 +246,7 @@ mod tests {
     use std::{fs, path::Path};
 
     use adolib::{
-        config_file::loader::ConfigFile, data::types::AdoData, logging::logger::setup_logger,
+        config::loader::AdoConfig, data::types::AdoData, logging::logger::setup_logger,
         search::google::GoogleSearchResults, shell::AdoShell, ui::commands::UserCommands,
     };
 
@@ -258,7 +258,7 @@ mod tests {
     fn display_text() {
         setup_logger(true).unwrap();
 
-        let config = ConfigFile::from_default().unwrap();
+        let config = AdoConfig::from_default().unwrap();
 
         let td = tempfile::Builder::new().prefix("console_test_").tempdir().unwrap();
         let cache_file = td.path().join("cache.db");
@@ -272,7 +272,7 @@ mod tests {
     async fn arg_parser() {
         setup_logger(true).unwrap();
 
-        let config = ConfigFile::from_default().unwrap();
+        let config = AdoConfig::from_default().unwrap();
 
         let td = tempfile::Builder::new().prefix("console_test_").tempdir().unwrap();
         let cache_file = td.path().join("cache.db");
@@ -299,7 +299,7 @@ mod tests {
 
         let json_data = fs::read_to_string(json_file).unwrap();
 
-        let config = ConfigFile::from_default().unwrap();
+        let config = AdoConfig::from_default().unwrap();
 
         let td = tempfile::Builder::new().prefix("console_test_").tempdir().unwrap();
         let cache_file = td.path().join("cache.db");
@@ -320,7 +320,7 @@ mod tests {
 
         let data = sh.exec("uname -a").unwrap();
 
-        let config = ConfigFile::from_default().unwrap();
+        let config = AdoConfig::from_default().unwrap();
 
         let td = tempfile::Builder::new().prefix("console_test_").tempdir().unwrap();
         let cache_file = td.path().join("cache.db");
