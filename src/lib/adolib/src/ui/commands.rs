@@ -112,6 +112,31 @@ impl UserCommands {
         Ok(search_data)
     }
 
+    async fn cached_lucky<S>(&self, query: S) -> Result<String>
+    where
+        S: AsRef<str>,
+    {
+        let sub_reddit = match self.cache.get("cmd_lucky", query.as_ref()).await {
+            Ok(v) => {
+                info!("query was cached");
+                v
+            }
+            Err(_) => {
+                let data = self.search.lucky(query.as_ref()).await?;
+
+                let data = data.replace("www.reddit.com", "old.reddit.com");
+
+                if let Err(e) = self.cache.set("cmd_lucky", query.as_ref(), &data, CACHE_05_DAYS).await {
+                    error!("{e}");
+                }
+
+                data
+            }
+        };
+
+        Ok(sub_reddit)
+    }
+
     async fn cached_reddit<S>(&self, query: S) -> Result<String>
     where
         S: AsRef<str>,
@@ -125,29 +150,6 @@ impl UserCommands {
                 let data = self.reddit.find_sub(&self.chain, query.as_ref()).await?;
 
                 if let Err(e) = self.cache.set("cmd_reddit", query.as_ref(), &data, CACHE_05_DAYS).await {
-                    error!("{e}");
-                }
-
-                data
-            }
-        };
-
-        Ok(sub_reddit)
-    }
-
-    async fn cached_lucky<S>(&self, query: S) -> Result<String>
-    where
-        S: AsRef<str>,
-    {
-        let sub_reddit = match self.cache.get("cmd_lucky", query.as_ref()).await {
-            Ok(v) => {
-                info!("query was cached");
-                v
-            }
-            Err(_) => {
-                let data = self.search.lucky(query.as_ref()).await?;
-
-                if let Err(e) = self.cache.set("cmd_lucky", query.as_ref(), &data, CACHE_05_DAYS).await {
                     error!("{e}");
                 }
 
