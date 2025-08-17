@@ -55,7 +55,7 @@ enum Command {
     /// Print status information
     Status,
     /// Model
-    LLM { name: Option<String> },
+    Llm { name: Option<String> },
 }
 
 pub struct CommandInfo {
@@ -222,7 +222,7 @@ impl UserCommands {
 
                     Ok(AdoData::Status(s))
                 }
-                Command::LLM { name } => {
+                Command::Llm { name } => {
                     if let Some(model_name) = name {
                         let cur_llm = self.config.llm_provider();
 
