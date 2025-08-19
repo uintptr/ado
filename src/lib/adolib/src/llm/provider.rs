@@ -5,7 +5,7 @@ use crate::{
     config::loader::AdoConfig,
     data::types::AdoData,
     error::{Error, Result},
-    llm::{ollama::ollama_chain::OllamaChain, openai::chain::OpenAIChain},
+    llm::{claude::claude_chain::ClaudeChain, ollama::ollama_chain::OllamaChain, openai::chain::OpenAIChain},
 };
 
 use log::error;
@@ -21,6 +21,7 @@ pub trait LLMChainTrait {
 pub enum LLMChain {
     OpenAI(Box<OpenAIChain>), // box because it gros the union/enum unnecessarily
     Ollama(OllamaChain),
+    Claude(ClaudeChain),
 }
 
 impl LLMChain {
@@ -33,6 +34,10 @@ impl LLMChain {
             "ollama" => {
                 let chain = OllamaChain::new(config)?;
                 LLMChain::Ollama(chain)
+            }
+            "claude" => {
+                let chain = ClaudeChain::new(config)?;
+                LLMChain::Claude(chain)
             }
             unk => {
                 error!("Unknown provider: {unk}");
@@ -47,6 +52,7 @@ impl LLMChain {
         match self {
             LLMChain::OpenAI(openai) => openai.message(content).await,
             LLMChain::Ollama(ollama) => ollama.message(content).await,
+            LLMChain::Claude(claude) => claude.message(content).await,
         }
     }
 
@@ -54,6 +60,7 @@ impl LLMChain {
         match self {
             LLMChain::OpenAI(openai) => openai.query(content).await,
             LLMChain::Ollama(ollama) => ollama.query(content).await,
+            LLMChain::Claude(claude) => claude.query(content).await,
         }
     }
 
@@ -61,6 +68,7 @@ impl LLMChain {
         match self {
             LLMChain::OpenAI(openai) => openai.reset(),
             LLMChain::Ollama(ollama) => ollama.reset(),
+            LLMChain::Claude(claude) => claude.reset(),
         }
     }
 
@@ -68,6 +76,7 @@ impl LLMChain {
         match self {
             LLMChain::OpenAI(openai) => openai.model(),
             LLMChain::Ollama(ollama) => ollama.model(),
+            LLMChain::Claude(claude) => claude.model(),
         }
     }
 }

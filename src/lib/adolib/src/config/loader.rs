@@ -28,6 +28,16 @@ pub struct OpenAiConfig {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ClaudeAiConfig {
+    pub model: String,
+    pub url: String,
+    pub anthropic_version: String,
+    pub key: String,
+    pub max_tokens: u64,
+    pub instructions: Option<Vec<String>>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ConfigLlmLlama {
     pub endpoint: String,
     pub model: String,
@@ -45,6 +55,7 @@ pub struct GoogleConfig {
 pub struct ConfigLlm {
     openai: Option<OpenAiConfig>,
     ollama: Option<ConfigLlmLlama>,
+    claude: Option<ClaudeAiConfig>,
     provider: String,
 }
 
@@ -201,6 +212,13 @@ impl AdoConfig {
 
     pub fn openai(&self) -> Result<&OpenAiConfig> {
         match &self.config_file.llm.openai {
+            Some(v) => Ok(v),
+            None => Err(Error::ConfigNotFound),
+        }
+    }
+
+    pub fn claude(&self) -> Result<&ClaudeAiConfig> {
+        match &self.config_file.llm.claude {
             Some(v) => Ok(v),
             None => Err(Error::ConfigNotFound),
         }

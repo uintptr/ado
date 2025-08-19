@@ -55,7 +55,6 @@ async fn main_loop(mut console: ConsoleUI, mut command: UserCommands, opt_input:
             Some(v) => v,
             None => console.read_input().await?,
         };
-
         //
         // little spinner waiting for the response
         //

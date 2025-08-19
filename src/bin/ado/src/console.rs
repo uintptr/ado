@@ -218,7 +218,7 @@ impl ConsoleUI {
             AdoData::Empty => Ok(()),
             AdoData::Reset => clear_console(),
             AdoData::Json(s) => self.display_md(s),
-            AdoData::String(s) => self.display_md(s),
+            AdoData::String(s) => self.display_string(s),
             AdoData::Base64(s) => self.display_base64(s),
             AdoData::Http(s) => self.display_md(s),
             AdoData::SearchData(s) => self.display_md(s),
