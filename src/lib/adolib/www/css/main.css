@@ -17,9 +17,14 @@
     --card-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
     --border-radius: 8px;
     --input-border-radius: 6px;
-    --retro-font: 'JetBrains Mono', 'Courier New', 'Monaco', 'Menlo', 'Consolas', monospace;
-    --modern-font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
-    --sci-fi-font: 'JetBrains Mono', 'Impact', 'Arial Black', 'Helvetica', sans-serif;
+    --retro-font:
+        "JetBrains Mono", "Courier New", "Monaco", "Menlo", "Consolas",
+        monospace;
+    --modern-font:
+        "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto",
+        sans-serif;
+    --sci-fi-font:
+        "JetBrains Mono", "Impact", "Arial Black", "Helvetica", sans-serif;
 }
 
 * {
@@ -29,7 +34,15 @@
 }
 
 body {
-    background: linear-gradient(135deg, #0d1117 0%, #010409 100%), repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 204, 153, 0.02) 2px, rgba(0, 204, 153, 0.02) 4px);
+    background:
+        linear-gradient(135deg, #0d1117 0%, #010409 100%),
+        repeating-linear-gradient(
+            0deg,
+            transparent,
+            transparent 2px,
+            rgba(0, 204, 153, 0.02) 2px,
+            rgba(0, 204, 153, 0.02) 4px
+        );
     color: var(--text-primary);
     font-family: var(--modern-font);
     font-size: 16px;
@@ -46,9 +59,16 @@ body {
 }
 
 @keyframes subtle-flicker {
-    0%, 95% { opacity: 1; }
-    97% { opacity: 0.99; }
-    100% { opacity: 1; }
+    0%,
+    95% {
+        opacity: 1;
+    }
+    97% {
+        opacity: 0.99;
+    }
+    100% {
+        opacity: 1;
+    }
 }
 
 /* Header Styles */
@@ -127,12 +147,15 @@ body {
 }
 
 @keyframes pulse-glow {
-    0%, 100% {
+    0%,
+    100% {
         box-shadow: 0 0 4px var(--accent-color);
         opacity: 1;
     }
     50% {
-        box-shadow: 0 0 8px var(--accent-color), 0 0 12px var(--accent-color);
+        box-shadow:
+            0 0 8px var(--accent-color),
+            0 0 12px var(--accent-color);
         opacity: 0.8;
     }
 }
@@ -171,22 +194,35 @@ body {
     font-family: var(--retro-font);
     outline: none;
     transition: all var(--transition-speed);
-    box-shadow: inset 0 0 10px rgba(0, 255, 0, 0.1), 0 0 20px rgba(0, 255, 0, 0.3);
+    box-shadow:
+        inset 0 0 10px rgba(0, 255, 0, 0.1),
+        0 0 20px rgba(0, 255, 0, 0.3);
     text-shadow: 0 0 5px currentColor;
     will-change: box-shadow, border-color;
 }
 
 .search-bar input:focus {
-    box-shadow: inset 0 0 15px rgba(0, 255, 0, 0.2), 0 0 30px rgba(0, 255, 0, 0.6), 0 0 0 3px var(--accent-color);
+    box-shadow:
+        inset 0 0 15px rgba(0, 255, 0, 0.2),
+        0 0 30px rgba(0, 255, 0, 0.6),
+        0 0 0 3px var(--accent-color);
     animation: terminal-blink 2s infinite;
 }
 
 @keyframes terminal-blink {
-    0%, 50% { 
-        box-shadow: inset 0 0 15px rgba(0, 255, 0, 0.2), 0 0 30px rgba(0, 255, 0, 0.6), 0 0 0 3px var(--accent-color); 
+    0%,
+    50% {
+        box-shadow:
+            inset 0 0 15px rgba(0, 255, 0, 0.2),
+            0 0 30px rgba(0, 255, 0, 0.6),
+            0 0 0 3px var(--accent-color);
     }
-    51%, 100% { 
-        box-shadow: inset 0 0 15px rgba(0, 255, 0, 0.2), 0 0 40px rgba(0, 255, 0, 0.8), 0 0 0 3px var(--accent-hover); 
+    51%,
+    100% {
+        box-shadow:
+            inset 0 0 15px rgba(0, 255, 0, 0.2),
+            0 0 40px rgba(0, 255, 0, 0.8),
+            0 0 0 3px var(--accent-hover);
     }
 }
 
@@ -194,14 +230,16 @@ body {
     background-color: var(--bg-card);
     border-radius: var(--border-radius);
     overflow: hidden;
-    box-shadow: var(--card-shadow), inset 0 0 0 1px var(--border-subtle);
+    box-shadow:
+        var(--card-shadow),
+        inset 0 0 0 1px var(--border-subtle);
     transition: all var(--transition-speed);
     border: 1px solid var(--border-subtle);
     position: relative;
 }
 
 .results::before {
-    content: 'Search Results';
+    content: "Search Results";
     position: absolute;
     top: -32px;
     left: 0;
@@ -255,7 +293,7 @@ body {
 }
 
 .result-title a::before {
-    content: '▶ ';
+    content: "▶ ";
     color: var(--accent-secondary);
     font-size: 12px;
     margin-right: 4px;
@@ -263,13 +301,19 @@ body {
 }
 
 @keyframes gentle-pulse {
-    0%, 70%, 100% { opacity: 0.8; }
-    85% { opacity: 1; }
+    0%,
+    70%,
+    100% {
+        opacity: 0.8;
+    }
+    85% {
+        opacity: 1;
+    }
 }
 
 .result-url {
     font-size: 14px;
-    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    font-family: "Consolas", "Monaco", "Courier New", monospace;
     color: var(--text-secondary);
     margin-bottom: 8px;
     text-shadow: 0 0 2px rgba(192, 192, 192, 0.3);
@@ -287,7 +331,7 @@ body {
 }
 
 .result-breadcrumb::before {
-    content: '📁 ';
+    content: "📁 ";
     font-size: 10px;
     margin-right: 2px;
 }
@@ -380,16 +424,23 @@ body {
 
 .command-line input:focus {
     border-color: var(--accent-color);
-    box-shadow: 0 0 0 2px rgba(0, 204, 153, 0.2), 0 2px 8px rgba(0, 0, 0, 0.2);
+    box-shadow:
+        0 0 0 2px rgba(0, 204, 153, 0.2),
+        0 2px 8px rgba(0, 0, 0, 0.2);
     animation: subtle-glow 3s ease-in-out infinite;
 }
 
 @keyframes subtle-glow {
-    0%, 100% {
-        box-shadow: 0 0 0 2px rgba(0, 204, 153, 0.2), 0 2px 8px rgba(0, 0, 0, 0.2);
+    0%,
+    100% {
+        box-shadow:
+            0 0 0 2px rgba(0, 204, 153, 0.2),
+            0 2px 8px rgba(0, 0, 0, 0.2);
     }
     50% {
-        box-shadow: 0 0 0 2px rgba(0, 204, 153, 0.3), 0 2px 12px rgba(0, 0, 0, 0.3);
+        box-shadow:
+            0 0 0 2px rgba(0, 204, 153, 0.3),
+            0 2px 12px rgba(0, 0, 0, 0.3);
     }
 }
 
@@ -424,20 +475,36 @@ body {
     left: 50%;
     width: 80px;
     height: 2px;
-    background: linear-gradient(90deg, transparent, var(--accent-color), transparent);
+    background: linear-gradient(
+        90deg,
+        transparent,
+        var(--accent-color),
+        transparent
+    );
     transform: translateX(-50%);
     animation: scan-sweep 3s linear infinite;
 }
 
 @keyframes scan-sweep {
-    0% { transform: translateX(-50%) translateY(0); opacity: 0; }
-    10% { opacity: 1; }
-    90% { opacity: 1; }
-    100% { transform: translateX(-50%) translateY(56px); opacity: 0; }
+    0% {
+        transform: translateX(-50%) translateY(0);
+        opacity: 0;
+    }
+    10% {
+        opacity: 1;
+    }
+    90% {
+        opacity: 1;
+    }
+    100% {
+        transform: translateX(-50%) translateY(56px);
+        opacity: 0;
+    }
 }
 
 @keyframes smooth-pulse {
-    0%, 100% {
+    0%,
+    100% {
         text-shadow: 0 0 12px rgba(0, 204, 153, 0.4);
         transform: scale(1);
     }

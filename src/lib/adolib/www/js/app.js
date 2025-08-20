@@ -11,8 +11,8 @@ const marked = window["marked"];
 
 class UserConfig {
     constructor(user_id, config_file) {
-        this.user_id = user_id
-        this.config_file = config_file
+        this.user_id = user_id;
+        this.config_file = config_file;
     }
 }
 
@@ -37,7 +37,7 @@ if (window.hljs) {
     });
 }
 
-export { };
+export {};
 
 /**
  * @param {any} item
@@ -112,13 +112,10 @@ async function display_search_results(json_data) {
  * @param {object} status
  */
 function display_status(status) {
-
-    let md = " ### Status\n"
-    md += " #### Model: `" + status.model + "`\n"
-    display_string(md)
+    let md = " ### Status\n";
+    md += " #### Model: `" + status.model + "`\n";
+    display_string(md);
 }
-
-
 
 /**
  * @param {string} response
@@ -183,8 +180,7 @@ function display_reset() {
  * @param {object} response
  */
 function response_handler(response) {
-
-    const data = response.data
+    const data = response.data;
 
     if (data.hasOwnProperty("UsageString")) {
         let usage = "```\n" + data.UsageString + "\n```";
@@ -192,18 +188,21 @@ function response_handler(response) {
     } else if (data.hasOwnProperty("String")) {
         display_string(data.String);
     } else if (data.hasOwnProperty("SearchData")) {
-        const object = data.SearchData
+        const object = data.SearchData;
         display_search_results(object.json_string);
     } else if (data == "Reset") {
         display_reset();
     } else if (data.hasOwnProperty("Status")) {
-        display_string(response.markdown)
+        display_string(response.markdown);
     } else {
-        console.warn("--------------------------------------------------------")
-        console.warn("unknown response type")
-        console.warn(response)
-        console.warn("--------------------------------------------------------")
-
+        console.warn(
+            "--------------------------------------------------------",
+        );
+        console.warn("unknown response type");
+        console.warn(response);
+        console.warn(
+            "--------------------------------------------------------",
+        );
     }
 }
 
@@ -254,7 +253,6 @@ function init_cmd_line(wctx) {
     }
 }
 
-
 /**
  * @param {AdoWasm} wctx
  * @param {string} query
@@ -263,7 +261,6 @@ async function navigate_to_lucky(wctx, query) {
     let res = await wctx.query("lucky " + query);
     await navigateWithLoading(res.data.String);
 }
-
 
 /**
  * @param {AdoWasm} wctx
@@ -282,13 +279,14 @@ async function search_handler(wctx, search) {
             //
             // assume this is a search
             //
-            let res = await wctx.query("search " + q)
-            response_handler(res)
+            let res = await wctx.query("search " + q);
+            response_handler(res);
         } else if (q.startsWith("i ")) {
             //
             // Google image search
             //
-            let google_image_url = "https://www.google.com/search?q=" + q_plus_two + "&tbm=isch"
+            let google_image_url =
+                "https://www.google.com/search?q=" + q_plus_two + "&tbm=isch";
             await navigateWithLoading(google_image_url);
         } else if (q.startsWith("a ")) {
             //
@@ -312,12 +310,12 @@ async function search_handler(wctx, search) {
             //
             // I'm feeling lucky google search
             //
-            await navigate_to_lucky(wctx, q_plus_two)
+            await navigate_to_lucky(wctx, q_plus_two);
         } else if (q.startsWith("r ")) {
             //
             // Find the associated subreddit
             //
-            let res = await wctx.query("reddit " + q_plus_two)
+            let res = await wctx.query("reddit " + q_plus_two);
             let reddit_url = "https://old.reddit.com" + res.data.String + "/";
             await navigateWithLoading(reddit_url);
         } else if (q.startsWith("t ")) {
@@ -330,7 +328,7 @@ async function search_handler(wctx, search) {
             //
             // wikipedia
             //
-            await navigate_to_lucky(wctx, "wikipedia " + q_plus_two)
+            await navigate_to_lucky(wctx, "wikipedia " + q_plus_two);
         } else {
             //
             // detect if this is a question
@@ -343,7 +341,7 @@ async function search_handler(wctx, search) {
                 // fallback to google "I'm Feeling Lucky" url. In most
                 // cases this is better than a search result
                 //
-                await navigate_to_lucky(wctx, q)
+                await navigate_to_lucky(wctx, q);
             }
         }
     }
@@ -355,56 +353,52 @@ async function search_handler(wctx, search) {
  */
 
 async function get_config_file(user_id) {
-
-    let config_file = null
-    const webdis_url = "/webdis//GET/" + user_id
+    let config_file = null;
+    const webdis_url = "/webdis//GET/" + user_id;
     let config = await utils.fetch_as_dict(webdis_url);
 
     if (null != config) {
-        config_file = config.GET
+        config_file = config.GET;
     }
 
-    return config_file
+    return config_file;
 }
 
 /**
  * @returns {Promise<string|null>}
  */
 async function get_user() {
-
-    let config = localStorage.getItem("user_config")
+    let config = localStorage.getItem("user_config");
 
     if (null == config) {
         config = await utils.fetch_as_string("https://keys.pi/user.json");
     }
 
     if (null != config) {
-        localStorage.setItem("user_config", config)
+        localStorage.setItem("user_config", config);
     }
 
-    return config
+    return config;
 }
 
 /**
  * @returns {Promise<UserConfig|null>}
  */
 async function get_config() {
-
-    let user_json = await get_user()
+    let user_json = await get_user();
 
     if (null != user_json) {
-        let user = JSON.parse(user_json)
+        let user = JSON.parse(user_json);
 
-        const config_file = await get_config_file(user.user_id)
+        const config_file = await get_config_file(user.user_id);
 
         if (config_file != null) {
-            return new UserConfig(user.user_id, config_file)
+            return new UserConfig(user.user_id, config_file);
         }
     }
 
-
     // in case it was burned in at build time ( for testing purposes )
-    return await utils.fetch_as_dict("/test_config.json")
+    return await utils.fetch_as_dict("/test_config.json");
 }
 
 async function main() {
@@ -412,11 +406,10 @@ async function main() {
     await init();
 
     // get the config.toml file
-    let config = await get_config()
+    let config = await get_config();
 
     if (config != null) {
-
-        let wctx = new AdoWasm(config.user_id, config.config_file)
+        let wctx = new AdoWasm(config.user_id, config.config_file);
 
         init_cmd_line(wctx);
 
@@ -426,7 +419,6 @@ async function main() {
         if (search != null && search.length > 0) {
             search_handler(wctx, search);
         }
-
     } else {
         await navigateWithLoading("/login.html");
     }

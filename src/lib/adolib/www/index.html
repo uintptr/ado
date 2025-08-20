@@ -4,26 +4,33 @@
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>Command Search Terminal | Professional CLI Interface</title>
-        
+
         <!-- Resource hints for better performance -->
         <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
-        <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin />
+        <link
+            rel="preconnect"
+            href="https://cdnjs.cloudflare.com"
+            crossorigin
+        />
         <link rel="dns-prefetch" href="https://cdn.jsdelivr.net" />
         <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com" />
-        
+
         <link
             rel="search"
             type="application/opensearchdescription+xml"
             title="frontpagecommand"
             href="/opensearch.xml"
         />
-        
+
         <!-- External CSS files -->
         <link rel="stylesheet" href="/css/main.css" />
         <link rel="stylesheet" href="/css/loading-screen.css" />
-        <link rel="preconnect" href="https://fonts.googleapis.com">
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&display=swap"
+            rel="stylesheet"
+        />
         <link
             rel="stylesheet"
             href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/atom-one-dark.min.css"
@@ -36,7 +43,7 @@
                 href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/atom-one-dark.min.css"
             />
         </noscript>
-        
+
         <!-- Preload critical scripts -->
         <link rel="modulepreload" href="/js/utils.js" />
         <link rel="modulepreload" href="/js/app.js" />
@@ -120,12 +127,12 @@
         <!-- Load critical scripts first -->
         <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-        
+
         <!-- Load application scripts -->
         <script src="/js/utils.js" type="module"></script>
         <script src="/js/loading-screen.js" type="module"></script>
         <script src="/js/app.js" type="module"></script>
-        
+
         <script>
             // Optimized page initialization
             document.addEventListener("DOMContentLoaded", function () {
@@ -135,7 +142,9 @@
 
                 // Optimized toggle function
                 function toggleEmptyState() {
-                    const hasResults = results.style.display !== "none" && results.children.length > 0;
+                    const hasResults =
+                        results.style.display !== "none" &&
+                        results.children.length > 0;
                     emptyState.style.display = hasResults ? "none" : "flex";
                 }
 
@@ -145,9 +154,11 @@
                     if (highlightTimeout) return;
                     highlightTimeout = setTimeout(() => {
                         if (window.hljs) {
-                            document.querySelectorAll("pre code:not(.hljs)").forEach((block) => {
-                                window.hljs.highlightElement(block);
-                            });
+                            document
+                                .querySelectorAll("pre code:not(.hljs)")
+                                .forEach((block) => {
+                                    window.hljs.highlightElement(block);
+                                });
                         }
                         highlightTimeout = null;
                     }, 100);
@@ -159,11 +170,17 @@
                     let shouldHighlight = false;
 
                     mutations.forEach((mutation) => {
-                        if (mutation.type === 'childList' || 
-                            (mutation.type === 'attributes' && mutation.attributeName === 'style')) {
+                        if (
+                            mutation.type === "childList" ||
+                            (mutation.type === "attributes" &&
+                                mutation.attributeName === "style")
+                        ) {
                             shouldToggle = true;
                         }
-                        if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
+                        if (
+                            mutation.type === "childList" &&
+                            mutation.addedNodes.length > 0
+                        ) {
                             shouldHighlight = true;
                         }
                     });
@@ -177,13 +194,13 @@
                     childList: true,
                     subtree: true,
                     attributes: true,
-                    attributeFilter: ["style"]
+                    attributeFilter: ["style"],
                 });
 
                 // Initial setup
                 toggleEmptyState();
                 requestAnimationFrame(() => cmdLine.focus());
-                
+
                 // Initial code highlighting when hljs loads
                 if (window.hljs) {
                     highlightAllCode();

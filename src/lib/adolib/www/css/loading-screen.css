@@ -13,19 +13,27 @@
     z-index: 9999;
     opacity: 0;
     visibility: hidden;
-    transition: opacity 0.3s, visibility 0s 0.3s;
+    transition:
+        opacity 0.3s,
+        visibility 0s 0.3s;
 }
 
 .retro-loading-screen.active {
     opacity: 1;
     visibility: visible;
-    transition: opacity 0.3s, visibility 0s;
+    transition:
+        opacity 0.3s,
+        visibility 0s;
 }
 
 .retro-loading-content {
     text-align: center;
     color: var(--text-primary, #f8f9fd);
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-family:
+        "Inter",
+        -apple-system,
+        BlinkMacSystemFont,
+        sans-serif;
 }
 
 .retro-loading-header {
@@ -50,7 +58,10 @@
 .retro-loading-bar {
     height: 100%;
     width: 0%;
-    background: var(--accent-gradient, linear-gradient(120deg, #4d7cfe, #8e5cff));
+    background: var(
+        --accent-gradient,
+        linear-gradient(120deg, #4d7cfe, #8e5cff)
+    );
     border-radius: calc(var(--input-border-radius, 12px) - 4px);
     transition: width 0.5s ease-in-out;
 }
@@ -65,7 +76,9 @@
     margin: 0.5rem 0;
     opacity: 0;
     transform: translateY(10px);
-    transition: opacity 0.3s, transform 0.3s;
+    transition:
+        opacity 0.3s,
+        transform 0.3s;
     font-weight: 500;
 }
 
@@ -102,19 +115,32 @@
     left: 0;
     width: 100%;
     height: 100%;
-    background: radial-gradient(ellipse at center, transparent 0%, rgba(0, 0, 0, 0.5) 100%);
+    background: radial-gradient(
+        ellipse at center,
+        transparent 0%,
+        rgba(0, 0, 0, 0.5) 100%
+    );
     pointer-events: none;
     opacity: 0.2;
 }
 
 @keyframes blink {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0; }
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0;
+    }
 }
 
 @keyframes scan {
-    0% { transform: translateY(-100vh); }
-    100% { transform: translateY(100vh); }
+    0% {
+        transform: translateY(-100vh);
+    }
+    100% {
+        transform: translateY(100vh);
+    }
 }
 
 /* Responsive adjustments */
@@ -122,12 +148,12 @@
     .retro-loading-header {
         font-size: 1.8rem;
     }
-    
+
     .retro-loading-bar-container {
         width: 250px;
         height: 25px;
     }
-    
+
     .retro-loading-text {
         font-size: 0.9rem;
     }

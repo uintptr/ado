@@ -39,15 +39,14 @@ export async function fetch_as_string(url) {
  * @returns {Promise<object | null>}
  */
 export async function fetch_as_dict(url) {
-
     try {
         const response = await fetch(url);
         const data = await response.json();
-        return data
+        return data;
     } catch (e) {
         console.log(e);
     }
-    return null
+    return null;
 }
 
 /**
