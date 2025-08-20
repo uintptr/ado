@@ -19,7 +19,7 @@ pub trait LLMChainTrait {
 }
 
 pub enum LLMChain {
-    OpenAI(Box<OpenAIChain>), // box because it gros the union/enum unnecessarily
+    OpenAI(Box<OpenAIChain>), // box because it grows the union/enum unnecessarily
     Ollama(OllamaChain),
     Claude(ClaudeChain),
 }
