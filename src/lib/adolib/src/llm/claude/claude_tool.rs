@@ -4,13 +4,13 @@ use serde::Serialize;
 
 use crate::{
     error::{Error, Result},
-    tools::loader::{ToolFunction, ToolParameters, ToolProperties},
+    tools::loader::{ToolFunction, ToolParameters, ToolProperties, ToolType},
 };
 
 #[derive(Debug, Serialize)]
 pub struct ClaudeToolProperty {
     #[serde(rename = "type")]
-    property_type: String,
+    property_type: ToolType,
     description: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     items: Option<ClaudeToolSchema>,
@@ -29,7 +29,7 @@ impl TryFrom<ToolProperties> for ClaudeToolProperty {
         };
 
         let claude_prop = Self {
-            property_type: props.t,
+            property_type: props.property_type,
             description: props.description,
             items,
         };
@@ -41,7 +41,7 @@ impl TryFrom<ToolProperties> for ClaudeToolProperty {
 #[derive(Debug, Serialize)]
 pub struct ClaudeToolSchema {
     #[serde(rename = "type")]
-    input_type: String,
+    schema_type: ToolType,
     properties: HashMap<String, ClaudeToolProperty>,
     required: Vec<String>,
 }
@@ -66,7 +66,7 @@ impl TryFrom<ToolParameters> for ClaudeToolSchema {
         }
 
         let claude_schema = Self {
-            input_type: params.t,
+            schema_type: params.param_type,
             properties,
             required,
         };

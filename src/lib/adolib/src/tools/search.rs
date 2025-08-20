@@ -2,7 +2,7 @@ use log::info;
 
 use crate::{config::loader::AdoConfig, data::types::AdoData, error::Result, search::google::GoogleCSE};
 
-use super::function_args::FunctionArgs;
+use super::function_args::ToolArgs;
 
 pub struct FunctionsSearch {
     search: GoogleCSE,
@@ -15,7 +15,7 @@ impl FunctionsSearch {
         Ok(Self { search })
     }
 
-    pub async fn search(&self, args: &FunctionArgs) -> Result<AdoData> {
+    pub async fn search(&self, args: &ToolArgs) -> Result<AdoData> {
         let query = args.get_string("query")?;
 
         info!("search term: {query}");

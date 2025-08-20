@@ -1,7 +1,7 @@
 # Ado
 
-
 ## Local Binary
+
 ### Install from source
 
 ```
@@ -27,8 +27,7 @@ __EOF__
 
 ### Example
 
- ![Alt Text](documentation/ado.gif)
-
+![Alt Text](documentation/ado.gif)
 
 ## WASM binary
 

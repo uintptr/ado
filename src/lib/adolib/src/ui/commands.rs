@@ -6,7 +6,7 @@ use crate::{
     llm::chain::LLMChain,
     search::google::{GoogleCSE, GoogleSearchResults},
     storage::{PersistentStorageTrait, persistent::PersistentStorage},
-    ui::{reddit::RedditQuery, status::StatusInfo},
+    ui::{ConsoleDisplayTrait, reddit::RedditQuery, status::StatusInfo},
 };
 use clap::{CommandFactory, Parser, Subcommand, error::ErrorKind};
 
@@ -180,11 +180,14 @@ impl UserCommands {
         Ok(())
     }
 
-    pub async fn handler<S>(&mut self, line: S) -> Result<AdoData>
+    async fn command_table<S, C>(&mut self, line: S, console: &mut C) -> Result<()>
     where
         S: AsRef<str>,
+        C: ConsoleDisplayTrait,
     {
         let mut args: Vec<&str> = line.as_ref().split_whitespace().collect();
+
+        console.start_spinner();
 
         args.insert(0, "");
 
@@ -193,34 +196,37 @@ impl UserCommands {
                 Command::Query { input } => {
                     let input_str = input.join(" ");
 
-                    self.chain.query(&input_str).await
+                    self.chain.link(&input_str, console).await?;
+                    Ok(())
                 }
                 Command::Quit => Err(Error::EOF),
                 Command::Reset => {
                     self.chain.reset();
-                    Ok(AdoData::Reset)
+                    Ok(())
                 }
                 Command::Search { query } => {
                     let query = query.join(" ");
 
                     let json_str = self.cached_search(query).await?;
 
-                    Ok(AdoData::SearchData(GoogleSearchResults::new(json_str)))
+                    let data = AdoData::SearchData(GoogleSearchResults::new(json_str));
+
+                    console.display(data)
                 }
                 Command::Reddit { query } => {
                     let query = query.join(" ");
                     let sub = self.cached_reddit(query).await?;
-                    Ok(AdoData::String(sub))
+
+                    console.display(AdoData::String(sub))
                 }
                 Command::Lucky { query } => {
                     let query = query.join(" ");
                     let url = self.cached_lucky(query).await?;
-                    Ok(AdoData::String(url))
+                    console.display(AdoData::String(url))
                 }
                 Command::Status => {
                     let s = StatusInfo::new(&self.config, &self.chain);
-
-                    Ok(AdoData::Status(s))
+                    console.display(AdoData::Status(s))
                 }
                 Command::Llm { name } => {
                     if let Some(model_name) = name {
@@ -232,21 +238,38 @@ impl UserCommands {
                     }
 
                     let model = self.chain.model();
-                    Ok(AdoData::String(model.into()))
+                    // TODO XXX TODO
+                    // can use use a &str here
+                    console.display(AdoData::String(model.into())) // can we use a str here
                 }
             },
             Err(e) => match e.kind() {
                 ErrorKind::DisplayHelp | ErrorKind::DisplayHelpOnMissingArgumentOrSubcommand => {
-                    Ok(AdoData::UsageString(e.to_string()))
+                    console.display(AdoData::UsageString(e.to_string()))
                 }
                 _ => {
                     //
                     // assuming this is query
                     //
-                    self.chain.query(line.as_ref()).await
+                    self.chain.link(line.as_ref(), console).await?;
+                    Ok(())
                 }
             },
         }
+    }
+
+    pub async fn handler<S, C>(&mut self, line: S, console: &mut C) -> Result<()>
+    where
+        S: AsRef<str>,
+        C: ConsoleDisplayTrait,
+    {
+        console.start_spinner();
+
+        let ret = self.command_table(line, console).await;
+
+        console.stop_spinner();
+
+        ret
     }
 
     pub fn list_commands(&self) -> Vec<CommandInfo> {
@@ -278,6 +301,7 @@ impl UserCommands {
 mod tests {
     use crate::config::loader::AdoConfig;
     use crate::storage::persistent::PersistentStorage;
+    use crate::ui::NopConsole;
     use crate::ui::commands::UserCommands;
 
     #[test]
@@ -292,6 +316,8 @@ mod tests {
 
         let mut cmd = UserCommands::new(&config, cache).unwrap();
 
-        let _ret = cmd.handler("/help");
+        let mut console = NopConsole {};
+
+        let _ret = cmd.handler("/help", &mut console);
     }
 }

@@ -1,3 +1,6 @@
+use std::collections::HashMap;
+
+use derive_more::Display;
 use log::{error, info};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
@@ -22,24 +25,41 @@ pub struct ClaudeError {
     error: ClaudeErrorMessage,
 }
 
-#[derive(Debug, Deserialize, Serialize)]
-pub struct ClaudeMessage {
-    pub role: String,
-    pub content: String,
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub enum ClaudeRole {
+    #[serde(rename = "user")]
+    User,
+    #[serde(rename = "assistant")]
+    Assistant,
 }
-#[derive(Debug, Deserialize, Serialize)]
-pub struct ClaudeContentInput {}
 
 #[derive(Debug, Deserialize, Serialize)]
+pub struct ClaudeMessage {
+    pub role: ClaudeRole,
+    pub content: String,
+}
+
+#[derive(Debug, Default, Deserialize, Serialize)]
+pub enum ClaudeContentType {
+    #[default]
+    #[serde(rename = "text")]
+    Text,
+    #[serde(rename = "tool_use")]
+    ToolUse,
+}
+
+#[derive(Debug, Default, Deserialize, Serialize)]
 pub struct ClaudeContent {
     #[serde(rename = "type")]
-    text_type: String,
+    pub content_type: ClaudeContentType,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub text: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    id: Option<String>,
+    pub id: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    input: Option<ClaudeContentInput>,
+    pub input: Option<HashMap<String, String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub name: Option<String>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -49,16 +69,30 @@ pub struct ClaudeUsage {
 }
 
 impl ClaudeMessage {
-    pub fn new<R, C>(role: R, content: C) -> Self
+    pub fn new<C>(role: ClaudeRole, content: C) -> Self
     where
-        R: AsRef<str>,
         C: AsRef<str>,
     {
         Self {
-            role: role.as_ref().to_string(),
+            role,
             content: content.as_ref().to_string(),
         }
     }
+}
+#[derive(Debug, Display, Deserialize)]
+pub enum ClaudeStopReason {
+    #[serde(rename = "end_turn")]
+    EndTurn,
+    #[serde(rename = "max_tokens")]
+    MaxToken,
+    #[serde(rename = "stop_sequence")]
+    StopSequence,
+    #[serde(rename = "tool_use")]
+    ToolUse,
+    #[serde(rename = "pause_turn")]
+    PauseTurn,
+    #[serde(rename = "refusal")]
+    Resusal,
 }
 
 #[derive(Debug, Deserialize)]
@@ -66,8 +100,8 @@ pub struct ClaudeResponse {
     pub content: Vec<ClaudeContent>,
     //pub id: String,
     //pub model: String,
-    //pub role: String,
-    //pub stop_reason: String,
+    pub role: ClaudeRole,
+    pub stop_reason: ClaudeStopReason,
     //pub stop_sequence: Option<String>,
     //#[serde(rename = "type")]
     //pub response_type: String,
@@ -126,9 +160,8 @@ impl ClaudeChat {
     {
         let content = ClaudeContent {
             text: Some(text.as_ref().into()),
-            text_type: "text".into(),
-            id: None,
-            input: None,
+            content_type: ClaudeContentType::Text,
+            ..Default::default()
         };
         self.system.push(content);
     }
@@ -153,9 +186,8 @@ impl ClaudeChat {
         }
     }
 
-    pub fn add_content<R, C>(&mut self, role: R, content: C)
+    pub fn add_content<C>(&mut self, role: ClaudeRole, content: C)
     where
-        R: AsRef<str>,
         C: AsRef<str>,
     {
         let message = ClaudeMessage::new(role, content);
@@ -237,7 +269,7 @@ impl ClaudeApi {
     {
         let mut chat = ClaudeChat::new(&self.model, 4096);
 
-        chat.add_content("user", content.as_ref());
+        chat.add_content(ClaudeRole::User, content.as_ref());
 
         self.chat(&chat).await
     }

@@ -1,20 +1,50 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, str::FromStr};
 
 use derive_more::Debug;
 use log::{error, info};
-use serde::{Deserialize, Deserializer, Serialize};
+use serde::{Deserialize, Serialize};
 
 use crate::{
     error::{Error, Result},
     tools::assets::{FunctionAssets, FunctionAssetsPlatform},
 };
 
-const PARAM_VALID_TYPES: &[&str] = &["object", "string", "integer", "boolean", "array", "number"];
+#[derive(Debug, Deserialize, Serialize)]
+pub enum ToolType {
+    #[serde(rename = "object")]
+    Object,
+    #[serde(rename = "string")]
+    String,
+    #[serde(rename = "integer")]
+    Integer,
+    #[serde(rename = "boolean")]
+    Boolean,
+    #[serde(rename = "array")]
+    Array,
+    #[serde(rename = "number")]
+    Number,
+}
+
+impl FromStr for ToolType {
+    type Err = Error;
+
+    fn from_str(s: &str) -> Result<ToolType> {
+        match s {
+            "object" => Ok(ToolType::Object),
+            "string" => Ok(ToolType::String),
+            "integer" => Ok(ToolType::Integer),
+            "boolean" => Ok(ToolType::Boolean),
+            "array" => Ok(ToolType::Array),
+            "number" => Ok(ToolType::Number),
+            _ => Err(Error::NotImplemented),
+        }
+    }
+}
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ToolProperties {
-    #[serde(rename = "type", deserialize_with = "validate_param_type")]
-    pub t: String,
+    #[serde(rename = "type")]
+    pub property_type: ToolType,
     pub description: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub items: Option<ToolParameters>,
@@ -22,8 +52,8 @@ pub struct ToolProperties {
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ToolParameters {
-    #[serde(rename = "type", deserialize_with = "validate_param_type")]
-    pub t: String,
+    #[serde(rename = "type")]
+    pub param_type: ToolType,
     pub properties: HashMap<String, ToolProperties>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub required: Option<Vec<String>>,
@@ -32,7 +62,7 @@ pub struct ToolParameters {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ToolFunction {
     #[serde(rename = "type")]
-    function_type: String,
+    function_type: ToolType,
     pub name: String,
     pub description: String,
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -43,18 +73,6 @@ pub struct ToolFunction {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Tools {
     pub list: Vec<ToolFunction>,
-}
-
-fn validate_param_type<'de, D>(deserializer: D) -> std::result::Result<String, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let param_type: String = Deserialize::deserialize(deserializer)?;
-
-    match PARAM_VALID_TYPES.contains(&param_type.as_str()) {
-        true => Ok(param_type),
-        false => Err(serde::de::Error::custom(Error::InvalidInputType { input: param_type })),
-    }
 }
 
 impl Tools {

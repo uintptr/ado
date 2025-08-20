@@ -4,7 +4,7 @@ use whois_rust::{WhoIs, WhoIsLookupOptions};
 use crate::{
     data::types::AdoData,
     error::{Error, Result},
-    tools::{assets::WhoisAssets, function_args::FunctionArgs},
+    tools::{assets::WhoisAssets, function_args::ToolArgs},
 };
 
 pub struct FunctionsWhois {
@@ -34,7 +34,7 @@ impl FunctionsWhois {
         Ok(data)
     }
 
-    pub fn query(&self, args: &FunctionArgs) -> Result<AdoData> {
+    pub fn query(&self, args: &ToolArgs) -> Result<AdoData> {
         let domain_name = args.get_string("domain_name")?;
         let res = self.query_domain(domain_name)?;
         Ok(AdoData::String(res))

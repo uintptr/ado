@@ -2,10 +2,10 @@ use log::info;
 
 use crate::{
     config::loader::AdoConfig,
-    data::types::AdoData,
     error::Result,
     llm::{chain::LLMChainTrait, openai::api::OpenAIAPI},
     tools::loader::Tools,
+    ui::ConsoleDisplayTrait,
 };
 
 use async_trait::async_trait;
@@ -59,10 +59,14 @@ impl OpenAIChain {
 
 #[async_trait(?Send)]
 impl LLMChainTrait for OpenAIChain {
-    async fn query(&mut self, content: &str) -> Result<AdoData> {
+    async fn link<C>(&mut self, content: &str, _console: &C) -> Result<()>
+    where
+        C: ConsoleDisplayTrait,
+    {
         info!("query: {}", content);
         self.req.with_input_role("user", content);
-        self.api.query(&mut self.req).await
+        self.api.query(&mut self.req).await?;
+        Ok(())
     }
 
     async fn message(&self, content: &str) -> Result<String> {

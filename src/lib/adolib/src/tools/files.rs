@@ -21,7 +21,7 @@ use crate::{
     error::{Error, Result},
 };
 
-use super::function_args::FunctionArgs;
+use super::function_args::ToolArgs;
 
 pub struct FunctionsFiles;
 
@@ -30,7 +30,7 @@ impl FunctionsFiles {
         FunctionsFiles {}
     }
 
-    pub fn write(&self, args: &FunctionArgs) -> Result<AdoData> {
+    pub fn write(&self, args: &ToolArgs) -> Result<AdoData> {
         let file_name = args.get_string("file_name")?;
         let file_data = args.get_string("file_data")?;
 
@@ -45,7 +45,7 @@ impl FunctionsFiles {
         Ok(AdoData::String(msg))
     }
 
-    pub fn read(&self, args: &FunctionArgs) -> Result<AdoData> {
+    pub fn read(&self, args: &ToolArgs) -> Result<AdoData> {
         let file_path = args.get_string("file_path")?;
 
         let mut f = fs::OpenOptions::new().read(true).open(file_path)?;
@@ -97,7 +97,7 @@ impl FunctionsFiles {
         })
     }
 
-    pub fn find(&self, args: &FunctionArgs) -> Result<AdoData> {
+    pub fn find(&self, args: &ToolArgs) -> Result<AdoData> {
         let file_name = args.get_string("file_name")?;
 
         let cwd = env::current_dir()?;
@@ -114,7 +114,7 @@ impl FunctionsFiles {
         Ok(AdoData::String(file_path))
     }
 
-    pub fn list(&self, args: &FunctionArgs) -> Result<AdoData> {
+    pub fn list(&self, args: &ToolArgs) -> Result<AdoData> {
         let directory = match args.get_string("directory") {
             Ok(v) => Path::new(v).to_path_buf(),
             Err(_) => env::current_dir()?,

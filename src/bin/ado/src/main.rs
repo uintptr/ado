@@ -1,20 +1,16 @@
-use std::{
-    fs,
-    io::{self, Write},
-    path::Path,
-};
+use std::{fs, path::Path};
 
-use ado::console::ConsoleUI;
+use ado::console::TerminalConsole;
 use adolib::{
     config::loader::AdoConfig,
     error::{Error, Result},
     llm::question::question_detection,
     logging::logger::setup_logger,
     storage::persistent::PersistentStorage,
+    ui::ConsoleDisplayTrait,
     ui::commands::UserCommands,
 };
 use clap::Parser;
-use spinner::SpinnerBuilder;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -47,7 +43,7 @@ where
     Ok(data)
 }
 
-async fn main_loop(mut console: ConsoleUI, mut command: UserCommands, opt_input: Option<String>) -> Result<()> {
+async fn main_loop(mut console: TerminalConsole, mut command: UserCommands, opt_input: Option<String>) -> Result<()> {
     let mut init_query = opt_input;
 
     loop {
@@ -55,22 +51,14 @@ async fn main_loop(mut console: ConsoleUI, mut command: UserCommands, opt_input:
             Some(v) => v,
             None => console.read_input().await?,
         };
-        //
-        // little spinner waiting for the response
-        //
-        let spinner = SpinnerBuilder::new("".into()).start();
 
         //
         // process the command
         //
-        let ret = command.handler(&input).await;
-
-        spinner.close();
-        print!(" \r ");
-        io::stdout().flush()?;
+        let ret = command.handler(&input, &mut console).await;
 
         match ret {
-            Ok(v) => console.display_messages(v)?,
+            Ok(()) => {}
             Err(Error::Usage { help }) => console.display_string(help)?,
             Err(e @ Error::CommandNotFound { command: _ }) => console.display_error(e)?,
             Err(Error::EOF) => return Ok(()),
@@ -117,7 +105,7 @@ async fn main() -> Result<()> {
 
     let command = UserCommands::new(&config, cache)?;
 
-    let console = ConsoleUI::new(&command)?;
+    let console = TerminalConsole::new(&command)?;
 
     match main_loop(console, command, query_opt).await {
         Ok(_) | Err(Error::EOF) => Ok(()),

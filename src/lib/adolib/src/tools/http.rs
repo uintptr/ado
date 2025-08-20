@@ -1,7 +1,7 @@
 use crate::{data::types::AdoData, error::Result, http::req::Http};
 use log::info;
 
-use super::function_args::FunctionArgs;
+use super::function_args::ToolArgs;
 
 pub struct FunctionsHttp {
     http: Http,
@@ -12,7 +12,7 @@ impl FunctionsHttp {
         FunctionsHttp { http: Http::new() }
     }
 
-    pub async fn get(&self, args: &FunctionArgs) -> Result<AdoData> {
+    pub async fn get(&self, args: &ToolArgs) -> Result<AdoData> {
         let url = args.get_string("url")?;
 
         //
@@ -33,7 +33,7 @@ impl FunctionsHttp {
         Ok(AdoData::Http(res))
     }
 
-    pub async fn post(&self, args: &FunctionArgs) -> Result<AdoData> {
+    pub async fn post(&self, args: &ToolArgs) -> Result<AdoData> {
         let url = args.get_string("url")?;
         let list = args.get_kv_list("http_headers").ok();
         let headers_opt = list.as_ref().map(|v| args.kv_list_to_map(v));

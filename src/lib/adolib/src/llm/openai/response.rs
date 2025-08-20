@@ -5,7 +5,7 @@ use serde_json::Value;
 use crate::{
     data::types::AdoData,
     error::{Error, Result},
-    tools::handler::FunctionHandler,
+    tools::handler::ToolHandler,
 };
 
 use super::request::{OpenAIFunctionInput, OpenAIFunctionOutput, OpenAIInput};
@@ -35,7 +35,7 @@ pub struct OpenAIOutputFunctionCall {
 }
 
 impl OpenAIOutputFunctionCall {
-    pub async fn process(&self, handler: &FunctionHandler) -> Result<AdoData> {
+    pub async fn process(&self, handler: &ToolHandler) -> Result<AdoData> {
         handler.call(&self.name, &self.arguments).await
     }
 }
@@ -138,7 +138,7 @@ impl OpenAIResponse {
         Ok(res)
     }
 
-    pub async fn process_output(&self, func_handler: &FunctionHandler) -> Result<OpenAIOutput> {
+    pub async fn process_output(&self, func_handler: &ToolHandler) -> Result<OpenAIOutput> {
         let mut message = AdoData::String("".to_string());
         let mut inputs = Vec::new();
 
@@ -206,7 +206,7 @@ mod tests {
 
         let config = AdoConfig::from_default().unwrap();
 
-        let handler = FunctionHandler::new(&config).unwrap();
+        let handler = ToolHandler::new(&config).unwrap();
 
         res.process_output(&handler).await.unwrap();
     }

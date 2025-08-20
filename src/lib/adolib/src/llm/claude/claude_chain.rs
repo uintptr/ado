@@ -1,19 +1,21 @@
 use crate::{
     config::loader::AdoConfig,
-    data::types::AdoData,
     error::Result,
     llm::{
         chain::LLMChainTrait,
-        claude::claude_api::{ClaudeApi, ClaudeChat},
+        claude::claude_api::{ClaudeApi, ClaudeChat, ClaudeContent, ClaudeContentType, ClaudeRole},
     },
-    tools::loader::Tools,
+    tools::{handler::ToolHandler, loader::Tools},
+    ui::ConsoleDisplayTrait,
 };
 
 use async_trait::async_trait;
+use log::info;
 
 pub struct ClaudeChain {
     api: ClaudeApi,
     chat: ClaudeChat,
+    tool_handler: ToolHandler,
 }
 
 impl ClaudeChain {
@@ -37,22 +39,57 @@ impl ClaudeChain {
         Ok(Self {
             api: ClaudeApi::new(claude)?,
             chat,
+            tool_handler: ToolHandler::new(config)?,
         })
+    }
+
+    async fn process_content<C>(&self, contents: &Vec<ClaudeContent>, console: &C) -> Result<()>
+    where
+        C: ConsoleDisplayTrait,
+    {
+        for content in contents {
+            match content.content_type {
+                ClaudeContentType::Text => {
+                    if let Some(text) = &content.text {
+                        console.display_string(text)?;
+                    }
+                }
+                ClaudeContentType::ToolUse => {
+                    if let Some(name) = &content.name {
+                        let data = self.tool_handler.call(name, "{}").await?;
+                        console.display(data)?;
+                    }
+                }
+            }
+        }
+
+        Ok(())
     }
 }
 
 #[async_trait(?Send)]
 impl LLMChainTrait for ClaudeChain {
-    async fn query(&mut self, content: &str) -> Result<AdoData> {
-        self.chat.add_content("user", content);
+    async fn link<C>(&mut self, content: &str, console: &C) -> Result<()>
+    where
+        C: ConsoleDisplayTrait,
+    {
+        self.chat.add_content(ClaudeRole::User, content);
 
         let resp = self.api.chat(&self.chat).await?;
 
+        info!("stop: {}", resp.stop_reason);
+
+        // in its own function so it can be tested from a local
+        // file
+        self.process_content(&resp.content, console).await?;
+
+        let resp_role = resp.role.clone();
+
         let msg = resp.message()?;
 
-        self.chat.add_content("assistant", msg);
+        self.chat.add_content(resp_role, msg);
 
-        Ok(AdoData::String(msg.to_string()))
+        Ok(())
     }
 
     async fn message(&self, content: &str) -> Result<String> {
@@ -70,12 +107,20 @@ impl LLMChainTrait for ClaudeChain {
 }
 
 #[cfg(test)]
-mod ollama_tests {
+mod tests {
+    use std::{fs, path::Path};
+
+    use log::info;
     use rstaples::logging::StaplesLogger;
 
     use crate::{
         config::loader::AdoConfig,
-        llm::{chain::LLMChainTrait, claude::claude_chain::ClaudeChain},
+        llm::{
+            chain::LLMChainTrait,
+            claude::{claude_api::ClaudeResponse, claude_chain::ClaudeChain},
+        },
+        logging::logger::setup_logger,
+        ui::NopConsole,
     };
 
     #[tokio::test]
@@ -97,9 +142,30 @@ mod ollama_tests {
 
         let mut chain = ClaudeChain::new(&config_file).unwrap();
 
-        chain.query("Hello World").await.unwrap();
-        chain.query("Can you tell a joke").await.unwrap();
+        let console = NopConsole {};
+
+        chain.link("Hello World", &console).await.unwrap();
+        chain.link("Can you tell a joke", &console).await.unwrap();
 
         chain.message("hello world").await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_content_response() {
+        setup_logger(true).unwrap();
+        let test_file = Path::new("/tmp").join("claude_response.json");
+
+        let resp = fs::read_to_string(test_file).unwrap();
+
+        let resp: ClaudeResponse = serde_json::from_str(&resp).unwrap();
+
+        let config_file = AdoConfig::from_default().unwrap();
+        let chain = ClaudeChain::new(&config_file).unwrap();
+
+        let console = NopConsole {};
+
+        let ret = chain.process_content(&resp.content, &console).await.unwrap();
+
+        info!("ret: {ret:?}");
     }
 }

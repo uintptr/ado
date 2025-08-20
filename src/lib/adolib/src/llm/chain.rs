@@ -3,16 +3,18 @@ use async_trait::async_trait;
 
 use crate::{
     config::loader::AdoConfig,
-    data::types::AdoData,
     error::{Error, Result},
     llm::{claude::claude_chain::ClaudeChain, ollama::ollama_chain::OllamaChain, openai::chain::OpenAIChain},
+    ui::ConsoleDisplayTrait,
 };
 
 use log::error;
 
 #[async_trait(?Send)]
 pub trait LLMChainTrait {
-    async fn query(&mut self, content: &str) -> Result<AdoData>;
+    async fn link<C>(&mut self, content: &str, console: &C) -> Result<()>
+    where
+        C: ConsoleDisplayTrait;
     async fn message(&self, content: &str) -> Result<String>;
     fn reset(&mut self);
     fn model(&self) -> &str;
@@ -56,11 +58,14 @@ impl LLMChain {
         }
     }
 
-    pub async fn query(&mut self, content: &str) -> Result<AdoData> {
+    pub async fn link<C>(&mut self, content: &str, console: &C) -> Result<()>
+    where
+        C: ConsoleDisplayTrait,
+    {
         match self {
-            LLMChain::OpenAI(openai) => openai.query(content).await,
-            LLMChain::Ollama(ollama) => ollama.query(content).await,
-            LLMChain::Claude(claude) => claude.query(content).await,
+            LLMChain::OpenAI(openai) => openai.link(content, console).await,
+            LLMChain::Ollama(ollama) => ollama.link(content, console).await,
+            LLMChain::Claude(claude) => claude.link(content, console).await,
         }
     }
 

@@ -6,6 +6,7 @@ use crate::{
         chain::LLMChainTrait,
         ollama::ollama_api::{OllamaApi, OllamaChat},
     },
+    ui::ConsoleDisplayTrait,
 };
 
 use async_trait::async_trait;
@@ -28,7 +29,10 @@ impl OllamaChain {
 
 #[async_trait(?Send)]
 impl LLMChainTrait for OllamaChain {
-    async fn query(&mut self, content: &str) -> Result<AdoData> {
+    async fn link<C>(&mut self, content: &str, console: &C) -> Result<()>
+    where
+        C: ConsoleDisplayTrait,
+    {
         self.chat.add_content("user", content);
 
         let resp = self.api.chat(&self.chat).await?;
@@ -37,7 +41,7 @@ impl LLMChainTrait for OllamaChain {
 
         self.chat.add_message(resp.message);
 
-        Ok(AdoData::String(resp_str))
+        console.display(AdoData::String(resp_str))
     }
 
     async fn message(&self, content: &str) -> Result<String> {
@@ -61,6 +65,7 @@ mod ollama_tests {
     use crate::{
         config::loader::AdoConfig,
         llm::{chain::LLMChainTrait, ollama::ollama_chain::OllamaChain},
+        ui::NopConsole,
     };
 
     #[tokio::test]
@@ -82,8 +87,10 @@ mod ollama_tests {
 
         let mut chain = OllamaChain::new(&config_file).unwrap();
 
-        chain.query("Hello World").await.unwrap();
-        chain.query("Can you tell a joke").await.unwrap();
+        let console = NopConsole {};
+
+        chain.link("Hello World", &console).await.unwrap();
+        chain.link("Can you tell a joke", &console).await.unwrap();
 
         chain.message("hello world").await.unwrap();
     }

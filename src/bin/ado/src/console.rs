@@ -9,11 +9,12 @@ use adolib::{
     const_vars::{DOT_DIRECTORY, PKG_NAME, PKG_VERSION, VERGEN_BUILD_DATE, VERGEN_RUSTC_COMMIT_HASH},
     data::types::{AdoData, AdoDataMarkdown},
     error::{Error, Result},
-    ui::commands::UserCommands,
+    ui::{ConsoleDisplayTrait, commands::UserCommands},
 };
 use colored;
 use colored::Colorize;
 use log::{error, info, warn};
+use spinner::{SpinnerBuilder, SpinnerHandle};
 use which::which;
 
 use rustyline::completion::FilenameCompleter;
@@ -34,9 +35,10 @@ struct MyHelper {
     hinter: HistoryHinter,
 }
 
-pub struct ConsoleUI {
+pub struct TerminalConsole {
     glow: Option<PathBuf>,
     rl: Editor<MyHelper, FileHistory>,
+    spinner: Option<SpinnerHandle>,
 }
 
 fn clear_console() -> Result<()> {
@@ -90,7 +92,7 @@ fn init_readline(commands: &UserCommands) -> Result<Editor<MyHelper, FileHistory
     Ok(rl)
 }
 
-impl ConsoleUI {
+impl TerminalConsole {
     pub fn new(commands: &UserCommands) -> Result<Self> {
         let glow = match which("glow") {
             Ok(v) => {
@@ -111,6 +113,7 @@ impl ConsoleUI {
         Ok(Self {
             glow,
             rl: init_readline(commands)?,
+            spinner: None,
         })
     }
 
@@ -181,16 +184,6 @@ impl ConsoleUI {
         }
     }
 
-    pub fn display_string<S>(&self, value: S) -> Result<()>
-    where
-        S: AsRef<str>,
-    {
-        match &self.glow {
-            Some(v) => self.display_glow(v, value),
-            None => self.display_boring(value),
-        }
-    }
-
     fn display_usage<S>(&self, usage: S) -> Result<()>
     where
         S: AsRef<str>,
@@ -213,6 +206,28 @@ impl ConsoleUI {
         unimplemented!()
     }
 
+    pub fn display_error(&self, err: Error) -> Result<()> {
+        match err {
+            Error::LlmError { message } => self.display_string(message)?,
+            _ => {
+                let err_str = format!("Error: {err}");
+                println!("{}", err_str.red());
+            }
+        }
+
+        Ok(())
+    }
+}
+
+impl ConsoleDisplayTrait for TerminalConsole {
+    fn start_spinner(&mut self) {
+        let spinner = SpinnerBuilder::new("".into()).start();
+        self.spinner = Some(spinner)
+    }
+    fn stop_spinner(&mut self) {
+        self.spinner = None
+    }
+
     fn display(&self, data: AdoData) -> Result<()> {
         match data {
             AdoData::Empty => Ok(()),
@@ -229,20 +244,14 @@ impl ConsoleUI {
         }
     }
 
-    pub fn display_messages(&self, data: AdoData) -> Result<()> {
-        self.display(data)
-    }
-
-    pub fn display_error(&self, err: Error) -> Result<()> {
-        match err {
-            Error::LlmError { message } => self.display_string(message)?,
-            _ => {
-                let err_str = format!("Error: {err}");
-                println!("{}", err_str.red());
-            }
+    fn display_string<S>(&self, value: S) -> Result<()>
+    where
+        S: AsRef<str>,
+    {
+        match &self.glow {
+            Some(v) => self.display_glow(v, value),
+            None => self.display_boring(value),
         }
-
-        Ok(())
     }
 }
 
@@ -258,7 +267,8 @@ mod tests {
 
     use adolib::storage::persistent::PersistentStorage;
 
-    use super::ConsoleUI;
+    use crate::console::TerminalConsole;
+    use adolib::ui::{ConsoleDisplayTrait, NopConsole};
 
     #[test]
     fn display_text() {
@@ -270,7 +280,7 @@ mod tests {
         let cache_file = td.path().join("cache.db");
         let cache = PersistentStorage::from_path(cache_file).unwrap();
         let command = UserCommands::new(&config, cache).unwrap();
-        let console = ConsoleUI::new(&command).unwrap();
+        let console = TerminalConsole::new(&command).unwrap();
         console.display(AdoData::String("Hello, World!".to_string())).unwrap();
     }
 
@@ -286,7 +296,9 @@ mod tests {
 
         let mut cmd = UserCommands::new(&config, cache).unwrap();
 
-        cmd.handler("/quit").await.unwrap();
+        let mut console = NopConsole {};
+
+        cmd.handler("/quit", &mut console).await.unwrap();
     }
 
     #[test]
@@ -311,7 +323,7 @@ mod tests {
         let cache_file = td.path().join("cache.db");
         let cache = PersistentStorage::from_path(cache_file).unwrap();
         let command = UserCommands::new(&config, cache).unwrap();
-        let console = ConsoleUI::new(&command).unwrap();
+        let console = TerminalConsole::new(&command).unwrap();
 
         let data = AdoData::SearchData(GoogleSearchResults { json_string: json_data });
 
@@ -334,7 +346,7 @@ mod tests {
 
         let command = UserCommands::new(&config, cache).unwrap();
 
-        let console = ConsoleUI::new(&command).unwrap();
+        let console = TerminalConsole::new(&command).unwrap();
 
         console.display(data).unwrap();
     }

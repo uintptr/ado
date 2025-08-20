@@ -8,7 +8,7 @@ use crate::{
     shell::ShellExit,
 };
 
-use super::function_args::FunctionArgs;
+use super::function_args::ToolArgs;
 
 pub struct FunctionsShell {}
 
@@ -37,7 +37,7 @@ impl FunctionsShell {
         Ok(AdoData::Shell(exit))
     }
 
-    pub fn shell_exec(&self, args: &FunctionArgs) -> Result<AdoData> {
+    pub fn shell_exec(&self, args: &ToolArgs) -> Result<AdoData> {
         let line = args.get_string("command_line")?;
         self.shell(line)
     }

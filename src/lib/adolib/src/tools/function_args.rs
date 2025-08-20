@@ -14,15 +14,15 @@ pub struct FunctionArgsKV {
 }
 
 #[derive(Default)]
-pub struct FunctionArgs {
+pub struct ToolArgs {
     inner: HashMap<String, Value>,
 }
 
-impl FunctionArgs {
+impl ToolArgs {
     pub fn new(args: &str) -> Result<Self> {
         let map: HashMap<String, Value> = serde_json::from_str(args)?;
 
-        Ok(FunctionArgs { inner: map })
+        Ok(Self { inner: map })
     }
 
     pub fn to_base64_string(&self, data: &[u8]) -> Result<String> {

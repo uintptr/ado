@@ -2,7 +2,7 @@ use crate::{
     config::loader::{AdoConfig, OpenAiConfig},
     data::types::AdoData,
     error::{Error, Result},
-    tools::handler::FunctionHandler,
+    tools::handler::ToolHandler,
 };
 
 use log::{error, info};
@@ -13,7 +13,7 @@ use super::{request::OpenAIRequest, response::OpenAIResponse};
 pub struct OpenAIAPI {
     client: Client,
     openai: OpenAiConfig,
-    handler: FunctionHandler,
+    handler: ToolHandler,
 }
 
 impl OpenAIAPI {
@@ -27,7 +27,7 @@ impl OpenAIAPI {
         Ok(Self {
             client: Client::new(),
             openai: openai.clone(),
-            handler: FunctionHandler::new(config)?,
+            handler: ToolHandler::new(config)?,
         })
     }
 
