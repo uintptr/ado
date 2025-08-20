@@ -1,4 +1,4 @@
-use crate::{error::Result, llm::provider::LLMChain};
+use crate::{error::Result, llm::chain::LLMChain};
 
 pub struct RedditQuery;
 

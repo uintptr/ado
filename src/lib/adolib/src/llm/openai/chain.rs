@@ -4,8 +4,8 @@ use crate::{
     config::loader::AdoConfig,
     data::types::AdoData,
     error::Result,
-    llm::{openai::api::OpenAIAPI, provider::LLMChainTrait},
-    tools::config::ConfigFunctions,
+    llm::{chain::LLMChainTrait, openai::api::OpenAIAPI},
+    tools::loader::Tools,
 };
 
 use async_trait::async_trait;
@@ -21,7 +21,7 @@ pub struct OpenAIChain {
     req: OpenAIRequest,
 }
 
-fn build_functions_prompt(functions: &ConfigFunctions) -> String {
+fn build_functions_prompt(functions: &Tools) -> String {
     let mut func_names: Vec<&str> = Vec::new();
 
     for f in functions.list.iter() {
@@ -35,7 +35,7 @@ fn build_functions_prompt(functions: &ConfigFunctions) -> String {
 
 impl OpenAIChain {
     pub fn new(config: &AdoConfig) -> Result<Self> {
-        let functions = ConfigFunctions::load()?;
+        let functions = Tools::load()?;
 
         let api = OpenAIAPI::new(config)?;
 

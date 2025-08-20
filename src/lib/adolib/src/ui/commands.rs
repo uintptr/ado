@@ -3,7 +3,7 @@ use crate::{
     const_vars::CACHE_05_DAYS,
     data::types::AdoData,
     error::{Error, Result},
-    llm::provider::LLMChain,
+    llm::chain::LLMChain,
     search::google::{GoogleCSE, GoogleSearchResults},
     storage::{PersistentStorageTrait, persistent::PersistentStorage},
     ui::{reddit::RedditQuery, status::StatusInfo},

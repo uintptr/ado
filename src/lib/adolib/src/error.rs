@@ -32,6 +32,9 @@ pub enum Error {
     EmptyLlmParts,
     LlmFunctionNotFound,
     LlmTextNotFound,
+    LlmError {
+        message: String,
+    },
     NotImplemented,
     FunctionNotImplemented {
         name: String,

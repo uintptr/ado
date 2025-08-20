@@ -234,8 +234,14 @@ impl ConsoleUI {
     }
 
     pub fn display_error(&self, err: Error) -> Result<()> {
-        let err_str = format!("Error: {err}");
-        println!("{}", err_str.red());
+        match err {
+            Error::LlmError { message } => self.display_string(message)?,
+            _ => {
+                let err_str = format!("Error: {err}");
+                println!("{}", err_str.red());
+            }
+        }
+
         Ok(())
     }
 }

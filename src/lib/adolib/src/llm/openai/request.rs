@@ -4,7 +4,7 @@ use serde::Serialize;
 
 use crate::{
     error::Result,
-    tools::config::{ConfigFunction, ConfigFunctions},
+    tools::loader::{ToolFunction, Tools},
 };
 
 #[derive(Debug, Serialize)]
@@ -43,7 +43,7 @@ pub struct OpenAIRequest {
     model: String,
     input: Vec<OpenAIInput>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    tools: Option<Vec<ConfigFunction>>,
+    tools: Option<Vec<ToolFunction>>,
 }
 
 impl OpenAIRequest {
@@ -55,7 +55,7 @@ impl OpenAIRequest {
         }
     }
 
-    pub fn with_functions(&mut self, functions: ConfigFunctions) {
+    pub fn with_functions(&mut self, functions: Tools) {
         let mut funcs = Vec::new();
 
         for f in &functions.list {

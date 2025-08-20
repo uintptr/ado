@@ -8,7 +8,7 @@ use crate::{
     const_vars::{PKG_VERSION, VERGEN_BUILD_DATE, VERGEN_RUSTC_COMMIT_HASH},
     data::types::AdoDataMarkdown,
     error::Result,
-    llm::provider::LLMChain,
+    llm::chain::LLMChain,
 };
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

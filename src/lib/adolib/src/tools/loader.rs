@@ -12,43 +12,37 @@ use crate::{
 const PARAM_VALID_TYPES: &[&str] = &["object", "string", "integer", "boolean", "array", "number"];
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Properties {
+pub struct ToolProperties {
     #[serde(rename = "type", deserialize_with = "validate_param_type")]
-    t: String,
-    description: String,
+    pub t: String,
+    pub description: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    items: Option<Parameters>,
+    pub items: Option<ToolParameters>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct Parameters {
+pub struct ToolParameters {
     #[serde(rename = "type", deserialize_with = "validate_param_type")]
-    t: String,
-    properties: HashMap<String, Properties>,
+    pub t: String,
+    pub properties: HashMap<String, ToolProperties>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    required: Option<Vec<String>>,
-}
-
-#[derive(Debug, Default, Serialize, Deserialize)]
-pub struct ConfigFunctionCall {
-    pub name: String,
-    pub args: HashMap<String, String>,
+    pub required: Option<Vec<String>>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct ConfigFunction {
+pub struct ToolFunction {
     #[serde(rename = "type")]
-    t: String,
+    function_type: String,
     pub name: String,
-    description: String,
+    pub description: String,
     #[serde(skip_serializing_if = "Option::is_none")]
-    parameters: Option<Parameters>,
-    returns: Option<Parameters>,
+    pub parameters: Option<ToolParameters>,
+    returns: Option<ToolParameters>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct ConfigFunctions {
-    pub list: Vec<ConfigFunction>,
+pub struct Tools {
+    pub list: Vec<ToolFunction>,
 }
 
 fn validate_param_type<'de, D>(deserializer: D) -> std::result::Result<String, D::Error>
@@ -63,7 +57,7 @@ where
     }
 }
 
-impl ConfigFunctions {
+impl Tools {
     pub fn load() -> Result<Self> {
         let mut list = Vec::new();
 
@@ -82,7 +76,7 @@ impl ConfigFunctions {
 
             let content = String::from_utf8_lossy(&f.data);
 
-            let inner_list: Vec<ConfigFunction> = serde_json::from_str(&content)?;
+            let inner_list: Vec<ToolFunction> = serde_json::from_str(&content)?;
 
             list.extend(inner_list);
         }
@@ -100,7 +94,7 @@ impl ConfigFunctions {
 
             let content = String::from_utf8_lossy(&f.data);
 
-            let inner_list: Vec<ConfigFunction> = serde_json::from_str(&content)?;
+            let inner_list: Vec<ToolFunction> = serde_json::from_str(&content)?;
 
             list.extend(inner_list);
         }
@@ -108,9 +102,8 @@ impl ConfigFunctions {
         //
         // load platform specific functions (wasm vs console)
         //
-
         info!("function count: {}", list.len());
 
-        Ok(ConfigFunctions { list })
+        Ok(Self { list })
     }
 }

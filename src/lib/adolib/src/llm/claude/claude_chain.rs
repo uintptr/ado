@@ -3,9 +3,10 @@ use crate::{
     data::types::AdoData,
     error::Result,
     llm::{
+        chain::LLMChainTrait,
         claude::claude_api::{ClaudeApi, ClaudeChat},
-        provider::LLMChainTrait,
     },
+    tools::loader::Tools,
 };
 
 use async_trait::async_trait;
@@ -21,10 +22,16 @@ impl ClaudeChain {
 
         let mut chat = ClaudeChat::new(&claude.model, claude.max_tokens);
 
+        // if the user defined instructions in the config file
         if let Some(instructions) = &claude.instructions {
             for i in instructions {
-                chat.add_content("user", i);
+                chat.add_system_promp(i);
             }
+        }
+
+        // try to load the tools from resources
+        if let Ok(tools) = Tools::load() {
+            chat.with_tools(tools);
         }
 
         Ok(Self {
@@ -68,7 +75,7 @@ mod ollama_tests {
 
     use crate::{
         config::loader::AdoConfig,
-        llm::{claude::claude_chain::ClaudeChain, provider::LLMChainTrait},
+        llm::{chain::LLMChainTrait, claude::claude_chain::ClaudeChain},
     };
 
     #[tokio::test]

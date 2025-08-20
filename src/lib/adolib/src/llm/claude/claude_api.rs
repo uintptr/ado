@@ -3,19 +3,43 @@ use reqwest::Client;
 use serde::{Deserialize, Serialize};
 
 use crate::error::Error;
+use crate::llm::claude::claude_tool::ClaudeTool;
+use crate::tools::loader::Tools;
 use crate::{config::loader::ClaudeAiConfig, error::Result};
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ClaudeErrorMessage {
+    #[serde(rename = "type")]
+    error_type: String,
+    message: String,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct ClaudeError {
+    #[serde(rename = "type")]
+    error_type: String,
+    request_id: Option<String>,
+    error: ClaudeErrorMessage,
+}
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ClaudeMessage {
     pub role: String,
     pub content: String,
 }
+#[derive(Debug, Deserialize, Serialize)]
+pub struct ClaudeContentInput {}
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ClaudeContent {
-    pub text: String,
     #[serde(rename = "type")]
     text_type: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub text: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    id: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    input: Option<ClaudeContentInput>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -53,7 +77,11 @@ pub struct ClaudeResponse {
 impl ClaudeResponse {
     pub fn message(&self) -> Result<&str> {
         let text = self.content.first().ok_or(Error::Empty)?;
-        Ok(&text.text)
+
+        match &text.text {
+            Some(v) => Ok(v),
+            None => Err(Error::Empty),
+        }
     }
 }
 
@@ -70,6 +98,11 @@ pub struct ClaudeChat {
     model: String,
     messages: Vec<ClaudeMessage>,
     max_tokens: u64,
+    stream: bool,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    system: Vec<ClaudeContent>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    tools: Vec<ClaudeTool>,
 }
 
 impl ClaudeChat {
@@ -81,6 +114,42 @@ impl ClaudeChat {
             model: model.as_ref().to_string(),
             messages: vec![],
             max_tokens,
+            stream: false,
+            system: vec![],
+            tools: vec![],
+        }
+    }
+
+    pub fn add_system_promp<S>(&mut self, text: S)
+    where
+        S: AsRef<str>,
+    {
+        let content = ClaudeContent {
+            text: Some(text.as_ref().into()),
+            text_type: "text".into(),
+            id: None,
+            input: None,
+        };
+        self.system.push(content);
+    }
+
+    pub fn with_tools(&mut self, tools: Tools) {
+        for t in tools.list {
+            if t.name != "get_ip_address" {
+                continue;
+            }
+
+            let claude_tool: ClaudeTool = match t.try_into() {
+                Ok(v) => v,
+                Err(e) => {
+                    error!("{e}");
+                    continue;
+                }
+            };
+
+            self.tools.push(claude_tool);
+
+            break;
         }
     }
 
@@ -144,7 +213,20 @@ impl ClaudeApi {
             error!("{resp_json}")
         }
 
-        let resp: ClaudeResponse = serde_json::from_str(resp_json)?;
+        //fs::write("/tmp/claude_response.json", resp_json.as_bytes())?;
+
+        let resp: ClaudeResponse = match serde_json::from_str(resp_json) {
+            Ok(v) => v,
+            Err(_) => {
+                //
+                // Try to print it nicely, best effort
+                //
+                let claude_error: ClaudeError = serde_json::from_str(resp_json)?;
+                let pretty_error = serde_json::to_string_pretty(&claude_error)?;
+                let pretty_error = format!("# Claude Error\n\n```json\n{pretty_error}\n```");
+                return Err(Error::LlmError { message: pretty_error });
+            }
+        };
 
         Ok(resp)
     }
@@ -158,5 +240,25 @@ impl ClaudeApi {
         chat.add_content("user", content.as_ref());
 
         self.chat(&chat).await
+    }
+}
+#[cfg(test)]
+mod tests {
+    use std::{fs, path::Path};
+
+    use log::info;
+
+    use crate::{llm::claude::claude_api::ClaudeResponse, logging::logger::setup_logger};
+
+    #[test]
+    fn test_response() {
+        setup_logger(true).unwrap();
+        let test_file = Path::new("/tmp").join("claude_response.json");
+
+        let resp = fs::read_to_string(test_file).unwrap();
+
+        let resp: ClaudeResponse = serde_json::from_str(&resp).unwrap();
+
+        info!("{resp:?}");
     }
 }

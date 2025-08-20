@@ -3,8 +3,8 @@ use crate::{
     data::types::AdoData,
     error::Result,
     llm::{
+        chain::LLMChainTrait,
         ollama::ollama_api::{OllamaApi, OllamaChat},
-        provider::LLMChainTrait,
     },
 };
 
@@ -60,7 +60,7 @@ mod ollama_tests {
 
     use crate::{
         config::loader::AdoConfig,
-        llm::{ollama::ollama_chain::OllamaChain, provider::LLMChainTrait},
+        llm::{chain::LLMChainTrait, ollama::ollama_chain::OllamaChain},
     };
 
     #[tokio::test]
