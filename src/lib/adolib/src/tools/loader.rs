@@ -23,6 +23,8 @@ pub enum ToolType {
     Array,
     #[serde(rename = "number")]
     Number,
+    #[serde(rename = "function")]
+    Function,
 }
 
 impl FromStr for ToolType {
@@ -36,6 +38,7 @@ impl FromStr for ToolType {
             "boolean" => Ok(ToolType::Boolean),
             "array" => Ok(ToolType::Array),
             "number" => Ok(ToolType::Number),
+            "function" => Ok(ToolType::Function),
             _ => Err(Error::NotImplemented),
         }
     }

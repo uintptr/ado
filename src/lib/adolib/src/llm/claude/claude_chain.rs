@@ -32,9 +32,9 @@ impl ClaudeChain {
         }
 
         // try to load the tools from resources
-        if let Ok(tools) = Tools::load() {
-            chat.with_tools(tools);
-        }
+        let tools = Tools::load()?;
+
+        chat.with_tools(tools);
 
         Ok(Self {
             api: ClaudeApi::new(claude)?,

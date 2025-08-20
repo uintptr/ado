@@ -168,10 +168,6 @@ impl ClaudeChat {
 
     pub fn with_tools(&mut self, tools: Tools) {
         for t in tools.list {
-            if t.name != "get_ip_address" {
-                continue;
-            }
-
             let claude_tool: ClaudeTool = match t.try_into() {
                 Ok(v) => v,
                 Err(e) => {
@@ -179,10 +175,7 @@ impl ClaudeChat {
                     continue;
                 }
             };
-
             self.tools.push(claude_tool);
-
-            break;
         }
     }
 

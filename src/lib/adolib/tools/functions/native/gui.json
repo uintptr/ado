@@ -1,7 +1,0 @@
-[
-    {
-        "type": "function",
-        "name": "desktop_windows",
-        "description": "list all the open windows on the current desktop"
-    }
-]
