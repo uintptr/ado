@@ -8,7 +8,7 @@ use rstaples::staples::find_file;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    const_vars::{DOT_DIRECTORY, STORE_PERMANENT},
+    const_vars::{CONFIG_FILE_NAME, DOT_DIRECTORY, STORE_PERMANENT},
     error::{Error, Result},
     llm::config::{ClaudeConfig, ConfigOllama, OpenAiConfig},
     search::google::GoogleConfig,
@@ -42,8 +42,6 @@ pub struct AdoConfig {
     config_file: ConfigFile,
 }
 
-const CONFIG_FILE_NAME: &str = "config.toml";
-
 fn find_from_home() -> Result<PathBuf> {
     let home = env::var("HOME")?;
 
@@ -72,7 +70,7 @@ impl AdoConfig {
         let toml_file = toml::to_string(&self.config_file)?;
 
         //
-        // Update th config file
+        // Update the config file
         //
         match &self.source {
             AdoConfigSource::File { path } => {
@@ -111,7 +109,7 @@ impl AdoConfig {
         AdoConfig::from_path(config_file)
     }
 
-    // only used for testing
+    // mainly only used in testing
     pub fn from_string<S>(value: S) -> Result<Self>
     where
         S: AsRef<str>,
