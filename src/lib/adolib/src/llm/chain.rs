@@ -12,7 +12,7 @@ use log::error;
 
 #[async_trait(?Send)]
 pub trait LLMChainTrait {
-    async fn link<C>(&mut self, content: &str, console: &C) -> Result<()>
+    async fn link<C>(&mut self, content: &str, console: &mut C) -> Result<()>
     where
         C: ConsoleDisplayTrait;
     async fn message(&self, content: &str) -> Result<String>;
@@ -23,7 +23,7 @@ pub trait LLMChainTrait {
 pub enum LLMChain {
     OpenAI(Box<OpenAIChain>), // box because it grows the union/enum unnecessarily
     Ollama(OllamaChain),
-    Claude(ClaudeChain),
+    Claude(Box<ClaudeChain>),
 }
 
 impl LLMChain {
@@ -39,7 +39,7 @@ impl LLMChain {
             }
             "claude" => {
                 let chain = ClaudeChain::new(config)?;
-                LLMChain::Claude(chain)
+                LLMChain::Claude(Box::new(chain))
             }
             unk => {
                 error!("Unknown provider: {unk}");
@@ -58,7 +58,7 @@ impl LLMChain {
         }
     }
 
-    pub async fn link<C>(&mut self, content: &str, console: &C) -> Result<()>
+    pub async fn link<C>(&mut self, content: &str, console: &mut C) -> Result<()>
     where
         C: ConsoleDisplayTrait,
     {

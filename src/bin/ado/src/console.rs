@@ -184,14 +184,14 @@ impl TerminalConsole {
         }
     }
 
-    fn display_usage<S>(&self, usage: S) -> Result<()>
+    fn display_usage<S>(&mut self, usage: S) -> Result<()>
     where
         S: AsRef<str>,
     {
         self.display_string(usage)
     }
 
-    fn display_md<M>(&self, data: M) -> Result<()>
+    fn display_md<M>(&mut self, data: M) -> Result<()>
     where
         M: AdoDataMarkdown,
     {
@@ -206,7 +206,7 @@ impl TerminalConsole {
         unimplemented!()
     }
 
-    pub fn display_error(&self, err: Error) -> Result<()> {
+    pub fn display_error(&mut self, err: Error) -> Result<()> {
         match err {
             Error::LlmError { message } => self.display_string(message)?,
             _ => {
@@ -228,7 +228,7 @@ impl ConsoleDisplayTrait for TerminalConsole {
         self.spinner = None
     }
 
-    fn display(&self, data: AdoData) -> Result<()> {
+    fn display(&mut self, data: AdoData) -> Result<()> {
         match data {
             AdoData::Empty => Ok(()),
             AdoData::Reset => clear_console(),
@@ -244,7 +244,7 @@ impl ConsoleDisplayTrait for TerminalConsole {
         }
     }
 
-    fn display_string<S>(&self, value: S) -> Result<()>
+    fn display_string<S>(&mut self, value: S) -> Result<()>
     where
         S: AsRef<str>,
     {

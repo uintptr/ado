@@ -196,13 +196,12 @@ impl UserCommands {
                 Command::Query { input } => {
                     let input_str = input.join(" ");
 
-                    self.chain.link(&input_str, console).await?;
-                    Ok(())
+                    self.chain.link(&input_str, console).await
                 }
                 Command::Quit => Err(Error::EOF),
                 Command::Reset => {
                     self.chain.reset();
-                    Ok(())
+                    console.display(AdoData::Reset)
                 }
                 Command::Search { query } => {
                     let query = query.join(" ");
@@ -216,13 +215,12 @@ impl UserCommands {
                 Command::Reddit { query } => {
                     let query = query.join(" ");
                     let sub = self.cached_reddit(query).await?;
-
-                    console.display(AdoData::String(sub))
+                    console.display_string(sub)
                 }
                 Command::Lucky { query } => {
                     let query = query.join(" ");
                     let url = self.cached_lucky(query).await?;
-                    console.display(AdoData::String(url))
+                    console.display_string(url)
                 }
                 Command::Status => {
                     let s = StatusInfo::new(&self.config, &self.chain);
@@ -240,7 +238,7 @@ impl UserCommands {
                     let model = self.chain.model();
                     // TODO XXX TODO
                     // can use use a &str here
-                    console.display(AdoData::String(model.into())) // can we use a str here
+                    console.display_string(model) // can we use a str here
                 }
             },
             Err(e) => match e.kind() {

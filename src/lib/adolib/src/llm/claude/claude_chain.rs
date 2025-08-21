@@ -43,7 +43,7 @@ impl ClaudeChain {
         })
     }
 
-    async fn process_content<C>(&self, contents: &Vec<ClaudeContent>, console: &C) -> Result<()>
+    async fn process_content<C>(&self, contents: &Vec<ClaudeContent>, console: &mut C) -> Result<()>
     where
         C: ConsoleDisplayTrait,
     {
@@ -69,7 +69,7 @@ impl ClaudeChain {
 
 #[async_trait(?Send)]
 impl LLMChainTrait for ClaudeChain {
-    async fn link<C>(&mut self, content: &str, console: &C) -> Result<()>
+    async fn link<C>(&mut self, content: &str, console: &mut C) -> Result<()>
     where
         C: ConsoleDisplayTrait,
     {
@@ -77,7 +77,7 @@ impl LLMChainTrait for ClaudeChain {
 
         let resp = self.api.chat(&self.chat).await?;
 
-        info!("stop: {}", resp.stop_reason);
+        info!("id={}", resp.id);
 
         // in its own function so it can be tested from a local
         // file
@@ -144,8 +144,8 @@ mod tests {
 
         let console = NopConsole {};
 
-        chain.link("Hello World", &console).await.unwrap();
-        chain.link("Can you tell a joke", &console).await.unwrap();
+        chain.link("Hello World", &mut console).await.unwrap();
+        chain.link("Can you tell a joke", &mut console).await.unwrap();
 
         chain.message("hello world").await.unwrap();
     }
@@ -164,7 +164,7 @@ mod tests {
 
         let console = NopConsole {};
 
-        let ret = chain.process_content(&resp.content, &console).await.unwrap();
+        let ret = chain.process_content(&resp.content, &mut console).await.unwrap();
 
         info!("ret: {ret:?}");
     }

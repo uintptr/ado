@@ -59,7 +59,7 @@ impl OpenAIChain {
 
 #[async_trait(?Send)]
 impl LLMChainTrait for OpenAIChain {
-    async fn link<C>(&mut self, content: &str, _console: &C) -> Result<()>
+    async fn link<C>(&mut self, content: &str, _console: &mut C) -> Result<()>
     where
         C: ConsoleDisplayTrait,
     {

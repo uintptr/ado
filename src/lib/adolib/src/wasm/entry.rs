@@ -2,26 +2,33 @@ use crate::{
     config::loader::AdoConfig,
     data::types::{AdoData, AdoDataMarkdown},
     error::{Error, Result},
-    llm::{provider::LLMChain, question::question_detection},
+    llm::{chain::LLMChain, question::question_detection},
     logging::logger::setup_logger,
     storage::persistent::PersistentStorage,
     ui::commands::UserCommands,
+    wasm::consoles::{WasmAsyncConsole, WasmSyncConsole},
 };
+
 use gloo_utils::format::JsValueSerdeExt;
 use serde::Serialize;
 use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
+
 use web_sys::window;
 
 #[wasm_bindgen]
 extern "C" {
     #[wasm_bindgen(js_namespace = console)]
     pub fn log(s: &str);
+    #[wasm_bindgen(js_name = wasm_display)]
+    pub fn wasm_display(s: JsValue);
 }
 
 #[wasm_bindgen]
 pub struct AdoWasm {
     commands: UserCommands,
     chain: LLMChain,
+    async_console: WasmAsyncConsole,
+    sync_console: WasmSyncConsole,
 }
 
 // or for your custom error type:
@@ -74,20 +81,35 @@ impl AdoWasm {
         let cache = PersistentStorage::new(user_id, storage_url);
         let commands = UserCommands::new(&config, cache).unwrap();
 
-        AdoWasm { commands, chain }
+        AdoWasm {
+            commands,
+            chain,
+            async_console: WasmAsyncConsole {},
+            sync_console: WasmSyncConsole::new(),
+        }
     }
 
     pub async fn query(&mut self, content: &str) -> Result<JsValue> {
-        let data = self.commands.handler(content).await?;
+        self.sync_console.clear();
+        self.commands.handler(content, &mut self.sync_console).await?;
 
-        let resp = WasmQueryResponse {
-            data: data.clone(),
-            markdown: data.to_markdown()?,
-        };
+        match self.sync_console.data_list.pop() {
+            Some(data) => {
+                let resp = WasmQueryResponse {
+                    data: data.clone(),
+                    markdown: data.to_markdown()?,
+                };
 
-        let obj = JsValue::from_serde(&resp)?;
+                let obj = JsValue::from_serde(&resp)?;
 
-        Ok(obj)
+                Ok(obj)
+            }
+            None => Err(Error::Empty),
+        }
+    }
+
+    pub async fn queue(&mut self, content: &str) -> Result<()> {
+        self.commands.handler(content, &mut self.async_console).await
     }
 
     pub fn is_question(&self, query: &str) -> bool {

@@ -29,7 +29,7 @@ impl OllamaChain {
 
 #[async_trait(?Send)]
 impl LLMChainTrait for OllamaChain {
-    async fn link<C>(&mut self, content: &str, console: &C) -> Result<()>
+    async fn link<C>(&mut self, content: &str, console: &mut C) -> Result<()>
     where
         C: ConsoleDisplayTrait,
     {

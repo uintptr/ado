@@ -63,9 +63,19 @@ pub struct ClaudeContent {
 }
 
 #[derive(Debug, Deserialize, Serialize)]
+pub struct ClaudeCacheCreation {
+    ephemeral_5m_input_tokens: u64,
+    ephemeral_1h_input_tokens: u64,
+}
+
+#[derive(Debug, Deserialize, Serialize)]
 pub struct ClaudeUsage {
     input_tokens: u64,
+    cache_creation_input_tokens: u64,
+    cache_read_input_tokens: u64,
+    cache_creation: ClaudeCacheCreation,
     output_tokens: u64,
+    service_tier: String,
 }
 
 impl ClaudeMessage {
@@ -79,7 +89,7 @@ impl ClaudeMessage {
         }
     }
 }
-#[derive(Debug, Display, Deserialize)]
+#[derive(Debug, Display, Serialize, Deserialize)]
 pub enum ClaudeStopReason {
     #[serde(rename = "end_turn")]
     EndTurn,
@@ -95,17 +105,23 @@ pub enum ClaudeStopReason {
     Resusal,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
+pub enum ClaudeResponseType {
+    #[serde(rename = "message")]
+    Message,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct ClaudeResponse {
-    pub content: Vec<ClaudeContent>,
-    //pub id: String,
-    //pub model: String,
+    pub id: String,
+    #[serde(rename = "type")]
+    pub response_type: ClaudeResponseType,
     pub role: ClaudeRole,
+    pub model: String,
+    pub content: Vec<ClaudeContent>,
     pub stop_reason: ClaudeStopReason,
-    //pub stop_sequence: Option<String>,
-    //#[serde(rename = "type")]
-    //pub response_type: String,
-    //pub usage: ClaudeUsage,
+    pub stop_sequence: Option<String>,
+    pub usage: ClaudeUsage,
 }
 
 impl ClaudeResponse {
@@ -238,10 +254,9 @@ impl ClaudeApi {
             error!("{resp_json}")
         }
 
-        //fs::write("/tmp/claude_response.json", resp_json.as_bytes())?;
-
-        let resp: ClaudeResponse = match serde_json::from_str(resp_json) {
-            Ok(v) => v,
+        // convert a our struct
+        match serde_json::from_str::<ClaudeResponse>(resp_json) {
+            Ok(v) => Ok(v),
             Err(_) => {
                 //
                 // Try to print it nicely, best effort
@@ -249,11 +264,9 @@ impl ClaudeApi {
                 let claude_error: ClaudeError = serde_json::from_str(resp_json)?;
                 let pretty_error = serde_json::to_string_pretty(&claude_error)?;
                 let pretty_error = format!("# Claude Error\n\n```json\n{pretty_error}\n```");
-                return Err(Error::LlmError { message: pretty_error });
+                Err(Error::LlmError { message: pretty_error })
             }
-        };
-
-        Ok(resp)
+        }
     }
 
     pub async fn message<S>(&self, content: S) -> Result<ClaudeResponse>

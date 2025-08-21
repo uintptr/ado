@@ -177,10 +177,10 @@ function display_reset() {
 }
 
 /**
- * @param {object} response
+ * @param {object} ado_data
  */
-function response_handler(response) {
-    const data = response.data;
+function display_adodata(ado_data) {
+    const data = ado_data.data;
 
     if (data.hasOwnProperty("UsageString")) {
         let usage = "```\n" + data.UsageString + "\n```";
@@ -193,13 +193,13 @@ function response_handler(response) {
     } else if (data == "Reset") {
         display_reset();
     } else if (data.hasOwnProperty("Status")) {
-        display_string(response.markdown);
+        display_string(ado_data.markdown);
     } else {
         console.warn(
             "--------------------------------------------------------",
         );
         console.warn("unknown response type");
-        console.warn(response);
+        console.warn(ado_data);
         console.warn(
             "--------------------------------------------------------",
         );
@@ -237,8 +237,7 @@ function init_cmd_line(wctx) {
                     display_string(cmd_line, false);
 
                     try {
-                        let ret = await wctx.query(cmd_line);
-                        response_handler(ret);
+                        let ret = await wctx.queue(cmd_line);
                     } catch (error) {
                         let err_msg = "error: " + error;
                         display_string("`" + err_msg + "`");
@@ -279,8 +278,7 @@ async function search_handler(wctx, search) {
             //
             // assume this is a search
             //
-            let res = await wctx.query("search " + q);
-            response_handler(res);
+            let res = await wctx.queue("search " + q);
         } else if (q.startsWith("i ")) {
             //
             // Google image search
@@ -298,8 +296,7 @@ async function search_handler(wctx, search) {
             //
             // assume this is a chat request
             //
-            let res = await wctx.query(q_plus_two);
-            response_handler(res);
+            let res = await wctx.queue(q_plus_two);
         } else if (q.startsWith("g ")) {
             //
             // google search
@@ -334,8 +331,7 @@ async function search_handler(wctx, search) {
             // detect if this is a question
             //
             if (true == wctx.is_question(q)) {
-                let res = await wctx.query(q);
-                response_handler(res);
+                let res = await wctx.queue(q);
             } else {
                 //
                 // fallback to google "I'm Feeling Lucky" url. In most
@@ -380,6 +376,12 @@ async function get_user() {
 
     return config;
 }
+/*
+ * @param {object} data
+ */
+function wasm_display_callback(data) {
+    display_adodata(data);
+}
 
 /**
  * @returns {Promise<UserConfig|null>}
@@ -423,5 +425,8 @@ async function main() {
         await navigateWithLoading("/login.html");
     }
 }
+
+// @ts-ignore
+window.wasm_display = wasm_display_callback;
 
 await main();

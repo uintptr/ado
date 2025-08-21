@@ -1,7 +1,7 @@
 use crate::{
     data::types::AdoData,
     error::{Error, Result},
-    tools::function_args::FunctionArgs,
+    tools::function_args::ToolArgs,
 };
 
 pub struct FunctionsWhois {}
@@ -11,7 +11,7 @@ impl FunctionsWhois {
         Ok(Self {})
     }
 
-    pub fn query(&self, _args: &FunctionArgs) -> Result<AdoData> {
+    pub fn query(&self, _args: &ToolArgs) -> Result<AdoData> {
         Err(Error::NotImplemented)
     }
 }
