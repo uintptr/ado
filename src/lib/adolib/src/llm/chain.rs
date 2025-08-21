@@ -21,8 +21,8 @@ pub trait LLMChainTrait {
 }
 
 pub enum LLMChain {
-    OpenAI(Box<OpenAIChain>), // box because it grows the union/enum unnecessarily
-    Ollama(OllamaChain),
+    OpenAI(Box<OpenAIChain>),
+    Ollama(Box<OllamaChain>),
     Claude(Box<ClaudeChain>),
 }
 
@@ -35,7 +35,7 @@ impl LLMChain {
             }
             "ollama" => {
                 let chain = OllamaChain::new(config)?;
-                LLMChain::Ollama(chain)
+                LLMChain::Ollama(Box::new(chain))
             }
             "claude" => {
                 let chain = ClaudeChain::new(config)?;
