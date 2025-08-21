@@ -383,6 +383,14 @@ function wasm_display_callback(data) {
     display_adodata(data);
 }
 
+function wasm_display_spinner_start() {
+    console.log("spinning...");
+}
+
+function wasm_display_spinner_stop() {
+    console.log("done");
+}
+
 /**
  * @returns {Promise<UserConfig|null>}
  */
@@ -428,5 +436,9 @@ async function main() {
 
 // @ts-ignore
 window.wasm_display = wasm_display_callback;
+// @ts-ignore
+window.wasm_display_spinner_start = wasm_display_spinner_start;
+// @ts-ignore
+window.wasm_display_spinner_stop = wasm_display_spinner_stop;
 
 await main();

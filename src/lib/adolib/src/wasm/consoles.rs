@@ -2,7 +2,7 @@ use crate::{
     data::types::{AdoData, AdoDataMarkdown},
     error::Result,
     ui::ConsoleDisplayTrait,
-    wasm::entry::{WasmQueryResponse, wasm_display},
+    wasm::entry::{WasmQueryResponse, wasm_display, wasm_display_spinner_start, wasm_display_spinner_stop},
 };
 use gloo_utils::format::JsValueSerdeExt;
 use wasm_bindgen::JsValue;
@@ -21,8 +21,12 @@ impl WasmSyncConsole {
     }
 }
 impl ConsoleDisplayTrait for WasmSyncConsole {
-    fn start_spinner(&mut self) {}
-    fn stop_spinner(&mut self) {}
+    fn start_spinner(&mut self) {
+        wasm_display_spinner_start();
+    }
+    fn stop_spinner(&mut self) {
+        wasm_display_spinner_stop();
+    }
     fn display(&mut self, data: AdoData) -> Result<()> {
         self.data_list.push(data);
         Ok(())
@@ -40,8 +44,12 @@ pub struct WasmAsyncConsole {}
 impl WasmAsyncConsole {}
 
 impl ConsoleDisplayTrait for WasmAsyncConsole {
-    fn start_spinner(&mut self) {}
-    fn stop_spinner(&mut self) {}
+    fn start_spinner(&mut self) {
+        wasm_display_spinner_start();
+    }
+    fn stop_spinner(&mut self) {
+        wasm_display_spinner_stop();
+    }
     fn display(&mut self, data: AdoData) -> Result<()> {
         let resp = WasmQueryResponse {
             data: data.clone(),

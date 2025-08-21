@@ -21,6 +21,10 @@ extern "C" {
     pub fn log(s: &str);
     #[wasm_bindgen(js_name = wasm_display)]
     pub fn wasm_display(s: JsValue);
+    #[wasm_bindgen(js_name = wasm_display_spinner_start)]
+    pub fn wasm_display_spinner_start();
+    #[wasm_bindgen(js_name = wasm_display_spinner_stop)]
+    pub fn wasm_display_spinner_stop();
 }
 
 #[wasm_bindgen]
