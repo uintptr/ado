@@ -33,7 +33,7 @@ rustyline = { workspace = true }
 tempfile = { workspace = true }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-getrandom_0_2 = { workspace = true }
+getrandom_js = { workspace = true }
 wasm-bindgen = { workspace = true }
 ring = { workspace = true }
 wasm-bindgen-futures = { workspace = true }
