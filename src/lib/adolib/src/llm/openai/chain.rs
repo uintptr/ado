@@ -47,8 +47,10 @@ impl OpenAIChain {
 
         req.with_functions(functions);
 
-        if let Some(prompt) = &openai.prompt {
-            req.with_input_role("user", prompt);
+        if let Some(instructions) = &openai.instructions {
+            for i in instructions {
+                req.with_input_role("system", i)
+            }
         }
 
         req.with_input_role("user", function_prompt);

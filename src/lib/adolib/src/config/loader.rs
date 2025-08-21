@@ -24,7 +24,7 @@ pub struct OpenAiConfig {
     pub url: String,
     #[serde(default = "openai_default_model")]
     pub model: String,
-    pub prompt: Option<String>,
+    pub instructions: Option<Vec<String>>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
