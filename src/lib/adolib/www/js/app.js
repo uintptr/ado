@@ -10,6 +10,10 @@ import {
 const marked = window["marked"];
 
 class UserConfig {
+    /**
+     * @param {string} user_id
+     * @param {string} config_file
+     */
     constructor(user_id, config_file) {
         this.user_id = user_id;
         this.config_file = config_file;
@@ -38,6 +42,30 @@ if (window.hljs) {
 }
 
 export {};
+
+/**
+ * @param {string} status
+ */
+function set_ready_status(status) {
+    const ready_container = document.querySelector("#ready-status");
+
+    if (null != ready_container && ready_container instanceof HTMLElement) {
+        ready_container.textContent = status;
+    }
+}
+
+/**
+ * @param {AdoWasm} wctx
+ */
+function set_version(wctx) {
+    const version = wctx.version();
+
+    const version_container = document.querySelector("#version-tag");
+
+    if (null != version_container && version_container instanceof HTMLElement) {
+        version_container.textContent = version;
+    }
+}
 
 /**
  * @param {any} item
@@ -265,7 +293,6 @@ async function navigate_to_lucky(wctx, query) {
  * @param {AdoWasm} wctx
  * @param {string} search
  */
-
 async function search_handler(wctx, search) {
     const urlParams = new URLSearchParams(search);
 
@@ -384,11 +411,11 @@ function wasm_display_callback(data) {
 }
 
 function wasm_display_spinner_start() {
-    console.log("spinning...");
+    set_ready_status("THINKING...");
 }
 
 function wasm_display_spinner_stop() {
-    console.log("done");
+    set_ready_status("READY");
 }
 
 /**
@@ -420,6 +447,8 @@ async function main() {
 
     if (config != null) {
         let wctx = new AdoWasm(config.user_id, config.config_file);
+
+        set_version(wctx);
 
         init_cmd_line(wctx);
 

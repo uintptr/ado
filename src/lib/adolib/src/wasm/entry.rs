@@ -1,5 +1,6 @@
 use crate::{
     config::loader::AdoConfig,
+    const_vars::VERGEN_RUSTC_COMMIT_HASH,
     data::types::{AdoData, AdoDataMarkdown},
     error::{Error, Result},
     llm::{chain::LLMChain, question::question_detection},
@@ -122,5 +123,9 @@ impl AdoWasm {
 
     pub fn reset(&mut self) {
         self.chain.reset();
+    }
+
+    pub fn version(&self) -> String {
+        VERGEN_RUSTC_COMMIT_HASH.to_string()
     }
 }
