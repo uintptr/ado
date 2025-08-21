@@ -144,6 +144,19 @@ pub struct ClaudeApi {
 }
 
 #[derive(Debug, Serialize)]
+pub enum ClaudeToolChoiceType {
+    #[serde(rename = "any")]
+    Any,
+}
+
+#[derive(Debug, Serialize)]
+pub struct ClaudeToolChoice {
+    #[serde(rename = "type")]
+    choice_type: ClaudeToolChoiceType,
+    disable_parallel_tool_use: bool,
+}
+
+#[derive(Debug, Serialize)]
 pub struct ClaudeChat {
     model: String,
     messages: Vec<ClaudeMessage>,
@@ -153,6 +166,8 @@ pub struct ClaudeChat {
     system: Vec<ClaudeContent>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     tools: Vec<ClaudeTool>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    tool_choice: Option<ClaudeToolChoice>,
 }
 
 impl ClaudeChat {
@@ -167,10 +182,11 @@ impl ClaudeChat {
             stream: false,
             system: vec![],
             tools: vec![],
+            tool_choice: None,
         }
     }
 
-    pub fn add_system_promp<S>(&mut self, text: S)
+    pub fn add_system_prompt<S>(&mut self, text: S)
     where
         S: AsRef<str>,
     {
@@ -193,6 +209,13 @@ impl ClaudeChat {
             };
             self.tools.push(claude_tool);
         }
+
+        let tool_choice = ClaudeToolChoice {
+            choice_type: ClaudeToolChoiceType::Any,
+            disable_parallel_tool_use: false,
+        };
+
+        self.tool_choice = Some(tool_choice)
     }
 
     pub fn add_content<C>(&mut self, role: ClaudeRole, content: C)

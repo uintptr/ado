@@ -27,7 +27,7 @@ impl ClaudeChain {
         // if the user defined instructions in the config file
         if let Some(instructions) = &claude.instructions {
             for i in instructions {
-                chat.add_system_promp(i);
+                chat.add_system_prompt(i);
             }
         }
 
