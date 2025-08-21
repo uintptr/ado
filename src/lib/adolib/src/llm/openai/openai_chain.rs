@@ -3,14 +3,14 @@ use log::info;
 use crate::{
     config::loader::AdoConfig,
     error::Result,
-    llm::{chain::LLMChainTrait, openai::api::OpenAIAPI},
+    llm::{chain::LLMChainTrait, openai::openai_api::OpenAIAPI},
     tools::loader::Tools,
     ui::ConsoleDisplayTrait,
 };
 
 use async_trait::async_trait;
 
-use super::request::OpenAIRequest;
+use super::openai_request::OpenAIRequest;
 
 const FUNC_PROMPT_PRE: &str = r#"Dont forget that you have access series of
 tools and functions to call to give the user the best possible answer. Here's

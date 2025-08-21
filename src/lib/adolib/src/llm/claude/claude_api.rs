@@ -5,11 +5,12 @@ use log::{error, info};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 
-use crate::config::loader::ClaudeMcpServer;
 use crate::error::Error;
+use crate::error::Result;
+use crate::llm::claude::claude_config::ClaudeConfig;
+use crate::llm::claude::claude_config::ClaudeMcpServer;
 use crate::llm::claude::claude_tool::ClaudeTool;
 use crate::tools::loader::Tools;
-use crate::{config::loader::ClaudeAiConfig, error::Result};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ClaudeErrorMessage {
@@ -138,23 +139,7 @@ impl ClaudeResponse {
 
 pub struct ClaudeApi {
     client: Client,
-    pub model: String,
-    pub url: String,
-    pub anthropic_version: String,
-    pub key: String,
-}
-
-#[derive(Debug, Serialize)]
-pub enum ClaudeToolChoiceType {
-    #[serde(rename = "any")]
-    Any,
-}
-
-#[derive(Debug, Serialize)]
-pub struct ClaudeToolChoice {
-    #[serde(rename = "type")]
-    choice_type: ClaudeToolChoiceType,
-    disable_parallel_tool_use: bool,
+    pub config: ClaudeConfig,
 }
 
 #[derive(Debug, Default, Serialize)]
@@ -167,8 +152,8 @@ pub struct ClaudeMessages {
     system: Vec<ClaudeContent>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     tools: Vec<ClaudeTool>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    tool_choice: Option<ClaudeToolChoice>,
+    //#[serde(skip_serializing_if = "Option::is_none")]
+    //tool_choice: Option<ClaudeToolChoice>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     mcp_servers: Vec<ClaudeMcpServer>,
 }
@@ -211,12 +196,13 @@ impl ClaudeMessages {
             self.tools.push(claude_tool);
         }
 
+        /*
         let tool_choice = ClaudeToolChoice {
             choice_type: ClaudeToolChoiceType::Any,
             disable_parallel_tool_use: false,
         };
-
         self.tool_choice = Some(tool_choice)
+        */
     }
 
     pub fn with_mcp_servers(&mut self, servers: &Vec<ClaudeMcpServer>) {
@@ -237,27 +223,24 @@ impl ClaudeMessages {
 }
 
 impl ClaudeApi {
-    pub fn new(config: &ClaudeAiConfig) -> Result<Self> {
+    pub fn new(config: &ClaudeConfig) -> Result<Self> {
         Ok(Self {
             client: Client::new(),
-            model: config.model.to_string(),
-            url: config.url.to_string(),
-            anthropic_version: config.anthropic_version.to_string(),
-            key: config.key.to_string(),
+            config: config.clone(),
         })
     }
 
     pub async fn chat(&self, chat: &ClaudeMessages) -> Result<ClaudeResponse> {
         let req_json = serde_json::to_string_pretty(&chat)?;
 
-        let url = format!("{}/v1/messages", self.url);
+        let url = format!("{}/v1/messages", self.config.url);
 
         let res = self
             .client
             .post(&url)
             .header("Content-Type", "application/json")
-            .header("x-api-key", &self.key)
-            .header("anthropic-version", &self.anthropic_version)
+            .header("x-api-key", &self.config.key)
+            .header("anthropic-version", &self.config.anthropic_version)
             .body(req_json)
             .send()
             .await?;
@@ -301,7 +284,7 @@ impl ClaudeApi {
     where
         S: AsRef<str>,
     {
-        let mut chat = ClaudeMessages::new(&self.model, 4096);
+        let mut chat = ClaudeMessages::new(&self.config.model, 4096);
 
         chat.add_content(ClaudeRole::User, content.as_ref());
 

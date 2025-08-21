@@ -8,7 +8,7 @@ use crate::{
     tools::handler::ToolHandler,
 };
 
-use super::request::{OpenAIFunctionInput, OpenAIFunctionOutput, OpenAIInput};
+use super::openai_request::{OpenAIFunctionInput, OpenAIFunctionOutput, OpenAIInput};
 
 #[derive(Debug, Deserialize)]
 pub struct OpenAiOutputMessageContent {

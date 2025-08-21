@@ -4,7 +4,7 @@ use async_trait::async_trait;
 use crate::{
     config::loader::AdoConfig,
     error::{Error, Result},
-    llm::{claude::claude_chain::ClaudeChain, ollama::ollama_chain::OllamaChain, openai::chain::OpenAIChain},
+    llm::{claude::claude_chain::ClaudeChain, ollama::ollama_chain::OllamaChain, openai::openai_chain::OpenAIChain},
     ui::ConsoleDisplayTrait,
 };
 

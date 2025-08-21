@@ -4,7 +4,7 @@ use log::{error, info};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 
-use crate::{config::loader::ConfigLlmLlama, error::Result};
+use crate::{error::Result, llm::ollama::ollama_config::ConfigOllama};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct OllamaMessage {
@@ -80,23 +80,21 @@ impl OllamaChat {
 // https://github.com/ollama/ollama/blob/main/docs/api.md
 pub struct OllamaApi {
     client: Client,
-    pub model: String,
-    pub endpoint: String,
+    pub config: ConfigOllama,
 }
 
 impl OllamaApi {
-    pub fn new(config: &ConfigLlmLlama) -> Result<Self> {
+    pub fn new(config: &ConfigOllama) -> Result<Self> {
         Ok(Self {
             client: Client::new(),
-            model: config.model.to_string(),
-            endpoint: config.endpoint.to_string(),
+            config: config.clone(),
         })
     }
 
     pub async fn chat(&self, chat: &OllamaChat) -> Result<OllamaChatResponse> {
         let req_json = serde_json::to_string_pretty(&chat)?;
 
-        let url = format!("{}/api/chat", self.endpoint);
+        let url = format!("{}/api/chat", self.config.endpoint);
 
         let res = self
             .client
@@ -129,7 +127,7 @@ impl OllamaApi {
     where
         S: AsRef<str>,
     {
-        let mut chat = OllamaChat::new(&self.model);
+        let mut chat = OllamaChat::new(&self.config.model);
 
         chat.add_content("user", content.as_ref());
 

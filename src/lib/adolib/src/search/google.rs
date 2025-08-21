@@ -2,10 +2,18 @@ use reqwest::Client;
 use serde_json::Value;
 
 use crate::{
-    config::loader::{AdoConfig, GoogleConfig},
+    config::loader::AdoConfig,
     data::types::AdoDataMarkdown,
     error::{Error, Result},
 };
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct GoogleConfig {
+    pub cx: String,
+    pub geo: String,
+    pub key: String,
+    pub url: String,
+}
 
 #[derive(Debug)]
 pub struct GoogleCSE {

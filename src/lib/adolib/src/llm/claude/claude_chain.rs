@@ -36,7 +36,7 @@ impl ClaudeChain {
 
         messages.with_tools(tools);
 
-        if let Some(mcp_server) = &claude.mcp_server {
+        if let Some(mcp_server) = &claude.mcp_servers {
             messages.with_mcp_servers(mcp_server);
         }
 
@@ -106,7 +106,7 @@ impl LLMChainTrait for ClaudeChain {
     }
 
     fn model(&self) -> &str {
-        &self.api.model
+        &self.api.config.model
     }
 }
 

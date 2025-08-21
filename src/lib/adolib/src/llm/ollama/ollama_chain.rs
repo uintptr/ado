@@ -54,7 +54,7 @@ impl LLMChainTrait for OllamaChain {
     }
 
     fn model(&self) -> &str {
-        &self.api.model
+        &self.api.config.model
     }
 }
 
@@ -89,8 +89,8 @@ mod ollama_tests {
 
         let console = NopConsole {};
 
-        chain.link("Hello World", &console).await.unwrap();
-        chain.link("Can you tell a joke", &console).await.unwrap();
+        chain.link("Hello World", &mut console).await.unwrap();
+        chain.link("Can you tell a joke", &mut console).await.unwrap();
 
         chain.message("hello world").await.unwrap();
     }

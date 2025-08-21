@@ -1,14 +1,15 @@
 use crate::{
-    config::loader::{AdoConfig, OpenAiConfig},
+    config::loader::AdoConfig,
     data::types::AdoData,
     error::{Error, Result},
+    llm::config::OpenAiConfig,
     tools::handler::ToolHandler,
 };
 
 use log::{error, info};
 use reqwest::Client;
 
-use super::{request::OpenAIRequest, response::OpenAIResponse};
+use super::{openai_request::OpenAIRequest, openai_response::OpenAIResponse};
 
 pub struct OpenAIAPI {
     client: Client,

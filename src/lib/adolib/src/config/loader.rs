@@ -3,75 +3,23 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use log::{error, info};
+use log::info;
 use rstaples::staples::find_file;
 use serde::{Deserialize, Serialize};
 
 use crate::{
     const_vars::{DOT_DIRECTORY, STORE_PERMANENT},
     error::{Error, Result},
+    llm::config::{ClaudeConfig, ConfigOllama, OpenAiConfig},
+    search::google::GoogleConfig,
     storage::{PersistentStorageTrait, persistent::PersistentStorage},
 };
-
-const DEF_OPENAI_URL: &str = "https://api.openai.com/v1/responses";
-const DEF_OPENAI_MODEL: &str = "gpt-5-mini";
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct OpenAiConfig {
-    #[serde(default = "openai_default_key")]
-    pub key: String,
-    #[serde(default = "openai_default_url")]
-    pub url: String,
-    #[serde(default = "openai_default_model")]
-    pub model: String,
-    pub instructions: Option<Vec<String>>,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub enum ClaudeMcpServerType {
-    #[serde(rename = "url")]
-    Url,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct ClaudeMcpServer {
-    name: String,
-    #[serde(rename = "type")]
-    server_type: ClaudeMcpServerType,
-    url: String,
-    authorization_token: Option<String>,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct ClaudeAiConfig {
-    pub model: String,
-    pub url: String,
-    pub anthropic_version: String,
-    pub key: String,
-    pub max_tokens: u64,
-    pub instructions: Option<Vec<String>>,
-    pub mcp_server: Option<Vec<ClaudeMcpServer>>,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct ConfigLlmLlama {
-    pub endpoint: String,
-    pub model: String,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct GoogleConfig {
-    pub cx: String,
-    pub geo: String,
-    pub key: String,
-    pub url: String,
-}
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ConfigLlm {
     openai: Option<OpenAiConfig>,
-    ollama: Option<ConfigLlmLlama>,
-    claude: Option<ClaudeAiConfig>,
+    ollama: Option<ConfigOllama>,
+    claude: Option<ClaudeConfig>,
     provider: String,
 }
 
@@ -92,24 +40,6 @@ pub enum AdoConfigSource {
 pub struct AdoConfig {
     source: AdoConfigSource,
     config_file: ConfigFile,
-}
-
-fn openai_default_url() -> String {
-    DEF_OPENAI_URL.to_string()
-}
-
-fn openai_default_model() -> String {
-    DEF_OPENAI_MODEL.to_string()
-}
-
-fn openai_default_key() -> String {
-    match env::var("OPENAI_API_KEY") {
-        Ok(v) => v,
-        Err(_) => {
-            error!("OPENAI_API_KEY env variable not defined");
-            "".to_string()
-        }
-    }
 }
 
 const CONFIG_FILE_NAME: &str = "config.toml";
@@ -219,7 +149,7 @@ impl AdoConfig {
         self.config_file.llm.provider = llm.as_ref().to_string();
     }
 
-    pub fn ollama(&self) -> Result<&ConfigLlmLlama> {
+    pub fn ollama(&self) -> Result<&ConfigOllama> {
         match &self.config_file.llm.ollama {
             Some(v) => Ok(v),
             None => Err(Error::ConfigNotFound),
@@ -233,7 +163,7 @@ impl AdoConfig {
         }
     }
 
-    pub fn claude(&self) -> Result<&ClaudeAiConfig> {
+    pub fn claude(&self) -> Result<&ClaudeConfig> {
         match &self.config_file.llm.claude {
             Some(v) => Ok(v),
             None => Err(Error::ConfigNotFound),
