@@ -54,8 +54,8 @@ enum Command {
     },
     /// Print status information
     Status,
-    /// Model
-    Llm { name: Option<String> },
+    /// LLM provider
+    Llm { llm: Option<String> },
 }
 
 pub struct CommandInfo {
@@ -226,19 +226,19 @@ impl UserCommands {
                     let s = StatusInfo::new(&self.config, &self.chain);
                     console.display(AdoData::Status(s))
                 }
-                Command::Llm { name } => {
-                    if let Some(model_name) = name {
+                Command::Llm { llm } => {
+                    if let Some(llm) = llm {
                         let cur_llm = self.config.llm_provider();
 
-                        if cur_llm != model_name {
-                            self.update_llm(model_name).await?;
+                        if cur_llm != llm {
+                            self.update_llm(llm).await?;
                         }
                     }
 
-                    let model = self.chain.model();
+                    let llm = self.config.llm_provider();
                     // TODO XXX TODO
                     // can use use a &str here
-                    console.display_string(model) // can we use a str here
+                    console.display_string(llm) // can we use a str here
                 }
             },
             Err(e) => match e.kind() {
