@@ -28,6 +28,21 @@ pub struct OpenAiConfig {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+pub enum ClaudeMcpServerType {
+    #[serde(rename = "url")]
+    Url,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ClaudeMcpServer {
+    name: String,
+    #[serde(rename = "type")]
+    server_type: ClaudeMcpServerType,
+    url: String,
+    authorization_token: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ClaudeAiConfig {
     pub model: String,
     pub url: String,
@@ -35,6 +50,7 @@ pub struct ClaudeAiConfig {
     pub key: String,
     pub max_tokens: u64,
     pub instructions: Option<Vec<String>>,
+    pub mcp_server: Option<Vec<ClaudeMcpServer>>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

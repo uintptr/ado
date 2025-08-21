@@ -3,7 +3,7 @@ use crate::{
     error::Result,
     llm::{
         chain::LLMChainTrait,
-        claude::claude_api::{ClaudeApi, ClaudeChat, ClaudeContent, ClaudeContentType, ClaudeRole},
+        claude::claude_api::{ClaudeApi, ClaudeContent, ClaudeContentType, ClaudeMessages, ClaudeRole},
     },
     tools::{handler::ToolHandler, loader::Tools},
     ui::ConsoleDisplayTrait,
@@ -14,7 +14,7 @@ use log::info;
 
 pub struct ClaudeChain {
     api: ClaudeApi,
-    chat: ClaudeChat,
+    messages: ClaudeMessages,
     tool_handler: ToolHandler,
 }
 
@@ -22,23 +22,27 @@ impl ClaudeChain {
     pub fn new(config: &AdoConfig) -> Result<Self> {
         let claude = config.claude()?;
 
-        let mut chat = ClaudeChat::new(&claude.model, claude.max_tokens);
+        let mut messages = ClaudeMessages::new(&claude.model, claude.max_tokens);
 
         // if the user defined instructions in the config file
         if let Some(instructions) = &claude.instructions {
             for i in instructions {
-                chat.add_system_prompt(i);
+                messages.add_system_prompt(i);
             }
         }
 
         // try to load the tools from resources
         let tools = Tools::load()?;
 
-        chat.with_tools(tools);
+        messages.with_tools(tools);
+
+        if let Some(mcp_server) = &claude.mcp_server {
+            messages.with_mcp_servers(mcp_server);
+        }
 
         Ok(Self {
             api: ClaudeApi::new(claude)?,
-            chat,
+            messages,
             tool_handler: ToolHandler::new(config)?,
         })
     }
@@ -73,9 +77,9 @@ impl LLMChainTrait for ClaudeChain {
     where
         C: ConsoleDisplayTrait,
     {
-        self.chat.add_content(ClaudeRole::User, content);
+        self.messages.add_content(ClaudeRole::User, content);
 
-        let resp = self.api.chat(&self.chat).await?;
+        let resp = self.api.chat(&self.messages).await?;
 
         info!("id={}", resp.id);
 
@@ -87,7 +91,7 @@ impl LLMChainTrait for ClaudeChain {
 
         let msg = resp.message()?;
 
-        self.chat.add_content(resp_role, msg);
+        self.messages.add_content(resp_role, msg);
 
         Ok(())
     }
@@ -98,7 +102,7 @@ impl LLMChainTrait for ClaudeChain {
     }
 
     fn reset(&mut self) {
-        self.chat.reset()
+        self.messages.reset()
     }
 
     fn model(&self) -> &str {

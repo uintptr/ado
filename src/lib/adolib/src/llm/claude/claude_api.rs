@@ -5,6 +5,7 @@ use log::{error, info};
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 
+use crate::config::loader::ClaudeMcpServer;
 use crate::error::Error;
 use crate::llm::claude::claude_tool::ClaudeTool;
 use crate::tools::loader::Tools;
@@ -156,8 +157,8 @@ pub struct ClaudeToolChoice {
     disable_parallel_tool_use: bool,
 }
 
-#[derive(Debug, Serialize)]
-pub struct ClaudeChat {
+#[derive(Debug, Default, Serialize)]
+pub struct ClaudeMessages {
     model: String,
     messages: Vec<ClaudeMessage>,
     max_tokens: u64,
@@ -168,9 +169,11 @@ pub struct ClaudeChat {
     tools: Vec<ClaudeTool>,
     #[serde(skip_serializing_if = "Option::is_none")]
     tool_choice: Option<ClaudeToolChoice>,
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    mcp_servers: Vec<ClaudeMcpServer>,
 }
 
-impl ClaudeChat {
+impl ClaudeMessages {
     pub fn new<M>(model: M, max_tokens: u64) -> Self
     where
         M: AsRef<str>,
@@ -180,9 +183,7 @@ impl ClaudeChat {
             messages: vec![],
             max_tokens,
             stream: false,
-            system: vec![],
-            tools: vec![],
-            tool_choice: None,
+            ..Default::default()
         }
     }
 
@@ -218,6 +219,10 @@ impl ClaudeChat {
         self.tool_choice = Some(tool_choice)
     }
 
+    pub fn with_mcp_servers(&mut self, servers: &Vec<ClaudeMcpServer>) {
+        self.mcp_servers = servers.clone()
+    }
+
     pub fn add_content<C>(&mut self, role: ClaudeRole, content: C)
     where
         C: AsRef<str>,
@@ -242,7 +247,7 @@ impl ClaudeApi {
         })
     }
 
-    pub async fn chat(&self, chat: &ClaudeChat) -> Result<ClaudeResponse> {
+    pub async fn chat(&self, chat: &ClaudeMessages) -> Result<ClaudeResponse> {
         let req_json = serde_json::to_string_pretty(&chat)?;
 
         let url = format!("{}/v1/messages", self.url);
@@ -296,7 +301,7 @@ impl ClaudeApi {
     where
         S: AsRef<str>,
     {
-        let mut chat = ClaudeChat::new(&self.model, 4096);
+        let mut chat = ClaudeMessages::new(&self.model, 4096);
 
         chat.add_content(ClaudeRole::User, content.as_ref());
 
