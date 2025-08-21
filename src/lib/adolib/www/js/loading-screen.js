@@ -13,16 +13,16 @@ const config = {
     minAnimationTime: 300,
     // Maximum animation time in milliseconds (used when enableDelay is true)
     maxAnimationTime: 1500,
-    // Array of loading messages to display
+    // Array of ASCII art to display during loading
     loadingMessages: [
-        "Navigating to destination...",
-        "Preparing content...",
-        "Loading resources...",
-        "Redirecting...",
-        "Fetching page...",
-        "Processing request...",
-        "Almost there...",
-        "Opening link...",
+        "    ╭─────╮\n    │ ◉ ◉ │\n    │  ∩  │\n    ╰─────╯",
+        "   ┌─────────┐\n   │ Loading │\n   │ ▓▓▓▓▓▓▓ │\n   └─────────┘",
+        "    ╔══════╗\n    ║ ░░░░ ║\n    ║ ░██░ ║\n    ║ ░░░░ ║\n    ╚══════╝",
+        "   ┌─ ◐ ─┐\n   │     │\n   │ >>> │\n   └─────┘",
+        "    ∩───∩\n   │ ● ● │\n   │  ω  │\n    ∪───∪",
+        "   ╭─────╮\n   │ ⚡⚡⚡ │\n   │ ⚡⚡⚡ │\n   ╰─────╯",
+        "    ┌───┐\n    │ ◈ │\n    │ ◈ │\n    │ ◈ │\n    └───┘",
+        "   ╭─────╮\n   │ ≈≈≈ │\n   │ ≈≈≈ │\n   ╰─────╯",
     ],
     // Use existing site theme
     useExistingTheme: true,
@@ -102,7 +102,7 @@ function showLoadingMessage(message, index) {
     return new Promise((resolve) => {
         const lineElement = document.createElement("div");
         lineElement.className = "retro-loading-text-line";
-        lineElement.textContent = message;
+        lineElement.innerHTML = `<pre>${message}</pre>`;
 
         loadingTextContainer.appendChild(lineElement);
 
@@ -143,11 +143,9 @@ function animateProgressBar(duration) {
  * @returns {Promise<void>}
  */
 async function showLoadingScreen(destination) {
-    // Create a new set of messages for this load (fewer messages when delay is disabled)
-    const messageCount = config.enableDelay ? 4 : 1;
-    const currentMessages = [...config.loadingMessages]
-        .sort(() => Math.random() - 0.5)
-        .slice(0, messageCount);
+    // Select one random ASCII art for this load
+    const randomIndex = Math.floor(Math.random() * config.loadingMessages.length);
+    const currentMessages = [config.loadingMessages[randomIndex]];
 
     // Clear previous content
     loadingTextContainer.innerHTML = "";
