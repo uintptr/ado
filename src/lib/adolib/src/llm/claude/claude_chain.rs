@@ -108,6 +108,13 @@ impl LLMChainTrait for ClaudeChain {
     fn model(&self) -> &str {
         &self.api.config.model
     }
+
+    fn change_model<S>(&mut self, _model: S)
+    where
+        S: AsRef<str>,
+    {
+        todo!()
+    }
 }
 
 #[cfg(test)]

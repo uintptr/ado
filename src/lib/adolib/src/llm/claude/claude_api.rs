@@ -184,7 +184,8 @@ impl ClaudeMessages {
         self.system.push(content);
     }
 
-    pub fn with_tools(&mut self, tools: Tools) {
+    pub fn with_tools(&mut self, _tools: Tools) {
+        /*
         for t in tools.list {
             let claude_tool: ClaudeTool = match t.try_into() {
                 Ok(v) => v,
@@ -195,8 +196,6 @@ impl ClaudeMessages {
             };
             self.tools.push(claude_tool);
         }
-
-        /*
         let tool_choice = ClaudeToolChoice {
             choice_type: ClaudeToolChoiceType::Any,
             disable_parallel_tool_use: false,

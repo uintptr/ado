@@ -18,6 +18,7 @@ pub trait LLMChainTrait {
     async fn message(&self, content: &str) -> Result<String>;
     fn reset(&mut self);
     fn model(&self) -> &str;
+    fn change_model<S: AsRef<str>>(&mut self, _model: S);
 }
 
 pub enum LLMChain {
@@ -82,6 +83,17 @@ impl LLMChain {
             LLMChain::OpenAI(openai) => openai.model(),
             LLMChain::Ollama(ollama) => ollama.model(),
             LLMChain::Claude(claude) => claude.model(),
+        }
+    }
+
+    pub fn change_model<S>(&mut self, model: S)
+    where
+        S: AsRef<str>,
+    {
+        match self {
+            LLMChain::OpenAI(openai) => openai.change_model(model),
+            LLMChain::Ollama(ollama) => ollama.change_model(model),
+            LLMChain::Claude(claude) => claude.change_model(model),
         }
     }
 }

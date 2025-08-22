@@ -56,6 +56,8 @@ enum Command {
     Status,
     /// LLM provider
     Llm { llm: Option<String> },
+    /// Model
+    Model { model: Option<String> },
 }
 
 pub struct CommandInfo {
@@ -239,6 +241,18 @@ impl UserCommands {
                     // TODO XXX TODO
                     // can use use a &str here
                     console.display_string(llm) // can we use a str here
+                }
+                Command::Model { model } => {
+                    if let Some(model) = model {
+                        let cur_model = self.chain.model();
+
+                        if cur_model != model {
+                            self.chain.change_model(model);
+                        }
+                    }
+
+                    let model = self.chain.model();
+                    console.display_string(model)
                 }
             },
             Err(e) => match e.kind() {
