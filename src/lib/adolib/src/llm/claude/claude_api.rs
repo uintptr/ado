@@ -204,8 +204,8 @@ impl ClaudeMessages {
         */
     }
 
-    pub fn with_mcp_servers(&mut self, servers: &Vec<ClaudeMcpServer>) {
-        self.mcp_servers = servers.clone()
+    pub fn with_mcp_servers(&mut self, servers: &[ClaudeMcpServer]) {
+        self.mcp_servers = servers.to_owned();
     }
 
     pub fn add_content<C>(&mut self, role: ClaudeRole, content: C)
