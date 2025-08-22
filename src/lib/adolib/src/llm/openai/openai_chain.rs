@@ -83,10 +83,10 @@ impl LLMChainTrait for OpenAIChain {
         self.api.model()
     }
 
-    fn change_model<S>(&mut self, _model: S)
+    fn change_model<S>(&mut self, model: S)
     where
         S: AsRef<str>,
     {
-        todo!()
+        self.api.config.model = model.as_ref().into()
     }
 }

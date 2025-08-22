@@ -13,21 +13,21 @@ use super::{openai_request::OpenAIRequest, openai_response::OpenAIResponse};
 
 pub struct OpenAIAPI {
     client: Client,
-    openai: OpenAiConfig,
+    pub config: OpenAiConfig,
     handler: ToolHandler,
 }
 
 impl OpenAIAPI {
     pub fn new(config: &AdoConfig) -> Result<Self> {
-        let openai = config.openai()?;
+        let openai_config = config.openai()?;
 
-        if openai.key.is_empty() {
+        if openai_config.key.is_empty() {
             return Err(Error::ApiKeyNotFound);
         }
 
         Ok(Self {
             client: Client::new(),
-            openai: openai.clone(),
+            config: openai_config.clone(),
             handler: ToolHandler::new(config)?,
         })
     }
@@ -37,16 +37,16 @@ impl OpenAIAPI {
 
         let res = self
             .client
-            .post(&self.openai.url)
+            .post(&self.config.url)
             .header("Content-Type", "application/json")
-            .header("Authorization", format!("Bearer {}", self.openai.key))
+            .header("Authorization", format!("Bearer {}", self.config.key))
             .body(post_data)
             .send()
             .await?;
 
         let log_msg = format!(
             "post {} -> code={} reason={}",
-            self.openai.url,
+            self.config.url,
             res.status().as_u16(),
             res.status().as_str()
         );
@@ -88,7 +88,7 @@ impl OpenAIAPI {
     where
         S: AsRef<str>,
     {
-        let mut req = OpenAIRequest::new(&self.openai.model);
+        let mut req = OpenAIRequest::new(&self.config.model);
 
         req.with_input_role("user", content);
 
@@ -100,6 +100,6 @@ impl OpenAIAPI {
     }
 
     pub fn model(&self) -> &str {
-        &self.openai.model
+        &self.config.model
     }
 }
