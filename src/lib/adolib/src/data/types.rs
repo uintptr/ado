@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     error::{Error, Result},
     http::req::HttpResponse,
+    llm::chain::LLMUsage,
     search::google::GoogleSearchResults,
     shell::ShellExit,
     ui::status::StatusInfo,
@@ -29,6 +30,7 @@ pub enum AdoData {
     Base64(String),
     Http(HttpResponse),
     SearchData(GoogleSearchResults),
+    LlmUsage(LLMUsage),
     UsageString(String),
     Shell(ShellExit),
     Status(StatusInfo),
@@ -54,6 +56,7 @@ impl AdoDataMarkdown for AdoData {
             AdoData::UsageString(s) => s.to_markdown()?,
             AdoData::Shell(s) => s.to_markdown()?,
             AdoData::Status(s) => s.to_markdown()?,
+            AdoData::LlmUsage(s) => s.to_markdown()?,
         };
 
         Ok(md)
@@ -84,6 +87,10 @@ impl AdoDataBase64 for AdoData {
             }
             AdoData::Status(s) => {
                 let json_str = serde_json::to_string(&s)?;
+                BASE64_STANDARD.encode(json_str)
+            }
+            AdoData::LlmUsage(u) => {
+                let json_str = serde_json::to_string(&u)?;
                 BASE64_STANDARD.encode(json_str)
             }
         };

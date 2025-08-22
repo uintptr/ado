@@ -56,6 +56,8 @@ enum Command {
     Status,
     /// LLM provider
     Llm { llm: Option<String> },
+    /// LLM usage
+    Usage,
     /// Model
     Model { model: Option<String> },
 }
@@ -241,6 +243,10 @@ impl UserCommands {
                     // TODO XXX TODO
                     // can use use a &str here
                     console.display_string(llm) // can we use a str here
+                }
+                Command::Usage => {
+                    let usage = self.chain.usage();
+                    console.display(AdoData::LlmUsage(usage))
                 }
                 Command::Model { model } => {
                     if let Some(model) = model {

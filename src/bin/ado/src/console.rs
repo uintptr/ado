@@ -240,7 +240,8 @@ impl ConsoleDisplayTrait for TerminalConsole {
             AdoData::UsageString(s) => self.display_usage(s),
             AdoData::Shell(s) => self.display_md(s),
             AdoData::Status(s) => self.display_md(s),
-            _ => unimplemented!(),
+            AdoData::LlmUsage(u) => self.display_md(u),
+            AdoData::Bytes(_b) => todo!(),
         }
     }
 

@@ -3,7 +3,10 @@ use log::info;
 use crate::{
     config::loader::AdoConfig,
     error::Result,
-    llm::{chain::LLMChainTrait, openai::openai_api::OpenAIAPI},
+    llm::{
+        chain::{LLMChainTrait, LLMUsage},
+        openai::openai_api::OpenAIAPI,
+    },
     tools::loader::Tools,
     ui::ConsoleDisplayTrait,
 };
@@ -88,5 +91,12 @@ impl LLMChainTrait for OpenAIChain {
         S: AsRef<str>,
     {
         self.api.config.model = model.as_ref().into()
+    }
+
+    fn usage(&self) -> LLMUsage {
+        LLMUsage {
+            input_tokens: 0,
+            output_tokens: 0,
+        }
     }
 }

@@ -72,12 +72,12 @@ pub struct ClaudeCacheCreation {
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ClaudeUsage {
-    input_tokens: u64,
-    cache_creation_input_tokens: u64,
-    cache_read_input_tokens: u64,
-    cache_creation: ClaudeCacheCreation,
-    output_tokens: u64,
-    service_tier: String,
+    pub input_tokens: u64,
+    pub cache_creation_input_tokens: u64,
+    pub cache_read_input_tokens: u64,
+    pub cache_creation: ClaudeCacheCreation,
+    pub output_tokens: u64,
+    pub service_tier: String,
 }
 
 impl ClaudeMessage {
@@ -266,7 +266,10 @@ impl ClaudeApi {
 
         // convert a our struct
         match serde_json::from_str::<ClaudeResponse>(resp_json) {
-            Ok(v) => Ok(v),
+            Ok(v) => {
+                info!("input={} output={}", v.usage.input_tokens, v.usage.output_tokens);
+                Ok(v)
+            }
             Err(_) => {
                 //
                 // Try to print it nicely, best effort

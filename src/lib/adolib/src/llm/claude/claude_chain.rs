@@ -2,7 +2,7 @@ use crate::{
     config::loader::AdoConfig,
     error::Result,
     llm::{
-        chain::LLMChainTrait,
+        chain::{LLMChainTrait, LLMUsage},
         claude::claude_api::{ClaudeApi, ClaudeContent, ClaudeContentType, ClaudeMessages, ClaudeRole},
     },
     tools::{handler::ToolHandler, loader::Tools},
@@ -10,12 +10,13 @@ use crate::{
 };
 
 use async_trait::async_trait;
-use log::info;
 
 pub struct ClaudeChain {
     api: ClaudeApi,
     messages: ClaudeMessages,
     tool_handler: ToolHandler,
+    input_tokens: u64,
+    output_tokens: u64,
 }
 
 impl ClaudeChain {
@@ -44,6 +45,8 @@ impl ClaudeChain {
             api: ClaudeApi::new(claude)?,
             messages,
             tool_handler: ToolHandler::new(config)?,
+            input_tokens: 0,
+            output_tokens: 0,
         })
     }
 
@@ -81,7 +84,8 @@ impl LLMChainTrait for ClaudeChain {
 
         let resp = self.api.chat(&self.messages).await?;
 
-        info!("id={}", resp.id);
+        self.input_tokens += resp.usage.input_tokens;
+        self.output_tokens += resp.usage.output_tokens;
 
         // in its own function so it can be tested from a local
         // file
@@ -114,6 +118,13 @@ impl LLMChainTrait for ClaudeChain {
         S: AsRef<str>,
     {
         self.api.config.model = model.as_ref().into()
+    }
+
+    fn usage(&self) -> LLMUsage {
+        LLMUsage {
+            input_tokens: self.input_tokens,
+            output_tokens: self.output_tokens,
+        }
     }
 }
 

@@ -3,7 +3,7 @@ use crate::{
     data::types::AdoData,
     error::Result,
     llm::{
-        chain::LLMChainTrait,
+        chain::{LLMChainTrait, LLMUsage},
         ollama::ollama_api::{OllamaApi, OllamaChat},
     },
     ui::ConsoleDisplayTrait,
@@ -62,6 +62,13 @@ impl LLMChainTrait for OllamaChain {
         S: AsRef<str>,
     {
         self.api.config.model = model.as_ref().into()
+    }
+
+    fn usage(&self) -> LLMUsage {
+        LLMUsage {
+            input_tokens: 0,
+            output_tokens: 0,
+        }
     }
 }
 

@@ -1,14 +1,35 @@
 #![allow(dead_code)] // message is dead code for native but required for wasm
 use async_trait::async_trait;
+use serde::{Deserialize, Serialize};
 
 use crate::{
     config::loader::AdoConfig,
+    data::types::AdoDataMarkdown,
     error::{Error, Result},
     llm::{claude::claude_chain::ClaudeChain, ollama::ollama_chain::OllamaChain, openai::openai_chain::OpenAIChain},
     ui::ConsoleDisplayTrait,
 };
 
 use log::error;
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct LLMUsage {
+    pub input_tokens: u64,
+    pub output_tokens: u64,
+}
+
+impl AdoDataMarkdown for LLMUsage {
+    fn to_markdown(self) -> Result<String> {
+        let mut lines = Vec::new();
+
+        lines.push("# LLM Usage".to_string());
+        lines.push(format!(" * Input Tokens: {}", self.input_tokens));
+        lines.push(format!(" * Ouput Tokens: {}", self.output_tokens));
+
+        let md = lines.join("\n");
+        Ok(md)
+    }
+}
 
 #[async_trait(?Send)]
 pub trait LLMChainTrait {
@@ -19,6 +40,7 @@ pub trait LLMChainTrait {
     fn reset(&mut self);
     fn model(&self) -> &str;
     fn change_model<S: AsRef<str>>(&mut self, _model: S);
+    fn usage(&self) -> LLMUsage;
 }
 
 pub enum LLMChain {
@@ -94,6 +116,14 @@ impl LLMChain {
             LLMChain::OpenAI(openai) => openai.change_model(model),
             LLMChain::Ollama(ollama) => ollama.change_model(model),
             LLMChain::Claude(claude) => claude.change_model(model),
+        }
+    }
+
+    pub fn usage(&self) -> LLMUsage {
+        match self {
+            LLMChain::OpenAI(openai) => openai.usage(),
+            LLMChain::Ollama(ollama) => ollama.usage(),
+            LLMChain::Claude(claude) => claude.usage(),
         }
     }
 }
