@@ -213,24 +213,13 @@ function display_adodata(ado_data) {
     if (data.hasOwnProperty("UsageString")) {
         let usage = "```\n" + data.UsageString + "\n```";
         display_string(usage);
-    } else if (data.hasOwnProperty("String")) {
-        display_string(data.String);
     } else if (data.hasOwnProperty("SearchData")) {
         const object = data.SearchData;
         display_search_results(object.json_string);
     } else if (data == "Reset") {
         display_reset();
-    } else if (data.hasOwnProperty("Status")) {
-        display_string(ado_data.markdown);
     } else {
-        console.warn(
-            "--------------------------------------------------------",
-        );
-        console.warn("unknown response type");
-        console.warn(ado_data);
-        console.warn(
-            "--------------------------------------------------------",
-        );
+        display_string(ado_data.markdown);
     }
 }
 
