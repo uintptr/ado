@@ -201,11 +201,11 @@ mod tests {
         let resp: ClaudeResponse = serde_json::from_str(&resp).unwrap();
 
         let config_file = AdoConfig::from_default().unwrap();
-        let chain = ClaudeChain::new(&config_file).unwrap();
+        let mut chain = ClaudeChain::new(&config_file).unwrap();
 
         let mut console = NopConsole::new();
 
-        let ret = chain.process_content(&resp.content, &mut console).await.unwrap();
+        let ret = chain.process_content(&resp, &mut console).await.unwrap();
 
         info!("ret: {ret:?}");
     }
@@ -215,7 +215,7 @@ mod tests {
         setup_logger(true).unwrap();
 
         let config_file = AdoConfig::from_default().unwrap();
-        let chain = ClaudeChain::new(&config_file).unwrap();
+        let mut chain = ClaudeChain::new(&config_file).unwrap();
 
         let test_file = Path::new("test").join("claude_tool_use.json");
         let test_file = find_file(test_file).unwrap();
@@ -224,6 +224,6 @@ mod tests {
 
         let mut console = NopConsole::new();
 
-        chain.process_content(&resp.content, &mut console).await.unwrap();
+        chain.process_content(&resp, &mut console).await.unwrap();
     }
 }

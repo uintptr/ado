@@ -87,6 +87,10 @@ pub struct UserCommands {
     reddit: RedditQuery,
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// IMPL
+///////////////////////////////////////////////////////////////////////////////
+
 impl UserCommands {
     pub fn new(config: &AdoConfig, cache: PersistentStorage) -> Result<UserCommands> {
         let search = GoogleCSE::new(config)?;
@@ -228,9 +232,13 @@ impl UserCommands {
                     console.display(data)
                 }
                 Command::Reddit { query } => {
-                    let query = query.join(" ");
-                    let sub = self.cached_reddit(query).await?;
-                    console.display_string(sub)
+                    if !query.is_empty() {
+                        let query = query.join(" ");
+                        let sub = self.cached_reddit(query).await?;
+                        console.display_string(sub)
+                    } else {
+                        console.display_string("missing description")
+                    }
                 }
                 Command::Lucky { query } => {
                     let query = query.join(" ");
@@ -282,11 +290,25 @@ impl UserCommands {
                 ErrorKind::DisplayHelp | ErrorKind::DisplayHelpOnMissingArgumentOrSubcommand => {
                     console.display(AdoData::UsageString(e.to_string()))
                 }
+                ErrorKind::InvalidSubcommand => {
+                    if let Some(sugg) = e.get(clap::error::ContextKind::SuggestedSubcommand) {
+                        let err_msg = format!("did you mean `{}`?", sugg.to_string());
+                        console.display_string(err_msg)
+                    } else {
+                        //
+                        // assume it's a query
+                        //
+                        //self.chain.link(line.as_ref(), console).await?;
+                        Ok(())
+                    }
+
+                    //Ok(())
+                }
                 _ => {
                     //
-                    // assuming this is query
+                    // assume it's a query
                     //
-                    self.chain.link(line.as_ref(), console).await?;
+                    //self.chain.link(line.as_ref(), console).await?;
                     Ok(())
                 }
             },
@@ -331,6 +353,10 @@ impl UserCommands {
         commands
     }
 }
+
+///////////////////////////////////////////////////////////////////////////////
+// TESTS
+///////////////////////////////////////////////////////////////////////////////
 
 #[cfg(test)]
 mod tests {

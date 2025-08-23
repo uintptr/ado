@@ -168,6 +168,7 @@
                 const observer = new MutationObserver((mutations) => {
                     let shouldToggle = false;
                     let shouldHighlight = false;
+                    let shouldScroll = false;
 
                     mutations.forEach((mutation) => {
                         if (
@@ -182,11 +183,19 @@
                             mutation.addedNodes.length > 0
                         ) {
                             shouldHighlight = true;
+                            shouldScroll = true;
                         }
                     });
 
                     if (shouldToggle) toggleEmptyState();
                     if (shouldHighlight) highlightAllCode();
+                    if (shouldScroll) {
+                        // Smooth scroll to bottom when new content is added
+                        window.scrollTo({
+                            top: document.body.scrollHeight,
+                            behavior: 'smooth'
+                        });
+                    }
                 });
 
                 // Observe with optimized settings
