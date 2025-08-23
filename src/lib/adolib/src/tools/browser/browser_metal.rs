@@ -2,7 +2,7 @@ use std::{path::PathBuf, process::Command};
 
 use which::which;
 
-use crate::{data::types::AdoData, error::Result, tools::function_args::ToolArgs};
+use crate::{data::types::AdoData, error::Result, tools::args::ToolArgs};
 
 pub struct FunctionsBrowser {
     xdg_open: PathBuf,

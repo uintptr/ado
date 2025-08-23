@@ -6,7 +6,7 @@ use crate::{
     config::loader::AdoConfig,
     data::types::AdoData,
     error::{Error, Result},
-    tools::{function_args::ToolArgs, ip_address::FunctionsIp},
+    tools::{args::ToolArgs, ip_address::FunctionsIp},
 };
 
 use super::{

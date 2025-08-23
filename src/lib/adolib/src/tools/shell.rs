@@ -8,7 +8,7 @@ use crate::{
     shell::ShellExit,
 };
 
-use super::function_args::ToolArgs;
+use super::args::ToolArgs;
 
 pub struct FunctionsShell {}
 

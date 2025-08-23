@@ -3,7 +3,7 @@ use crate::{
     error::Result,
     llm::{
         chain::{LLMChainTrait, LLMUsage},
-        claude::claude_api::{ClaudeApi, ClaudeContent, ClaudeContentType, ClaudeMessages, ClaudeRole},
+        claude::claude_api::{ClaudeApi, ClaudeContentType, ClaudeMessages, ClaudeResponse, ClaudeRole},
     },
     tools::{handler::ToolHandler, loader::Tools},
     ui::ConsoleDisplayTrait,
@@ -44,20 +44,28 @@ impl ClaudeChain {
         })
     }
 
-    async fn process_content<C>(&self, contents: &Vec<ClaudeContent>, console: &mut C) -> Result<()>
+    async fn process_content<C>(&mut self, response: &ClaudeResponse, console: &mut C) -> Result<()>
     where
         C: ConsoleDisplayTrait,
     {
-        for content in contents {
+        for content in response.content.iter() {
             match content.content_type {
                 ClaudeContentType::Text => {
                     if let Some(text) = &content.text {
                         console.display_string(text)?;
+                        self.messages.add_content(ClaudeRole::Assistant, text);
                     }
                 }
                 ClaudeContentType::ToolUse => {
                     if let Some(name) = &content.name {
                         let data = self.tool_handler.call(name, content.input.as_ref()).await?;
+
+                        let str_ret: Result<String> = data.clone().try_into();
+
+                        if let Ok(string_value) = str_ret {
+                            self.messages.add_content(ClaudeRole::User, string_value);
+                        }
+
                         console.display(data)?;
                     }
                 }
@@ -83,13 +91,7 @@ impl LLMChainTrait for ClaudeChain {
 
         // in its own function so it can be tested from a local
         // file
-        self.process_content(&resp.content, console).await?;
-
-        let resp_role = resp.role.clone();
-
-        let msg = resp.message()?;
-
-        self.messages.add_content(resp_role, msg);
+        self.process_content(&resp, console).await?;
 
         Ok(())
     }

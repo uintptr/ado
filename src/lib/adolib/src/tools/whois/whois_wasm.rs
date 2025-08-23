@@ -1,7 +1,7 @@
 use crate::{
     data::types::AdoData,
     error::{Error, Result},
-    tools::function_args::ToolArgs,
+    tools::args::ToolArgs,
 };
 
 pub struct FunctionsWhois {}

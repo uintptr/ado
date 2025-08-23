@@ -1,7 +1,7 @@
+mod args;
 mod assets;
 mod browser;
 mod files;
-mod function_args;
 pub mod handler;
 mod http;
 mod ip_address;

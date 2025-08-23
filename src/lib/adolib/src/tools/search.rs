@@ -2,7 +2,7 @@ use log::info;
 
 use crate::{config::loader::AdoConfig, data::types::AdoData, error::Result, search::google::GoogleCSE};
 
-use super::function_args::ToolArgs;
+use super::args::ToolArgs;
 
 pub struct FunctionsSearch {
     search: GoogleCSE,

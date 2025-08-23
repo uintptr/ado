@@ -4,7 +4,7 @@ use whois_rust::{WhoIs, WhoIsLookupOptions};
 use crate::{
     data::types::AdoData,
     error::{Error, Result},
-    tools::{assets::WhoisAssets, function_args::ToolArgs},
+    tools::{args::ToolArgs, assets::WhoisAssets},
 };
 
 pub struct FunctionsWhois {

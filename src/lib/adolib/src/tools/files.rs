@@ -21,7 +21,7 @@ use crate::{
     error::{Error, Result},
 };
 
-use super::function_args::ToolArgs;
+use super::args::ToolArgs;
 
 pub struct FunctionsFiles;
 

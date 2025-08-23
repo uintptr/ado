@@ -1,7 +1,7 @@
 use crate::{data::types::AdoData, error::Result, http::req::Http};
 use log::info;
 
-use super::function_args::ToolArgs;
+use super::args::ToolArgs;
 
 pub struct FunctionsHttp {
     http: Http,
