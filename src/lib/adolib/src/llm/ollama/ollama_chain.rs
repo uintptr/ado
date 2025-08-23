@@ -70,6 +70,10 @@ impl LLMChainTrait for OllamaChain {
             output_tokens: 0,
         }
     }
+
+    fn json_chain(&self) -> Result<AdoData> {
+        unimplemented!()
+    }
 }
 
 #[cfg(test)]

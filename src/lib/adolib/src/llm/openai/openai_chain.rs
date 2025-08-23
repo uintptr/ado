@@ -2,6 +2,7 @@ use log::info;
 
 use crate::{
     config::loader::AdoConfig,
+    data::types::AdoData,
     error::Result,
     llm::{
         chain::{LLMChainTrait, LLMUsage},
@@ -98,5 +99,9 @@ impl LLMChainTrait for OpenAIChain {
             input_tokens: 0,
             output_tokens: 0,
         }
+    }
+
+    fn json_chain(&self) -> Result<AdoData> {
+        unimplemented!()
     }
 }

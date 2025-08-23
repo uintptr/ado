@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     config::loader::AdoConfig,
-    data::types::AdoDataMarkdown,
+    data::types::{AdoData, AdoDataMarkdown},
     error::{Error, Result},
     llm::{claude::claude_chain::ClaudeChain, ollama::ollama_chain::OllamaChain, openai::openai_chain::OpenAIChain},
     ui::ConsoleDisplayTrait,
@@ -41,6 +41,7 @@ pub trait LLMChainTrait {
     fn model(&self) -> &str;
     fn change_model<S: AsRef<str>>(&mut self, _model: S);
     fn usage(&self) -> LLMUsage;
+    fn json_chain(&self) -> Result<AdoData>;
 }
 
 pub enum LLMChain {
@@ -124,6 +125,14 @@ impl LLMChain {
             LLMChain::OpenAI(openai) => openai.usage(),
             LLMChain::Ollama(ollama) => ollama.usage(),
             LLMChain::Claude(claude) => claude.usage(),
+        }
+    }
+
+    pub fn json_chain(&self) -> Result<AdoData> {
+        match self {
+            LLMChain::OpenAI(openai) => openai.json_chain(),
+            LLMChain::Ollama(ollama) => ollama.json_chain(),
+            LLMChain::Claude(claude) => claude.json_chain(),
         }
     }
 }

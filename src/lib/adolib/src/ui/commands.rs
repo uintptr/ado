@@ -58,6 +58,8 @@ enum Command {
     Llm { llm: Option<String> },
     /// LLM usage
     Usage,
+    /// Chain
+    Chain,
     /// Model
     Model { model: Option<String> },
 }
@@ -259,6 +261,10 @@ impl UserCommands {
 
                     let model = self.chain.model();
                     console.display_string(model)
+                }
+                Command::Chain => {
+                    let data = self.chain.json_chain()?;
+                    console.display(data)
                 }
             },
             Err(e) => match e.kind() {

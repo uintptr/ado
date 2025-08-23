@@ -1,5 +1,6 @@
 use crate::{
     config::loader::AdoConfig,
+    data::types::AdoData,
     error::Result,
     llm::{
         chain::{LLMChainTrait, LLMUsage},
@@ -122,6 +123,11 @@ impl LLMChainTrait for ClaudeChain {
             input_tokens: self.tokens.input_tokens,
             output_tokens: self.tokens.output_tokens,
         }
+    }
+
+    fn json_chain(&self) -> Result<AdoData> {
+        let json_chain = serde_json::to_string_pretty(&self.messages)?;
+        Ok(AdoData::Json(json_chain))
     }
 }
 
