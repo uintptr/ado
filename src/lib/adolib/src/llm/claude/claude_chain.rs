@@ -4,7 +4,10 @@ use crate::{
     error::Result,
     llm::{
         chain::{LLMChainTrait, LLMUsage},
-        claude::claude_api::{ClaudeApi, ClaudeContentType, ClaudeMessages, ClaudeResponse, ClaudeRole},
+        claude::{
+            claude_api::{ClaudeApi, ClaudeContentType, ClaudeMessages, ClaudeResponse, ClaudeRole},
+            claude_config::ClaudeToolChoiceType,
+        },
     },
     tools::{handler::ToolHandler, loader::Tools},
     ui::ConsoleDisplayTrait,
@@ -32,10 +35,17 @@ impl ClaudeChain {
             }
         }
 
-        // try to load the tools from resources
-        let tools = Tools::load()?;
+        if let Some(tool_choice) = &claude.tool_choice {
+            match tool_choice.choice_type {
+                ClaudeToolChoiceType::None => {}
+                ClaudeToolChoiceType::Any => {
+                    // try to load the tools from resources
+                    let tools = Tools::load()?;
 
-        messages.with_tools(tools);
+                    messages.with_tools(tools);
+                }
+            }
+        }
 
         Ok(Self {
             api: ClaudeApi::new(claude)?,

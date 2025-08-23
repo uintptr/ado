@@ -19,6 +19,18 @@ struct CommandCli {
 use log::{error, info};
 
 #[derive(Debug, Subcommand)]
+enum LlmCommmands {
+    /// Provider
+    Provider { llm: Option<String> },
+    /// LLM usage
+    Usage,
+    /// Chain
+    Chain,
+    /// Model
+    Model { model: Option<String> },
+}
+
+#[derive(Debug, Subcommand)]
 enum Command {
     /// query the LLM
     #[command(alias = "q")]
@@ -54,14 +66,11 @@ enum Command {
     },
     /// Print status information
     Status,
-    /// LLM provider
-    Llm { llm: Option<String> },
-    /// LLM usage
-    Usage,
-    /// Chain
-    Chain,
-    /// Model
-    Model { model: Option<String> },
+    /// LLM Specific Commands
+    Llm {
+        #[command(subcommand)]
+        command: LlmCommmands,
+    },
 }
 
 pub struct CommandInfo {
@@ -232,40 +241,42 @@ impl UserCommands {
                     let s = StatusInfo::new(&self.config, &self.chain);
                     console.display(AdoData::Status(s))
                 }
-                Command::Llm { llm } => {
-                    if let Some(llm) = llm {
-                        let cur_llm = self.config.llm_provider();
+                Command::Llm { command } => match command {
+                    LlmCommmands::Provider { llm } => {
+                        if let Some(llm) = llm {
+                            let cur_llm = self.config.llm_provider();
 
-                        if cur_llm != llm {
-                            self.update_llm(llm).await?;
+                            if cur_llm != llm {
+                                self.update_llm(llm).await?;
+                            }
                         }
+
+                        let llm = self.config.llm_provider();
+                        // TODO XXX TODO
+                        // can use use a &str here
+                        console.display_string(llm) // can we use a str here
                     }
+                    LlmCommmands::Usage => {
+                        let usage = self.chain.usage();
+                        console.display(AdoData::LlmUsage(usage))
+                    }
+                    LlmCommmands::Model { model } => {
+                        if let Some(model) = model {
+                            let cur_model = self.chain.model();
 
-                    let llm = self.config.llm_provider();
-                    // TODO XXX TODO
-                    // can use use a &str here
-                    console.display_string(llm) // can we use a str here
-                }
-                Command::Usage => {
-                    let usage = self.chain.usage();
-                    console.display(AdoData::LlmUsage(usage))
-                }
-                Command::Model { model } => {
-                    if let Some(model) = model {
-                        let cur_model = self.chain.model();
-
-                        if cur_model != model {
-                            self.chain.change_model(model);
+                            if cur_model != model {
+                                self.chain.change_model(model);
+                            }
                         }
-                    }
 
-                    let model = self.chain.model();
-                    console.display_string(model)
-                }
-                Command::Chain => {
-                    let data = self.chain.json_chain()?;
-                    console.display(data)
-                }
+                        let model = self.chain.model();
+                        console.display_string(model)
+                    }
+                    LlmCommmands::Chain => {
+                        let data = self.chain.json_chain()?;
+                        console.display(data)
+                    }
+                },
             },
             Err(e) => match e.kind() {
                 ErrorKind::DisplayHelp | ErrorKind::DisplayHelpOnMissingArgumentOrSubcommand => {

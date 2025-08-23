@@ -5,11 +5,14 @@ pub enum ClaudeToolChoiceType {
     #[default]
     #[serde(rename = "any")]
     Any,
+    #[serde(rename = "none")]
+    None,
 }
 #[derive(Debug, Default, Serialize, Deserialize, Clone)]
 pub struct ClaudeToolChoice {
     #[serde(rename = "type")]
     pub choice_type: ClaudeToolChoiceType,
+    #[serde(default = "default_true")]
     pub disable_parallel_tool_use: bool,
 }
 
@@ -38,4 +41,8 @@ pub struct ClaudeConfig {
     pub instructions: Option<Vec<String>>,
     pub mcp_servers: Option<Vec<ClaudeMcpServer>>,
     pub tool_choice: Option<ClaudeToolChoice>,
+}
+
+fn default_true() -> bool {
+    true
 }

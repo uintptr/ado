@@ -43,11 +43,11 @@ impl AdoDataMarkdown for StatusInfo {
         let fmt = r#"
 |             |                     |
 |-------------|---------------------|
-| Model       |  `{model}`          |
 | Version     |  `{version}`        |
 | Build Date  |  `{build_date}`     |
 | Commit Hash |  `{commit_hash}`    |
-| LLM         |  `{llm}`            |"#;
+| LLM         |  `{llm}`            |
+| LLM Model   |  `{model}`          |"#;
 
         let mut vars: HashMap<String, String> = HashMap::new();
 

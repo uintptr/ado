@@ -9,8 +9,6 @@ use crate::error::Error;
 use crate::error::Result;
 use crate::llm::claude::claude_config::ClaudeConfig;
 use crate::llm::claude::claude_config::ClaudeMcpServer;
-use crate::llm::claude::claude_config::ClaudeToolChoice;
-use crate::llm::claude::claude_config::ClaudeToolChoiceType;
 use crate::llm::claude::claude_tool::ClaudeTool;
 use crate::tools::loader::Tools;
 
@@ -82,17 +80,6 @@ pub struct ClaudeUsage {
     pub service_tier: String,
 }
 
-impl ClaudeMessage {
-    pub fn new<C>(role: ClaudeRole, content: C) -> Self
-    where
-        C: AsRef<str>,
-    {
-        Self {
-            role,
-            content: content.as_ref().to_string(),
-        }
-    }
-}
 #[derive(Debug, Display, Serialize, Deserialize)]
 pub enum ClaudeStopReason {
     #[serde(rename = "end_turn")]
@@ -128,17 +115,6 @@ pub struct ClaudeResponse {
     pub usage: ClaudeUsage,
 }
 
-impl ClaudeResponse {
-    pub fn message(&self) -> Result<&str> {
-        let text = self.content.first().ok_or(Error::Empty)?;
-
-        match &text.text {
-            Some(v) => Ok(v),
-            None => Err(Error::Empty),
-        }
-    }
-}
-
 pub struct ClaudeApi {
     client: Client,
     pub config: ClaudeConfig,
@@ -154,10 +130,35 @@ pub struct ClaudeMessages {
     system: Vec<ClaudeContent>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     tools: Vec<ClaudeTool>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    tool_choice: Option<ClaudeToolChoice>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     mcp_servers: Vec<ClaudeMcpServer>,
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// IMPL
+///////////////////////////////////////////////////////////////////////////////
+
+impl ClaudeMessage {
+    pub fn new<C>(role: ClaudeRole, content: C) -> Self
+    where
+        C: AsRef<str>,
+    {
+        Self {
+            role,
+            content: content.as_ref().to_string(),
+        }
+    }
+}
+
+impl ClaudeResponse {
+    pub fn message(&self) -> Result<&str> {
+        let text = self.content.first().ok_or(Error::Empty)?;
+
+        match &text.text {
+            Some(v) => Ok(v),
+            None => Err(Error::Empty),
+        }
+    }
 }
 
 impl ClaudeMessages {
@@ -197,11 +198,6 @@ impl ClaudeMessages {
             };
             self.tools.push(claude_tool);
         }
-        let tool_choice = ClaudeToolChoice {
-            choice_type: ClaudeToolChoiceType::Any,
-            disable_parallel_tool_use: false,
-        };
-        self.tool_choice = Some(tool_choice)
     }
 
     pub fn add_content<C>(&mut self, role: ClaudeRole, content: C)
@@ -291,6 +287,11 @@ impl ClaudeApi {
         self.chat(&chat).await
     }
 }
+
+///////////////////////////////////////////////////////////////////////////////
+// TESTS
+///////////////////////////////////////////////////////////////////////////////
+
 #[cfg(test)]
 mod tests {
     use std::{fs, path::Path};
