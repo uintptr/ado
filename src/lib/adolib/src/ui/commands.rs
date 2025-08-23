@@ -3,12 +3,12 @@ use crate::{
     const_vars::CACHE_05_DAYS,
     data::types::AdoData,
     error::{Error, Result},
-    llm::chain::LLMChain,
+    llm::chain::{LLMChain, LLMToolState},
     search::google::{GoogleCSE, GoogleSearchResults},
     storage::{PersistentStorageTrait, persistent::PersistentStorage},
     ui::{ConsoleDisplayTrait, reddit::RedditQuery, status::StatusInfo},
 };
-use clap::{CommandFactory, Parser, Subcommand, error::ErrorKind};
+use clap::{CommandFactory, Parser, Subcommand, ValueEnum, error::ErrorKind};
 
 #[derive(Parser)]
 struct CommandCli {
@@ -17,6 +17,12 @@ struct CommandCli {
 }
 
 use log::{error, info};
+
+#[derive(ValueEnum, Clone, Debug)]
+enum LlmToolState {
+    Enable,
+    Disable,
+}
 
 #[derive(Debug, Subcommand)]
 enum LlmCommmands {
@@ -28,6 +34,8 @@ enum LlmCommmands {
     Chain,
     /// Model
     Model { model: Option<String> },
+    /// Tool State
+    Tool { state: LlmToolState },
 }
 
 #[derive(Debug, Subcommand)]
@@ -281,8 +289,22 @@ impl UserCommands {
                         console.display_string(model)
                     }
                     LlmCommmands::Chain => {
-                        let data = self.chain.json_chain()?;
+                        let data = self.chain.dump_chain()?;
                         console.display(data)
+                    }
+                    LlmCommmands::Tool { state } => {
+                        let cur_state = match state {
+                            LlmToolState::Disable => {
+                                self.chain.tool(LLMToolState::Disable)?;
+                                "disabled"
+                            }
+                            LlmToolState::Enable => {
+                                self.chain.tool(LLMToolState::Enable)?;
+                                "enabled"
+                            }
+                        };
+
+                        console.display_string(cur_state)
                     }
                 },
             },
@@ -291,25 +313,33 @@ impl UserCommands {
                     console.display(AdoData::UsageString(e.to_string()))
                 }
                 ErrorKind::InvalidSubcommand => {
-                    if let Some(sugg) = e.get(clap::error::ContextKind::SuggestedSubcommand) {
-                        let err_msg = format!("did you mean `{}`?", sugg.to_string());
-                        console.display_string(err_msg)
-                    } else {
-                        //
-                        // assume it's a query
-                        //
-                        //self.chain.link(line.as_ref(), console).await?;
-                        Ok(())
+                    match e.get(clap::error::ContextKind::SuggestedSubcommand) {
+                        Some(v) => {
+                            let err_msg = format!("did you mean `{}`?", v.to_string());
+                            console.display_string(err_msg)
+                        }
+                        None => {
+                            //
+                            // assume it's a query
+                            //
+                            self.chain.link(line.as_ref(), console).await
+                        }
                     }
-
-                    //Ok(())
+                }
+                ErrorKind::InvalidValue => {
+                    let err_msg = format!("{e}");
+                    console.display_string(err_msg)
+                }
+                ErrorKind::MissingRequiredArgument => {
+                    let err_msg = format!("{e}");
+                    console.display_string(err_msg)
                 }
                 _ => {
+                    //error!("{e}");
                     //
                     // assume it's a query
                     //
-                    //self.chain.link(line.as_ref(), console).await?;
-                    Ok(())
+                    self.chain.link(line.as_ref(), console).await
                 }
             },
         }

@@ -3,7 +3,7 @@ use crate::{
     data::types::AdoData,
     error::Result,
     llm::{
-        chain::{LLMChainTrait, LLMUsage},
+        chain::{LLMChainTrait, LLMToolState, LLMUsage},
         claude::{
             claude_api::{ClaudeApi, ClaudeContentType, ClaudeMessages, ClaudeResponse, ClaudeRole},
             claude_config::ClaudeToolChoiceType,
@@ -44,7 +44,6 @@ impl ClaudeChain {
                 ClaudeToolChoiceType::Any => {
                     // try to load the tools from resources
                     let tools = Tools::load()?;
-
                     messages.with_tools(tools);
                 }
             }
@@ -89,9 +88,6 @@ impl ClaudeChain {
         Ok(())
     }
 }
-///////////////////////////////////////////////////////////////////////////////
-// TESTS
-///////////////////////////////////////////////////////////////////////////////
 
 #[async_trait(?Send)]
 impl LLMChainTrait for ClaudeChain {
@@ -108,9 +104,7 @@ impl LLMChainTrait for ClaudeChain {
 
         // in its own function so it can be tested from a local
         // file
-        self.process_content(&resp, console).await?;
-
-        Ok(())
+        self.process_content(&resp, console).await
     }
 
     async fn message(&self, content: &str) -> Result<String> {
@@ -145,7 +139,25 @@ impl LLMChainTrait for ClaudeChain {
         let json_chain = serde_json::to_string_pretty(&self.messages)?;
         Ok(AdoData::Json(json_chain))
     }
+
+    fn tool(&mut self, state: LLMToolState) -> Result<()> {
+        match state {
+            LLMToolState::Disable => {
+                self.messages.without_tools();
+            }
+            LLMToolState::Enable => {
+                let tools = Tools::load()?;
+                self.messages.with_tools(tools);
+            }
+        }
+
+        Ok(())
+    }
 }
+
+///////////////////////////////////////////////////////////////////////////////
+// TEST
+///////////////////////////////////////////////////////////////////////////////
 
 #[cfg(test)]
 mod tests {

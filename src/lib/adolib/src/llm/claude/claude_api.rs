@@ -188,6 +188,8 @@ impl ClaudeMessages {
     }
 
     pub fn with_tools(&mut self, tools: Tools) {
+        self.tools.clear();
+
         for t in tools.list {
             let claude_tool: ClaudeTool = match t.try_into() {
                 Ok(v) => v,
@@ -198,6 +200,10 @@ impl ClaudeMessages {
             };
             self.tools.push(claude_tool);
         }
+    }
+
+    pub fn without_tools(&mut self) {
+        self.tools.clear();
     }
 
     pub fn add_content<C>(&mut self, role: ClaudeRole, content: C)

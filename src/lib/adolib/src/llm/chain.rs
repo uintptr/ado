@@ -31,6 +31,11 @@ impl AdoDataMarkdown for LLMUsage {
     }
 }
 
+pub enum LLMToolState {
+    Enable,
+    Disable,
+}
+
 #[async_trait(?Send)]
 pub trait LLMChainTrait {
     async fn link<C>(&mut self, content: &str, console: &mut C) -> Result<()>
@@ -42,6 +47,9 @@ pub trait LLMChainTrait {
     fn change_model<S: AsRef<str>>(&mut self, _model: S);
     fn usage(&self) -> LLMUsage;
     fn dump_chain(&self) -> Result<AdoData>;
+    fn tool(&mut self, _state: LLMToolState) -> Result<()> {
+        Err(Error::NotImplemented)
+    }
 }
 
 pub enum LLMChain {
@@ -128,11 +136,19 @@ impl LLMChain {
         }
     }
 
-    pub fn json_chain(&self) -> Result<AdoData> {
+    pub fn dump_chain(&self) -> Result<AdoData> {
         match self {
             LLMChain::OpenAI(openai) => openai.dump_chain(),
             LLMChain::Ollama(ollama) => ollama.dump_chain(),
             LLMChain::Claude(claude) => claude.dump_chain(),
+        }
+    }
+
+    pub fn tool(&mut self, state: LLMToolState) -> Result<()> {
+        match self {
+            LLMChain::OpenAI(openai) => openai.tool(state),
+            LLMChain::Ollama(ollama) => ollama.tool(state),
+            LLMChain::Claude(claude) => claude.tool(state),
         }
     }
 }
