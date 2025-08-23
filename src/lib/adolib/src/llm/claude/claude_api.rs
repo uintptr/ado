@@ -262,8 +262,6 @@ impl ClaudeApi {
 
         let resp_json = &res.text().await?;
 
-        fs::write("/tmp/claude_last.json", resp_json.as_bytes())?;
-
         if !success {
             error!("{resp_json}")
         }
