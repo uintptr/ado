@@ -41,7 +41,7 @@ pub trait LLMChainTrait {
     fn model(&self) -> &str;
     fn change_model<S: AsRef<str>>(&mut self, _model: S);
     fn usage(&self) -> LLMUsage;
-    fn json_chain(&self) -> Result<AdoData>;
+    fn dump_chain(&self) -> Result<AdoData>;
 }
 
 pub enum LLMChain {
@@ -130,9 +130,9 @@ impl LLMChain {
 
     pub fn json_chain(&self) -> Result<AdoData> {
         match self {
-            LLMChain::OpenAI(openai) => openai.json_chain(),
-            LLMChain::Ollama(ollama) => ollama.json_chain(),
-            LLMChain::Claude(claude) => claude.json_chain(),
+            LLMChain::OpenAI(openai) => openai.dump_chain(),
+            LLMChain::Ollama(ollama) => ollama.dump_chain(),
+            LLMChain::Claude(claude) => claude.dump_chain(),
         }
     }
 }

@@ -22,6 +22,9 @@ pub struct ClaudeChain {
     tokens: LLMUsage,
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// IMPL
+///////////////////////////////////////////////////////////////////////////////
 impl ClaudeChain {
     pub fn new(config: &AdoConfig) -> Result<Self> {
         let claude = config.claude()?;
@@ -86,6 +89,9 @@ impl ClaudeChain {
         Ok(())
     }
 }
+///////////////////////////////////////////////////////////////////////////////
+// TESTS
+///////////////////////////////////////////////////////////////////////////////
 
 #[async_trait(?Send)]
 impl LLMChainTrait for ClaudeChain {
@@ -135,7 +141,7 @@ impl LLMChainTrait for ClaudeChain {
         }
     }
 
-    fn json_chain(&self) -> Result<AdoData> {
+    fn dump_chain(&self) -> Result<AdoData> {
         let json_chain = serde_json::to_string_pretty(&self.messages)?;
         Ok(AdoData::Json(json_chain))
     }

@@ -101,7 +101,7 @@ impl LLMChainTrait for OpenAIChain {
         }
     }
 
-    fn json_chain(&self) -> Result<AdoData> {
+    fn dump_chain(&self) -> Result<AdoData> {
         unimplemented!()
     }
 }

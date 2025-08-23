@@ -16,6 +16,25 @@ pub struct ClaudeToolProperty {
     items: Option<ClaudeToolSchema>,
 }
 
+#[derive(Debug, Serialize)]
+pub struct ClaudeToolSchema {
+    #[serde(rename = "type")]
+    schema_type: ToolType,
+    properties: HashMap<String, ClaudeToolProperty>,
+    required: Vec<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct ClaudeTool {
+    name: String,
+    description: String,
+    input_schema: Option<ClaudeToolSchema>,
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// IMPL
+///////////////////////////////////////////////////////////////////////////////
+
 impl TryFrom<ToolProperties> for ClaudeToolProperty {
     type Error = Error;
 
@@ -36,14 +55,6 @@ impl TryFrom<ToolProperties> for ClaudeToolProperty {
 
         Ok(claude_prop)
     }
-}
-
-#[derive(Debug, Serialize)]
-pub struct ClaudeToolSchema {
-    #[serde(rename = "type")]
-    schema_type: ToolType,
-    properties: HashMap<String, ClaudeToolProperty>,
-    required: Vec<String>,
 }
 
 impl TryFrom<ToolParameters> for ClaudeToolSchema {
@@ -73,13 +84,6 @@ impl TryFrom<ToolParameters> for ClaudeToolSchema {
 
         Ok(claude_schema)
     }
-}
-
-#[derive(Debug, Serialize)]
-pub struct ClaudeTool {
-    name: String,
-    description: String,
-    input_schema: Option<ClaudeToolSchema>,
 }
 
 impl TryFrom<ToolFunction> for ClaudeTool {
