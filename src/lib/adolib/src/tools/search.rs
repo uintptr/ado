@@ -15,7 +15,7 @@ impl FunctionsSearch {
         Ok(Self { search })
     }
 
-    pub async fn search(&self, args: &ToolArgs) -> Result<AdoData> {
+    pub async fn search(&self, args: &ToolArgs<'_>) -> Result<AdoData> {
         let query = args.get_string("query")?;
 
         info!("search term: {query}");

@@ -12,17 +12,13 @@ pub struct FunctionArgsKV {
     pub value: String,
 }
 
-pub struct ToolArgs {
-    inner: HashMap<String, String>,
+pub struct ToolArgs<'a> {
+    inner: Option<&'a HashMap<String, String>>,
 }
 
-impl ToolArgs {
-    pub fn new(args: Option<&HashMap<String, String>>) -> Self {
-        let inner = match args {
-            Some(v) => v.clone(),
-            None => HashMap::new(),
-        };
-        Self { inner }
+impl<'a> ToolArgs<'a> {
+    pub fn new(args: Option<&'a HashMap<String, String>>) -> Self {
+        Self { inner: args }
     }
 
     pub fn to_base64_string(&self, data: &[u8]) -> Result<String> {
@@ -36,17 +32,27 @@ impl ToolArgs {
     }
 
     pub fn get_string(&self, key: &str) -> Result<&str> {
-        let v = self.inner.get(key).ok_or(Error::MissingArgument { name: key.to_string() })?;
-        Ok(v.as_str())
+        match self.inner {
+            Some(v) => {
+                let value = v.get(key).ok_or(Error::MissingArgument { name: key.to_string() })?;
+                Ok(value.as_str())
+            }
+            None => Err(Error::MissingArgument { name: key.to_string() }),
+        }
     }
 
     pub fn get_kv_list(&self, key: &str) -> Result<Vec<FunctionArgsKV>> {
-        let v = self.inner.get(key).ok_or(Error::MissingArgument { name: key.to_string() })?;
-        let list: Vec<FunctionArgsKV> = serde_json::from_str(v.as_str())?;
-        Ok(list)
+        match self.inner {
+            Some(v) => {
+                let value = v.get(key).ok_or(Error::MissingArgument { name: key.to_string() })?;
+                let list: Vec<FunctionArgsKV> = serde_json::from_str(value.as_str())?;
+                Ok(list)
+            }
+            None => Err(Error::MissingArgument { name: key.to_string() }),
+        }
     }
 
-    pub fn kv_list_to_map<'a>(&self, list: &'a [FunctionArgsKV]) -> HashMap<&'a str, &'a str> {
+    pub fn kv_list_to_map<'b>(&self, list: &'b [FunctionArgsKV]) -> HashMap<&'b str, &'b str> {
         let mut map: HashMap<&str, &str> = HashMap::new();
 
         for i in list.iter() {

@@ -12,7 +12,7 @@ impl FunctionsHttp {
         FunctionsHttp { http: Http::new() }
     }
 
-    pub async fn get(&self, args: &ToolArgs) -> Result<AdoData> {
+    pub async fn get(&self, args: &ToolArgs<'_>) -> Result<AdoData> {
         let url = args.get_string("url")?;
 
         //
@@ -33,7 +33,7 @@ impl FunctionsHttp {
         Ok(AdoData::Http(res))
     }
 
-    pub async fn post(&self, args: &ToolArgs) -> Result<AdoData> {
+    pub async fn post(&self, args: &ToolArgs<'_>) -> Result<AdoData> {
         let url = args.get_string("url")?;
         let list = args.get_kv_list("http_headers").ok();
         let headers_opt = list.as_ref().map(|v| args.kv_list_to_map(v));
