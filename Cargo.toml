@@ -41,17 +41,7 @@ ring = { version = "0.17.14", features = ["wasm32_unknown_unknown_js"] }
 wasm-bindgen-futures = "0.4.50"
 adolib = { path = "src/lib/adolib" }
 console_error_panic_hook = "0.1.7"
-web-sys = { version = "0.3.77", features = [
-    "Storage",
-    "IdbDatabase",
-    "IdbOpenDbRequest",
-    "Window",
-    "IdbFactory",
-    "IdbTransaction",
-    "IdbObjectStore",
-    "EventTarget",
-    "Navigator",
-] }
+web-sys = { version = "0.3.77" }
 gloo-utils = "0.2.0"
 rstaples = "0.1.0"
 md5 = "0.8.0"
