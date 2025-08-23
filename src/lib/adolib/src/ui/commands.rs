@@ -334,7 +334,7 @@ mod tests {
 
         let mut cmd = UserCommands::new(&config, cache).unwrap();
 
-        let mut console = NopConsole {};
+        let mut console = NopConsole::new();
 
         let _ret = cmd.handler("/help", &mut console);
     }

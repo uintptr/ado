@@ -35,8 +35,8 @@ pub struct OpenAIOutputFunctionCall {
 }
 
 impl OpenAIOutputFunctionCall {
-    pub async fn process(&self, handler: &ToolHandler) -> Result<AdoData> {
-        handler.call(&self.name, &self.arguments).await
+    pub async fn process(&self, _handler: &ToolHandler) -> Result<AdoData> {
+        unimplemented!()
     }
 }
 

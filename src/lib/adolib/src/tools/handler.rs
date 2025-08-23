@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use log::{error, info};
 
 use crate::{
@@ -35,14 +37,13 @@ impl ToolHandler {
         })
     }
 
-    pub async fn call<N, A>(&self, name: N, args: A) -> Result<AdoData>
+    pub async fn call<N>(&self, name: N, args: Option<&HashMap<String, String>>) -> Result<AdoData>
     where
         N: AsRef<str>,
-        A: AsRef<str>,
     {
         info!("executing {}", name.as_ref());
 
-        let args = ToolArgs::new(args.as_ref())?;
+        let args = ToolArgs::new(args);
 
         match name.as_ref() {
             "browse" => match &self.browser {
@@ -73,6 +74,8 @@ impl ToolHandler {
 #[cfg(test)]
 mod tests {
 
+    use std::collections::HashMap;
+
     use crate::logging::logger::setup_logger;
 
     use super::ToolArgs;
@@ -83,7 +86,9 @@ mod tests {
     fn args_test() {
         setup_logger(true).unwrap();
 
-        let args = ToolArgs::new(TEST_ARG).unwrap();
+        let args: HashMap<String, String> = serde_json::from_str(TEST_ARG).unwrap();
+
+        let args = ToolArgs::new(Some(&args));
 
         args.get_string("url").unwrap();
         let _l = args.get_kv_list("http_headers").unwrap();

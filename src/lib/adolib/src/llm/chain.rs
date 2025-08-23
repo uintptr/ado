@@ -12,7 +12,7 @@ use crate::{
 
 use log::error;
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct LLMUsage {
     pub input_tokens: u64,
     pub output_tokens: u64,

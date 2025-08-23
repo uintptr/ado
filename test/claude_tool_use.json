@@ -1,0 +1,29 @@
+{
+    "id": "msg_01FwGVTPEToCsro2qAvMeW3C",
+    "type": "message",
+    "role": "assistant",
+    "model": "claude-3-7-sonnet-20250219",
+    "content": [
+        {
+            "type": "tool_use",
+            "id": "toolu_01S65oH6cVMpAmEtyHn9n2yU",
+            "name": "search",
+            "input": {
+                "query": "what tools does Claude assistant have access to"
+            }
+        }
+    ],
+    "stop_reason": "tool_use",
+    "stop_sequence": null,
+    "usage": {
+        "input_tokens": 1615,
+        "cache_creation_input_tokens": 0,
+        "cache_read_input_tokens": 0,
+        "cache_creation": {
+            "ephemeral_5m_input_tokens": 0,
+            "ephemeral_1h_input_tokens": 0
+        },
+        "output_tokens": 43,
+        "service_tier": "standard"
+    }
+}

@@ -3,7 +3,6 @@ use std::collections::HashMap;
 use base64::{Engine, prelude::BASE64_STANDARD};
 
 use serde::Deserialize;
-use serde_json::Value;
 
 use crate::error::{Error, Result};
 
@@ -13,16 +12,17 @@ pub struct FunctionArgsKV {
     pub value: String,
 }
 
-#[derive(Default)]
 pub struct ToolArgs {
-    inner: HashMap<String, Value>,
+    inner: HashMap<String, String>,
 }
 
 impl ToolArgs {
-    pub fn new(args: &str) -> Result<Self> {
-        let map: HashMap<String, Value> = serde_json::from_str(args)?;
-
-        Ok(Self { inner: map })
+    pub fn new(args: Option<&HashMap<String, String>>) -> Self {
+        let inner = match args {
+            Some(v) => v.clone(),
+            None => HashMap::new(),
+        };
+        Self { inner }
     }
 
     pub fn to_base64_string(&self, data: &[u8]) -> Result<String> {
@@ -37,17 +37,12 @@ impl ToolArgs {
 
     pub fn get_string(&self, key: &str) -> Result<&str> {
         let v = self.inner.get(key).ok_or(Error::MissingArgument { name: key.to_string() })?;
-
-        v.as_str().ok_or(Error::TypeError {
-            error: format!("{key} is not a string"),
-        })
+        Ok(v.as_str())
     }
 
     pub fn get_kv_list(&self, key: &str) -> Result<Vec<FunctionArgsKV>> {
         let v = self.inner.get(key).ok_or(Error::MissingArgument { name: key.to_string() })?;
-
-        let list: Vec<FunctionArgsKV> = serde_json::from_value(v.clone())?;
-
+        let list: Vec<FunctionArgsKV> = serde_json::from_str(v.as_str())?;
         Ok(list)
     }
 

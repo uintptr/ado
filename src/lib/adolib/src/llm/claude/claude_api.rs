@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::fs;
 
 use derive_more::Display;
 use log::{error, info};
@@ -9,6 +10,8 @@ use crate::error::Error;
 use crate::error::Result;
 use crate::llm::claude::claude_config::ClaudeConfig;
 use crate::llm::claude::claude_config::ClaudeMcpServer;
+use crate::llm::claude::claude_config::ClaudeToolChoice;
+use crate::llm::claude::claude_config::ClaudeToolChoiceType;
 use crate::llm::claude::claude_tool::ClaudeTool;
 use crate::tools::loader::Tools;
 
@@ -152,8 +155,8 @@ pub struct ClaudeMessages {
     system: Vec<ClaudeContent>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     tools: Vec<ClaudeTool>,
-    //#[serde(skip_serializing_if = "Option::is_none")]
-    //tool_choice: Option<ClaudeToolChoice>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    tool_choice: Option<ClaudeToolChoice>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     mcp_servers: Vec<ClaudeMcpServer>,
 }
@@ -184,8 +187,7 @@ impl ClaudeMessages {
         self.system.push(content);
     }
 
-    pub fn with_tools(&mut self, _tools: Tools) {
-        /*
+    pub fn with_tools(&mut self, tools: Tools) {
         for t in tools.list {
             let claude_tool: ClaudeTool = match t.try_into() {
                 Ok(v) => v,
@@ -201,11 +203,6 @@ impl ClaudeMessages {
             disable_parallel_tool_use: false,
         };
         self.tool_choice = Some(tool_choice)
-        */
-    }
-
-    pub fn with_mcp_servers(&mut self, servers: &[ClaudeMcpServer]) {
-        self.mcp_servers = servers.to_owned();
     }
 
     pub fn add_content<C>(&mut self, role: ClaudeRole, content: C)
@@ -234,15 +231,20 @@ impl ClaudeApi {
 
         let url = format!("{}/v1/messages", self.config.url);
 
-        let res = self
+        let req_builds = self
             .client
             .post(&url)
             .header("Content-Type", "application/json")
             .header("x-api-key", &self.config.key)
             .header("anthropic-version", &self.config.anthropic_version)
-            .body(req_json)
-            .send()
-            .await?;
+            .body(req_json);
+
+        let req_builds = match self.config.mcp_servers {
+            Some(_) => req_builds.header("anthropic-beta", "mcp-client-2025-04-04"),
+            None => req_builds,
+        };
+
+        let res = req_builds.send().await?;
 
         let log_msg = format!(
             "post {} -> code={} reason={}",
@@ -260,16 +262,15 @@ impl ClaudeApi {
 
         let resp_json = &res.text().await?;
 
+        fs::write("/tmp/claude_last.json", resp_json.as_bytes())?;
+
         if !success {
             error!("{resp_json}")
         }
 
         // convert a our struct
         match serde_json::from_str::<ClaudeResponse>(resp_json) {
-            Ok(v) => {
-                info!("input={} output={}", v.usage.input_tokens, v.usage.output_tokens);
-                Ok(v)
-            }
+            Ok(v) => Ok(v),
             Err(_) => {
                 //
                 // Try to print it nicely, best effort

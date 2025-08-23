@@ -15,8 +15,7 @@ pub struct ClaudeChain {
     api: ClaudeApi,
     messages: ClaudeMessages,
     tool_handler: ToolHandler,
-    input_tokens: u64,
-    output_tokens: u64,
+    tokens: LLMUsage,
 }
 
 impl ClaudeChain {
@@ -37,16 +36,11 @@ impl ClaudeChain {
 
         messages.with_tools(tools);
 
-        if let Some(mcp_server) = &claude.mcp_servers {
-            messages.with_mcp_servers(mcp_server);
-        }
-
         Ok(Self {
             api: ClaudeApi::new(claude)?,
             messages,
             tool_handler: ToolHandler::new(config)?,
-            input_tokens: 0,
-            output_tokens: 0,
+            tokens: LLMUsage::default(),
         })
     }
 
@@ -63,7 +57,7 @@ impl ClaudeChain {
                 }
                 ClaudeContentType::ToolUse => {
                     if let Some(name) = &content.name {
-                        let data = self.tool_handler.call(name, "{}").await?;
+                        let data = self.tool_handler.call(name, content.input.as_ref()).await?;
                         console.display(data)?;
                     }
                 }
@@ -84,8 +78,8 @@ impl LLMChainTrait for ClaudeChain {
 
         let resp = self.api.chat(&self.messages).await?;
 
-        self.input_tokens += resp.usage.input_tokens;
-        self.output_tokens += resp.usage.output_tokens;
+        self.tokens.input_tokens += resp.usage.input_tokens;
+        self.tokens.output_tokens += resp.usage.output_tokens;
 
         // in its own function so it can be tested from a local
         // file
@@ -106,6 +100,7 @@ impl LLMChainTrait for ClaudeChain {
     }
 
     fn reset(&mut self) {
+        self.tokens = LLMUsage::default();
         self.messages.reset()
     }
 
@@ -122,8 +117,8 @@ impl LLMChainTrait for ClaudeChain {
 
     fn usage(&self) -> LLMUsage {
         LLMUsage {
-            input_tokens: self.input_tokens,
-            output_tokens: self.output_tokens,
+            input_tokens: self.tokens.input_tokens,
+            output_tokens: self.tokens.output_tokens,
         }
     }
 }
@@ -133,7 +128,7 @@ mod tests {
     use std::{fs, path::Path};
 
     use log::info;
-    use rstaples::logging::StaplesLogger;
+    use rstaples::{logging::StaplesLogger, staples::find_file};
 
     use crate::{
         config::loader::AdoConfig,
@@ -164,7 +159,7 @@ mod tests {
 
         let mut chain = ClaudeChain::new(&config_file).unwrap();
 
-        let console = NopConsole {};
+        let mut console = NopConsole::new();
 
         chain.link("Hello World", &mut console).await.unwrap();
         chain.link("Can you tell a joke", &mut console).await.unwrap();
@@ -184,10 +179,27 @@ mod tests {
         let config_file = AdoConfig::from_default().unwrap();
         let chain = ClaudeChain::new(&config_file).unwrap();
 
-        let console = NopConsole {};
+        let mut console = NopConsole::new();
 
         let ret = chain.process_content(&resp.content, &mut console).await.unwrap();
 
         info!("ret: {ret:?}");
+    }
+
+    #[tokio::test]
+    async fn test_tool() {
+        setup_logger(true).unwrap();
+
+        let config_file = AdoConfig::from_default().unwrap();
+        let chain = ClaudeChain::new(&config_file).unwrap();
+
+        let test_file = Path::new("test").join("claude_tool_use.json");
+        let test_file = find_file(test_file).unwrap();
+        let resp_json = fs::read_to_string(test_file).unwrap();
+        let resp: ClaudeResponse = serde_json::from_str(&resp_json).unwrap();
+
+        let mut console = NopConsole::new();
+
+        chain.process_content(&resp.content, &mut console).await.unwrap();
     }
 }

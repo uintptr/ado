@@ -1,0 +1,6 @@
+[llm]
+provider = "ollama"
+
+[llm.ollama]
+endpoint = "http://localhost:11434"
+model = "tinyllama"

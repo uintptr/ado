@@ -101,7 +101,7 @@ mod ollama_tests {
 
         let mut chain = OllamaChain::new(&config_file).unwrap();
 
-        let console = NopConsole {};
+        let mut console = NopConsole::new();
 
         chain.link("Hello World", &mut console).await.unwrap();
         chain.link("Can you tell a joke", &mut console).await.unwrap();

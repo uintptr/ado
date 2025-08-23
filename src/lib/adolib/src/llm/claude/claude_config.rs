@@ -9,8 +9,8 @@ pub enum ClaudeToolChoiceType {
 #[derive(Debug, Default, Serialize, Deserialize, Clone)]
 pub struct ClaudeToolChoice {
     #[serde(rename = "type")]
-    choice_type: ClaudeToolChoiceType,
-    disable_parallel_tool_use: bool,
+    pub choice_type: ClaudeToolChoiceType,
+    pub disable_parallel_tool_use: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

@@ -4,7 +4,14 @@ pub mod commands;
 mod reddit;
 pub mod status;
 
+#[derive(Default)]
 pub struct NopConsole {}
+
+impl NopConsole {
+    pub fn new() -> Self {
+        Self {}
+    }
+}
 
 impl ConsoleDisplayTrait for NopConsole {
     fn start_spinner(&mut self) {}
