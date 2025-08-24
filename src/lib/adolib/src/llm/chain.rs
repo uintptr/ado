@@ -18,7 +18,7 @@ pub struct LLMUsage {
     pub output_tokens: u64,
 }
 
-impl AdoDataMarkdown for LLMUsage {
+impl AdoDataMarkdown for &LLMUsage {
     fn to_markdown(self) -> Result<String> {
         let mut lines = Vec::new();
 

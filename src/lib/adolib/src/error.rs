@@ -112,8 +112,6 @@ pub enum Error {
     #[from]
     Staples(rstaples::error::Error),
     #[from]
-    FmtError(strfmt::FmtError),
-    #[from]
     SledError(sled::Error),
 }
 

@@ -22,7 +22,7 @@ pub struct ShellExit {
     pub execution_time: u64,
 }
 
-impl AdoDataMarkdown for ShellExit {
+impl AdoDataMarkdown for &ShellExit {
     fn to_markdown(self) -> Result<String> {
         let mut lines = Vec::new();
 

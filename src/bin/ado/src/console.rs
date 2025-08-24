@@ -41,6 +41,9 @@ pub struct TerminalConsole {
     spinner: Option<SpinnerHandle>,
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// FUNC
+///////////////////////////////////////////////////////////////////////////////
 fn clear_console() -> Result<()> {
     print!("{esc}c", esc = 27 as char);
     io::stdout().flush()?;
@@ -92,6 +95,9 @@ fn init_readline(commands: &UserCommands) -> Result<Editor<MyHelper, FileHistory
     Ok(rl)
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// IMPL
+///////////////////////////////////////////////////////////////////////////////
 impl TerminalConsole {
     pub fn new(commands: &UserCommands) -> Result<Self> {
         let glow = match which("glow") {
@@ -228,11 +234,17 @@ impl ConsoleDisplayTrait for TerminalConsole {
         self.spinner = None
     }
 
-    fn display(&mut self, data: AdoData) -> Result<()> {
-        match data {
+    fn display<D>(&mut self, data: D) -> Result<()>
+    where
+        D: AsRef<AdoData>,
+    {
+        match data.as_ref() {
             AdoData::Empty => Ok(()),
             AdoData::Reset => clear_console(),
-            AdoData::Json(s) => self.display_md(s),
+            AdoData::Json(s) => {
+                let json_str = format!("```json\n{s}\n```");
+                self.display_string(json_str)
+            }
             AdoData::String(s) => self.display_string(s),
             AdoData::Base64(s) => self.display_base64(s),
             AdoData::Http(s) => self.display_md(s),
@@ -256,6 +268,9 @@ impl ConsoleDisplayTrait for TerminalConsole {
     }
 }
 
+///////////////////////////////////////////////////////////////////////////////
+// TEST
+///////////////////////////////////////////////////////////////////////////////
 #[cfg(test)]
 mod tests {
 

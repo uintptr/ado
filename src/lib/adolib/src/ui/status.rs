@@ -1,7 +1,6 @@
-use std::collections::HashMap;
+use std::fs;
 
 use serde::{Deserialize, Serialize};
-use strfmt::strfmt;
 
 use crate::{
     config::loader::AdoConfig,
@@ -34,33 +33,22 @@ impl StatusInfo {
     }
 }
 
-impl AdoDataMarkdown for StatusInfo {
+impl AdoDataMarkdown for &StatusInfo {
     fn to_markdown(self) -> Result<String> {
-        let mut lines = Vec::new();
-
-        lines.push("# Status".into());
-
-        let fmt = r#"
+        let table = format!(
+            r#"
 |             |                     |
 |-------------|---------------------|
-| Version     |  `{version}`        |
-| Build Date  |  `{build_date}`     |
-| Commit Hash |  `{commit_hash}`    |
-| LLM         |  `{llm}`            |
-| LLM Model   |  `{model}`          |"#;
+| Version     |  `{}` |
+| Build Date  |  `{}` |
+| Commit Hash |  `{}` |
+| LLM         |  `{}` |
+| LLM Model   |  `{}` |"#,
+            self.version, self.build_date, self.commit_hash, self.llm_provider, self.model
+        );
 
-        let mut vars: HashMap<String, String> = HashMap::new();
+        fs::write("/tmp/table.md", table.as_bytes())?;
 
-        vars.insert("model".into(), self.model);
-        vars.insert("version".into(), self.version);
-        vars.insert("build_date".into(), self.build_date);
-        vars.insert("commit_hash".into(), self.commit_hash);
-        vars.insert("llm".into(), self.llm_provider);
-
-        let table = strfmt(fmt, &vars)?;
-
-        lines.push(table);
-
-        Ok(lines.join("\n"))
+        Ok(table)
     }
 }

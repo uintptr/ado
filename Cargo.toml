@@ -48,7 +48,6 @@ md5 = "0.8.0"
 uuid = { version = "1.18.0", features = ["v4"] }
 vergen-git2 = { version = "1.0.7", features = ["build"] }
 fern = "0.7.1"
-strfmt = "0.2.5"
 async-trait = "0.1.89"
 sled = "0.34.7"
 tempfile = "3.21.0"

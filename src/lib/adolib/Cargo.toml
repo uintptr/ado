@@ -20,7 +20,6 @@ walkdir = { workspace = true }
 clap = { workspace = true }
 rstaples = { workspace = true }
 md5 = { workspace = true }
-strfmt = { workspace = true }
 async-trait = { workspace = true }
 sled = { workspace = true }
 

@@ -60,6 +60,17 @@ impl AdoDataMarkdown for HttpResponse {
     }
 }
 
+impl AdoDataMarkdown for &HttpResponse {
+    fn to_markdown(self) -> Result<String> {
+        let mut lines = Vec::new();
+        lines.push("# Http Results".to_string());
+        lines.push(format!(" * url: {}", self.url));
+        lines.push(format!(" * code: {}", self.code));
+
+        Ok(lines.join("\n"))
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Http {
     client: Client,

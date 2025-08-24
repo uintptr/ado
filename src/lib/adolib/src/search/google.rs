@@ -34,7 +34,7 @@ impl GoogleSearchResults {
     }
 }
 
-impl AdoDataMarkdown for GoogleSearchResults {
+impl AdoDataMarkdown for &GoogleSearchResults {
     fn to_markdown(self) -> crate::error::Result<String> {
         let value: Value = serde_json::from_str(&self.json_string)?;
 

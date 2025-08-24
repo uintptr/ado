@@ -49,7 +49,7 @@ impl AdoDataMarkdown for AdoData {
             AdoData::Reset => "".to_string(),
             AdoData::String(s) => s.to_markdown()?,
             AdoData::Bytes(_) => unimplemented!(),
-            AdoData::Json(s) => s.to_markdown()?,
+            AdoData::Json(s) => format!("```json\n{s}\n```"),
             AdoData::Base64(b) => b.to_markdown()?,
             AdoData::SearchData(d) => d.to_markdown()?,
             AdoData::Http(h) => h.to_markdown()?,
@@ -116,5 +116,10 @@ impl TryFrom<AdoData> for String {
         };
 
         Ok(s)
+    }
+}
+impl AsRef<AdoData> for AdoData {
+    fn as_ref(&self) -> &AdoData {
+        self
     }
 }
