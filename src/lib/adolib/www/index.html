@@ -169,6 +169,7 @@
                     let shouldToggle = false;
                     let shouldHighlight = false;
                     let shouldScroll = false;
+                    let lastAddedElement = null;
 
                     mutations.forEach((mutation) => {
                         if (
@@ -184,17 +185,88 @@
                         ) {
                             shouldHighlight = true;
                             shouldScroll = true;
+                            // Find the last added element that's an actual Element
+                            for (
+                                let i = mutation.addedNodes.length - 1;
+                                i >= 0;
+                                i--
+                            ) {
+                                const node = mutation.addedNodes[i];
+                                if (node.nodeType === Node.ELEMENT_NODE) {
+                                    lastAddedElement = node;
+                                    break;
+                                }
+                            }
                         }
                     });
 
                     if (shouldToggle) toggleEmptyState();
                     if (shouldHighlight) highlightAllCode();
                     if (shouldScroll) {
-                        // Smooth scroll to bottom when new content is added
-                        window.scrollTo({
-                            top: document.body.scrollHeight,
-                            behavior: 'smooth'
-                        });
+                        // Use multiple attempts to ensure our scroll behavior takes precedence
+                        setTimeout(() => {
+                            // Look for headings in the entire results container since they might be added separately
+                            const allHeadings = results.querySelectorAll(
+                                "h1, h2, h3, h4, h5, h6",
+                            );
+                            const lastHeading =
+                                allHeadings[allHeadings.length - 1];
+
+                            // Also look for the most recent result item
+                            const allResultItems =
+                                results.querySelectorAll(".result-item");
+                            const lastResultItem =
+                                allResultItems[allResultItems.length - 1];
+
+                            // Try to find a title within the last result item (this is the "heading")
+                            let targetElement = lastResultItem;
+                            if (lastResultItem) {
+                                const titleInItem =
+                                    lastResultItem.querySelector(
+                                        ".result-title",
+                                    );
+                                if (titleInItem) {
+                                    targetElement = titleInItem;
+                                } else {
+                                    // Fallback to traditional headings
+                                    const headingInItem =
+                                        lastResultItem.querySelector(
+                                            "h1, h2, h3, h4, h5, h6",
+                                        );
+                                    if (headingInItem) {
+                                        targetElement = headingInItem;
+                                    }
+                                }
+                            }
+
+                            // If we found a recent heading outside result items, prefer that
+                            if (
+                                lastHeading &&
+                                lastHeading.offsetTop >
+                                    (targetElement?.offsetTop || 0)
+                            ) {
+                                targetElement = lastHeading;
+                            }
+
+                            if (targetElement) {
+                                // Get the element's position relative to the document
+                                const elementTop = targetElement.offsetTop;
+
+                                // Scroll to the element with some padding
+                                window.scrollTo({
+                                    top: elementTop - 20,
+                                    behavior: "smooth",
+                                });
+
+                                // Try again after a delay to override any competing scroll behavior
+                                setTimeout(() => {
+                                    window.scrollTo({
+                                        top: elementTop - 20,
+                                        behavior: "smooth",
+                                    });
+                                }, 100);
+                            }
+                        }, 50);
                     }
                 });
 

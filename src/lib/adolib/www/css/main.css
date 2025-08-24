@@ -54,7 +54,6 @@ body {
     line-height: 1.5;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
-    will-change: opacity;
     animation: subtle-flicker 8s infinite linear alternate;
 }
 
@@ -198,7 +197,6 @@ body {
         inset 0 0 10px rgba(0, 255, 0, 0.1),
         0 0 20px rgba(0, 255, 0, 0.3);
     text-shadow: 0 0 5px currentColor;
-    will-change: box-shadow, border-color;
 }
 
 .search-bar input:focus {
@@ -256,7 +254,6 @@ body {
     border-bottom: 1px solid var(--border-subtle);
     transition: all var(--transition-speed);
     animation: fadeIn 0.4s ease-out;
-    will-change: transform, background-color;
 }
 
 .result-item:hover {
@@ -284,7 +281,6 @@ body {
     transition: all var(--transition-speed);
     position: relative;
     display: inline-block;
-    will-change: color;
 }
 
 .result-title a:hover {
@@ -365,7 +361,6 @@ body {
     box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.3);
     border-top: 1px solid var(--border-subtle);
     backdrop-filter: blur(10px);
-    will-change: transform;
 }
 
 .command-input-container {
@@ -419,7 +414,6 @@ body {
     font-family: var(--retro-font);
     transition: all var(--transition-speed);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    will-change: box-shadow, border-color;
 }
 
 .command-line input:focus {
@@ -466,7 +460,6 @@ body {
     color: var(--accent-color);
     text-shadow: 0 0 12px rgba(0, 204, 153, 0.4);
     animation: smooth-pulse 4s ease-in-out infinite;
-    will-change: transform;
 }
 
 .scan-line {

@@ -46,7 +46,6 @@ body {
     animation: subtle-flicker 8s infinite linear alternate;
     position: relative;
     overflow: hidden;
-    will-change: opacity;
 }
 
 body::before {
@@ -97,7 +96,6 @@ body::before {
     z-index: 2;
     backdrop-filter: blur(10px);
     animation: gentle-glow 8s ease-in-out infinite;
-    will-change: box-shadow;
 }
 
 @keyframes gentle-glow {
@@ -213,7 +211,6 @@ body::before {
     outline: none;
     transition: all var(--transition-speed);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-    will-change: box-shadow, border-color;
 }
 
 .login-input:focus {
@@ -253,7 +250,6 @@ body::before {
     box-shadow: 0 4px 12px rgba(0, 204, 153, 0.3);
     position: relative;
     overflow: hidden;
-    will-change: background-color, transform, box-shadow;
 }
 
 .login-btn::before {
@@ -300,7 +296,6 @@ body::before {
     color: var(--accent-color);
     text-shadow: 0 0 12px rgba(0, 204, 153, 0.4);
     animation: icon-pulse 4s ease-in-out infinite;
-    will-change: transform;
 }
 
 @keyframes icon-pulse {
@@ -353,7 +348,6 @@ body::before {
     color: var(--accent-color) !important;
     text-decoration: none !important;
     transition: all 0.3s ease;
-    will-change: color;
 }
 
 .login-hint a:hover {
