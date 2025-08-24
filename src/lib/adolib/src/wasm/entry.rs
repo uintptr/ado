@@ -44,8 +44,8 @@ impl From<Error> for JsValue {
 }
 
 #[derive(Serialize)]
-pub struct WasmQueryResponse {
-    pub data: AdoData,
+pub struct WasmQueryResponse<'a> {
+    pub data: &'a AdoData,
     pub markdown: String,
 }
 
@@ -98,10 +98,10 @@ impl AdoWasm {
         self.sync_console.clear();
         self.commands.handler(content, &mut self.sync_console).await?;
 
-        match self.sync_console.data_list.pop() {
+        match self.sync_console.data_list.first() {
             Some(data) => {
                 let resp = WasmQueryResponse {
-                    data: data.clone(),
+                    data: data,
                     markdown: data.to_markdown()?,
                 };
 

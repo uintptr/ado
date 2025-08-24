@@ -47,8 +47,6 @@ impl AdoDataMarkdown for &StatusInfo {
             self.version, self.build_date, self.commit_hash, self.llm_provider, self.model
         );
 
-        fs::write("/tmp/table.md", table.as_bytes())?;
-
         Ok(table)
     }
 }

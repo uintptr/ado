@@ -27,8 +27,11 @@ impl ConsoleDisplayTrait for WasmSyncConsole {
     fn stop_spinner(&mut self) {
         wasm_display_spinner_stop();
     }
-    fn display(&mut self, data: AdoData) -> Result<()> {
-        self.data_list.push(data);
+    fn display<D>(&mut self, data: D) -> Result<()>
+    where
+        D: AsRef<AdoData>,
+    {
+        self.data_list.push(data.as_ref().clone());
         Ok(())
     }
     fn display_string<S>(&mut self, value: S) -> Result<()>
@@ -50,10 +53,13 @@ impl ConsoleDisplayTrait for WasmAsyncConsole {
     fn stop_spinner(&mut self) {
         wasm_display_spinner_stop();
     }
-    fn display(&mut self, data: AdoData) -> Result<()> {
+    fn display<D>(&mut self, data: D) -> Result<()>
+    where
+        D: AsRef<AdoData>,
+    {
         let resp = WasmQueryResponse {
-            data: data.clone(),
-            markdown: data.to_markdown()?,
+            data: data.as_ref(),
+            markdown: data.as_ref().to_markdown()?,
         };
 
         let obj = JsValue::from_serde(&resp)?;
