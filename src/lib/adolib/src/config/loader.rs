@@ -1,4 +1,5 @@
 use std::{
+    collections::HashMap,
     env, fs,
     path::{Path, PathBuf},
 };
@@ -11,6 +12,7 @@ use crate::{
     const_vars::{CONFIG_FILE_NAME, DOT_DIRECTORY, STORE_PERMANENT},
     error::{Error, Result},
     llm::config::{ClaudeConfig, ConfigOllama, OpenAiConfig},
+    mcp::types::McpConfig,
     search::google::GoogleConfig,
     storage::{PersistentStorageTrait, persistent::PersistentStorage},
 };
@@ -27,6 +29,7 @@ pub struct ConfigLlm {
 struct ConfigFile {
     llm: ConfigLlm,
     search: Option<GoogleConfig>,
+    mcp: Option<HashMap<String, McpConfig>>,
 }
 
 #[derive(Clone)]

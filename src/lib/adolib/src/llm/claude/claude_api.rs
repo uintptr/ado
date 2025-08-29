@@ -8,8 +8,7 @@ use serde::{Deserialize, Serialize};
 use crate::error::Error;
 use crate::error::Result;
 use crate::llm::claude::claude_config::ClaudeConfig;
-use crate::llm::claude::claude_config::ClaudeMcpServer;
-use crate::llm::claude::claude_tool::ClaudeTool;
+use crate::mcp::types::McpTool;
 use crate::tools::loader::Tools;
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -129,9 +128,7 @@ pub struct ClaudeMessages {
     #[serde(skip_serializing_if = "Vec::is_empty")]
     system: Vec<ClaudeContent>,
     #[serde(skip_serializing_if = "Vec::is_empty")]
-    tools: Vec<ClaudeTool>,
-    #[serde(skip_serializing_if = "Vec::is_empty")]
-    mcp_servers: Vec<ClaudeMcpServer>,
+    tools: Vec<McpTool>,
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -191,7 +188,7 @@ impl ClaudeMessages {
         self.tools.clear();
 
         for t in tools.list {
-            let claude_tool: ClaudeTool = match t.try_into() {
+            let claude_tool: McpTool = match t.try_into() {
                 Ok(v) => v,
                 Err(e) => {
                     error!("{e}");

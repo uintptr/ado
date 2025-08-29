@@ -4,7 +4,7 @@ resolver = "2"
 
 
 [workspace.dependencies]
-clap = { version = "4.5.45", features = ["derive", "suggestions"] }
+clap = { version = "4.5.46", features = ["derive", "suggestions"] }
 log = "0.4.27"
 base64 = "0.22.1"
 bytes = "1.10.1"
@@ -27,7 +27,7 @@ toml = "0.9.5"
 walkdir = "2.5.0"
 which = "8.0.0"
 whois-rust = "1.6.0"
-x11rb = "0.13.1"
+x11rb = "0.13.2"
 rustyline = { version = "17.0.1", features = [
     "derive",
     "rustyline-derive",
@@ -43,7 +43,7 @@ adolib = { path = "src/lib/adolib" }
 console_error_panic_hook = "0.1.7"
 web-sys = { version = "0.3.77" }
 gloo-utils = "0.2.0"
-rstaples = "0.1.0"
+rstaples = "0.1.1"
 md5 = "0.8.0"
 uuid = { version = "1.18.0", features = ["v4"] }
 vergen-git2 = { version = "1.0.7", features = ["build"] }
@@ -51,6 +51,7 @@ fern = "0.7.1"
 async-trait = "0.1.89"
 sled = "0.34.7"
 tempfile = "3.21.0"
+omcp = "0.1.1"
 
 [profile.release]
 lto = true

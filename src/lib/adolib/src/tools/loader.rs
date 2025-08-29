@@ -1,48 +1,14 @@
-use std::{collections::HashMap, str::FromStr};
+use std::collections::HashMap;
 
 use derive_more::Debug;
 use log::{error, info};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    error::{Error, Result},
+    error::Result,
+    mcp::types::ToolType,
     tools::assets::{FunctionAssets, FunctionAssetsPlatform},
 };
-
-#[derive(Debug, Deserialize, Serialize)]
-pub enum ToolType {
-    #[serde(rename = "object")]
-    Object,
-    #[serde(rename = "string")]
-    String,
-    #[serde(rename = "integer")]
-    Integer,
-    #[serde(rename = "boolean")]
-    Boolean,
-    #[serde(rename = "array")]
-    Array,
-    #[serde(rename = "number")]
-    Number,
-    #[serde(rename = "function")]
-    Function,
-}
-
-impl FromStr for ToolType {
-    type Err = Error;
-
-    fn from_str(s: &str) -> Result<ToolType> {
-        match s {
-            "object" => Ok(ToolType::Object),
-            "string" => Ok(ToolType::String),
-            "integer" => Ok(ToolType::Integer),
-            "boolean" => Ok(ToolType::Boolean),
-            "array" => Ok(ToolType::Array),
-            "number" => Ok(ToolType::Number),
-            "function" => Ok(ToolType::Function),
-            _ => Err(Error::NotImplemented),
-        }
-    }
-}
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ToolProperties {

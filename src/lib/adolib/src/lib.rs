@@ -5,6 +5,7 @@ pub mod error;
 pub mod http;
 pub mod llm;
 pub mod logging;
+pub mod mcp;
 pub mod search;
 pub mod shell;
 pub mod storage;

@@ -22,7 +22,7 @@ rstaples = { workspace = true }
 md5 = { workspace = true }
 async-trait = { workspace = true }
 sled = { workspace = true }
-
+omcp = { workspace = true }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 whois-rust = { workspace = true }
