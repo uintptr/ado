@@ -6,6 +6,7 @@ use crate::{
         chain::{LLMChainTrait, LLMUsage},
         ollama::ollama_api::{OllamaApi, OllamaChat},
     },
+    mcp::matrix::McpMatrix,
     ui::ConsoleDisplayTrait,
 };
 
@@ -29,7 +30,7 @@ impl OllamaChain {
 
 #[async_trait(?Send)]
 impl LLMChainTrait for OllamaChain {
-    async fn link<C>(&mut self, content: &str, console: &mut C) -> Result<()>
+    async fn link<C>(&mut self, _mcp: &McpMatrix, content: &str, console: &mut C) -> Result<()>
     where
         C: ConsoleDisplayTrait,
     {
@@ -83,6 +84,7 @@ mod ollama_tests {
     use crate::{
         config::loader::AdoConfig,
         llm::{chain::LLMChainTrait, ollama::ollama_chain::OllamaChain},
+        mcp::matrix::McpMatrix,
         ui::NopConsole,
     };
 
@@ -107,8 +109,10 @@ mod ollama_tests {
 
         let mut console = NopConsole::new();
 
-        chain.link("Hello World", &mut console).await.unwrap();
-        chain.link("Can you tell a joke", &mut console).await.unwrap();
+        let mcp = McpMatrix::new();
+
+        chain.link(&mcp, "Hello World", &mut console).await.unwrap();
+        chain.link(&mcp, "Can you tell a joke", &mut console).await.unwrap();
 
         chain.message("hello world").await.unwrap();
     }

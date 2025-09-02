@@ -1,14 +1,14 @@
 [
     {
-        "type": "function",
         "name": "browse",
-        "description": "Ask the default browser to go the specified URL",
-        "parameters": {
+        "description": "Open a URL in the user's default web browser. This will launch the browser application and navigate to the specified webpage.",
+        "inputSchema": {
             "type": "object",
             "properties": {
                 "url": {
                     "type": "string",
-                    "description": "url to browse to"
+                    "description": "The complete URL to open in the browser. Must include the protocol (http:// or https://). Examples: 'https://www.google.com', 'https://github.com/user/repo', 'http://localhost:3000'. For local files, use file:// protocol: 'file:///home/user/document.html'.",
+                    "format": "uri"
                 }
             },
             "required": ["url"],

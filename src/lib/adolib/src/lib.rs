@@ -9,7 +9,7 @@ pub mod mcp;
 pub mod search;
 pub mod shell;
 pub mod storage;
-pub mod tools;
+//pub mod tools;
 pub mod ui;
 #[cfg(target_arch = "wasm32")]
 pub mod wasm;

@@ -1,88 +1,45 @@
 [
     {
-        "type": "function",
         "name": "shell_exec",
-        "description": "Executes a shell command on the host system. Use with caution as this function provides direct access to the underlying operating system.",
-        "parameters": {
+        "description": "Execute a shell command on the host system. **WARNING**: This provides direct system access and should be used carefully. Avoid commands that could harm the system or expose sensitive data.",
+        "inputSchema": {
             "type": "object",
             "properties": {
                 "command_line": {
                     "type": "string",
-                    "description": "The command line to execute on the host system. Should be properly escaped to prevent injection attacks."
+                    "description": "The shell command to execute. Examples: 'ls -la', 'python script.py', 'curl https://api.example.com'. Avoid commands with user input that could cause injection attacks. Always validate and sanitize inputs."
                 },
                 "working_directory": {
                     "type": "string",
-                    "description": "Optional. The directory in which to execute the command. If not specified, the command will run in the current working directory."
+                    "description": "Directory to run the command in. Use absolute paths (e.g., '/home/user/project', '/tmp'). If not specified, uses current working directory."
                 },
                 "timeout": {
                     "type": "integer",
-                    "description": "Optional. Maximum execution time in seconds before the command is terminated. Default is 60 seconds. Set to 0 for no timeout."
+                    "description": "Maximum execution time in seconds (1-3600). Commands exceeding this will be terminated. Default: 60 seconds. Use 0 for no timeout (dangerous for long-running commands).",
+                    "minimum": 0,
+                    "maximum": 3600
                 },
                 "environment": {
                     "type": "object",
-                    "description": "Optional. Key-value pairs of environment variables to set for the command execution.",
+                    "description": "Environment variables to set for this command execution. Format: {\"VAR_NAME\": \"value\"}. Examples: {\"DEBUG\": \"true\", \"API_KEY\": \"secret123\"}",
                     "additionalProperties": {
                         "type": "string"
                     }
                 },
                 "shell": {
                     "type": "string",
-                    "description": "Optional. Specify which shell to use (e.g., '/bin/bash', '/bin/sh'). Default is system default shell."
+                    "description": "Shell interpreter to use. Common options: '/bin/bash' (default on most systems), '/bin/sh' (POSIX shell), '/bin/zsh'. Leave empty to use system default.",
+                    "enum": [
+                        "/bin/bash",
+                        "/bin/sh",
+                        "/bin/zsh",
+                        "/bin/dash",
+                        ""
+                    ]
                 }
             },
             "required": ["command_line"],
             "additionalProperties": false
-        },
-        "returns": {
-            "type": "object",
-            "properties": {
-                "stdout": {
-                    "type": "string",
-                    "description": "Base64-encoded standard output from the command."
-                },
-                "stderr": {
-                    "type": "string",
-                    "description": "Base64-encoded standard error output from the command."
-                },
-                "exit_code": {
-                    "type": "integer",
-                    "description": "Exit code returned by the command. 0 typically indicates success."
-                },
-                "timed_out": {
-                    "type": "boolean",
-                    "description": "Indicates whether the command execution timed out."
-                },
-                "execution_time": {
-                    "type": "number",
-                    "description": "Time taken to execute the command in seconds."
-                }
-            }
-        },
-        "examples": [
-            {
-                "name": "List files in current directory",
-                "parameters": {
-                    "command_line": "ls -la"
-                }
-            },
-            {
-                "name": "Run script with timeout and working directory",
-                "parameters": {
-                    "command_line": "./run_analysis.sh --verbose",
-                    "working_directory": "/opt/data",
-                    "timeout": 300,
-                    "environment": {
-                        "DEBUG": "true",
-                        "MAX_THREADS": "4"
-                    }
-                }
-            }
-        ],
-        "security_considerations": [
-            "This function provides direct access to the host system and should be used with extreme caution",
-            "Input validation and sanitization should be performed on the command_line parameter",
-            "Consider implementing a command allowlist if possible",
-            "Avoid passing sensitive information through command arguments"
-        ]
+        }
     }
 ]

@@ -71,6 +71,10 @@ pub enum Error {
         help: String,
     },
     StorageWriteFailure,
+    ConfigError {
+        error: String,
+    },
+    ToolNotFound,
     //
     // 2nd party
     //
@@ -113,6 +117,8 @@ pub enum Error {
     Staples(rstaples::error::Error),
     #[from]
     SledError(sled::Error),
+    #[from]
+    Omcp(omcp::error::Error),
 }
 
 impl core::fmt::Display for Error {

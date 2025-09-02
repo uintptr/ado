@@ -1,31 +1,31 @@
 [
     {
-        "type": "function",
         "name": "http_get",
-        "description": "Issue an HTTP GET request to the specified URL. This can also work for REST APIs",
-        "parameters": {
+        "description": "Make an HTTP GET request to retrieve data from a web server or API endpoint. Use this to fetch web pages, API data, or any publicly accessible HTTP resources.",
+        "inputSchema": {
             "type": "object",
             "properties": {
                 "url": {
                     "type": "string",
-                    "description": "The URL to query. Must be a valid domain name."
+                    "description": "The complete HTTP/HTTPS URL to request. Must include protocol (http:// or https://). Examples: 'https://api.example.com/data', 'https://www.example.com/page.html'"
                 },
                 "http_headers": {
                     "type": "array",
-                    "description": "The value of the http header",
+                    "description": "Optional HTTP headers to include with the request. Common headers include Authorization, Content-Type, User-Agent, etc.",
                     "items": {
                         "type": "object",
                         "properties": {
                             "key": {
                                 "type": "string",
-                                "description": "The name of the http header to set"
+                                "description": "Header name (e.g., 'Authorization', 'Content-Type', 'User-Agent')"
                             },
                             "value": {
                                 "type": "string",
-                                "description": "The value of the http header"
+                                "description": "Header value (e.g., 'Bearer token123', 'application/json', 'MyApp/1.0')"
                             }
                         },
-                        "required": ["key", "value"]
+                        "required": ["key", "value"],
+                        "additionalProperties": false
                     }
                 }
             },
@@ -34,33 +34,37 @@
         }
     },
     {
-        "type": "function",
         "name": "http_post",
-        "description": "Issue an HTTP POST request to the specified URL. This can also work for REST APIs",
-        "parameters": {
+        "description": "Make an HTTP POST request to send data to a web server or API endpoint. Use this to submit forms, send API data, or perform actions that modify server state.",
+        "inputSchema": {
             "type": "object",
             "properties": {
                 "url": {
                     "type": "string",
-                    "description": "The URL to query. Must be a valid domain name."
+                    "description": "The complete HTTP/HTTPS URL to post to. Must include protocol (http:// or https://). Examples: 'https://api.example.com/submit', 'https://forms.example.com/contact'"
                 },
                 "http_headers": {
                     "type": "array",
-                    "description": "The value of the http header",
+                    "description": "Optional HTTP headers to include with the request. For JSON APIs, typically include Content-Type: application/json. For authentication, include Authorization header.",
                     "items": {
                         "type": "object",
                         "properties": {
                             "key": {
                                 "type": "string",
-                                "description": "The name of the http header to set"
+                                "description": "Header name (e.g., 'Content-Type', 'Authorization', 'Accept')"
                             },
                             "value": {
                                 "type": "string",
-                                "description": "The value of the http header"
+                                "description": "Header value (e.g., 'application/json', 'Bearer token123', 'application/json')"
                             }
                         },
-                        "required": ["key", "value"]
+                        "required": ["key", "value"],
+                        "additionalProperties": false
                     }
+                },
+                "body": {
+                    "type": "string",
+                    "description": "The request body data to send. For JSON APIs, provide a JSON string. For form data, provide URL-encoded string. Leave empty if no body is needed."
                 }
             },
             "required": ["url"],

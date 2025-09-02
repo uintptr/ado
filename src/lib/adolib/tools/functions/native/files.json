@@ -1,18 +1,17 @@
 [
     {
-        "type": "function",
         "name": "file_write",
-        "description": "function to write a file to the local disk",
-        "parameters": {
+        "description": "Create or overwrite a file on the local filesystem with the provided content. The content must be base64-encoded before writing.",
+        "inputSchema": {
             "type": "object",
             "properties": {
                 "file_name": {
                     "type": "string",
-                    "description": "the full path of the file to write"
+                    "description": "Full absolute path where the file should be written (e.g., '/home/user/documents/file.txt', '/tmp/data.json'). Use forward slashes for path separators."
                 },
                 "file_data": {
                     "type": "string",
-                    "description": "the data of the file to write. the file_data has to be always encoded using base64"
+                    "description": "The file content encoded as a base64 string. To write text, first encode it to base64. To write binary data, provide the base64 representation of the binary content."
                 }
             },
             "required": ["file_name", "file_data"],
@@ -20,15 +19,18 @@
         }
     },
     {
-        "type": "function",
         "name": "file_find",
-        "description": "function to find a file in a directory",
-        "parameters": {
+        "description": "Search for files by name in the filesystem. This will recursively search from the current directory or system-wide depending on implementation.",
+        "inputSchema": {
             "type": "object",
             "properties": {
                 "file_name": {
                     "type": "string",
-                    "description": "name of the file that we're looking for"
+                    "description": "Name of the file to search for. Can be exact filename (e.g., 'config.json') or pattern with wildcards (e.g., '*.txt', 'test*'). Do not include path, just the filename."
+                },
+                "search_path": {
+                    "type": "string",
+                    "description": "Optional: Directory path to start the search from. If not provided, searches from current working directory. Use absolute paths for best results."
                 }
             },
             "required": ["file_name"],
@@ -36,15 +38,14 @@
         }
     },
     {
-        "type": "function",
         "name": "file_read",
-        "description": "read a file on the local disk using a file path",
-        "parameters": {
+        "description": "Read the contents of a file from the local filesystem. Returns the file content, typically as text or base64-encoded for binary files.",
+        "inputSchema": {
             "type": "object",
             "properties": {
                 "file_path": {
                     "type": "string",
-                    "description": "path of the file to read"
+                    "description": "Full absolute path to the file to read (e.g., '/home/user/documents/file.txt', '/etc/config.conf'). File must exist and be readable."
                 }
             },
             "required": ["file_path"],
@@ -52,15 +53,22 @@
         }
     },
     {
-        "type": "function",
         "name": "file_list",
-        "description": "list all files in the directory specified",
-        "parameters": {
+        "description": "List all files and subdirectories in a specified directory. Returns file names, sizes, permissions, and modification dates.",
+        "inputSchema": {
             "type": "object",
             "properties": {
                 "directory": {
                     "type": "string",
-                    "description": "directory to list. This is optional, if not specifed the current workdir directory (CWD) will be used. The return value will be a list of files and some meta-data"
+                    "description": "Full path to the directory to list (e.g., '/home/user/', '/tmp/', './'). If not provided, lists the current working directory. Use '.' for current directory or '..' for parent directory."
+                },
+                "show_hidden": {
+                    "type": "boolean",
+                    "description": "Whether to include hidden files (files starting with '.') in the listing. Defaults to false."
+                },
+                "recursive": {
+                    "type": "boolean",
+                    "description": "Whether to recursively list files in subdirectories. Defaults to false (only immediate directory contents)."
                 }
             },
             "additionalProperties": false

@@ -6,7 +6,8 @@ use crate::{
     config::loader::AdoConfig,
     data::types::{AdoData, AdoDataMarkdown},
     error::{Error, Result},
-    llm::{claude::claude_chain::ClaudeChain, ollama::ollama_chain::OllamaChain, openai::openai_chain::OpenAIChain},
+    llm::{claude::claude_chain::ClaudeChain, ollama::ollama_chain::OllamaChain},
+    mcp::matrix::McpMatrix,
     ui::ConsoleDisplayTrait,
 };
 
@@ -38,7 +39,7 @@ pub enum LLMToolState {
 
 #[async_trait(?Send)]
 pub trait LLMChainTrait {
-    async fn link<C>(&mut self, content: &str, console: &mut C) -> Result<()>
+    async fn link<C>(&mut self, mcp: &McpMatrix, content: &str, console: &mut C) -> Result<()>
     where
         C: ConsoleDisplayTrait;
     async fn message(&self, content: &str) -> Result<String>;
@@ -47,24 +48,22 @@ pub trait LLMChainTrait {
     fn change_model<S: AsRef<str>>(&mut self, _model: S);
     fn usage(&self) -> LLMUsage;
     fn dump_chain(&self) -> Result<AdoData>;
-    fn tool(&mut self, _state: LLMToolState) -> Result<()> {
+    fn enable_mcp(&mut self, _mcp: &McpMatrix) -> Result<()> {
+        Err(Error::NotImplemented)
+    }
+    fn disable_mcp(&mut self) -> Result<()> {
         Err(Error::NotImplemented)
     }
 }
 
 pub enum LLMChain {
-    OpenAI(Box<OpenAIChain>),
     Ollama(Box<OllamaChain>),
     Claude(Box<ClaudeChain>),
 }
 
 impl LLMChain {
-    pub fn new(config: &AdoConfig) -> Result<LLMChain> {
+    pub fn new(config: &AdoConfig) -> Result<Self> {
         let chain = match config.llm_provider() {
-            "openai" => {
-                let chain = OpenAIChain::new(config)?;
-                LLMChain::OpenAI(Box::new(chain))
-            }
             "ollama" => {
                 let chain = OllamaChain::new(config)?;
                 LLMChain::Ollama(Box::new(chain))
@@ -84,26 +83,23 @@ impl LLMChain {
 
     pub async fn message(&self, content: &str) -> Result<String> {
         match self {
-            LLMChain::OpenAI(openai) => openai.message(content).await,
             LLMChain::Ollama(ollama) => ollama.message(content).await,
             LLMChain::Claude(claude) => claude.message(content).await,
         }
     }
 
-    pub async fn link<C>(&mut self, content: &str, console: &mut C) -> Result<()>
+    pub async fn link<C>(&mut self, mcp: &McpMatrix, content: &str, console: &mut C) -> Result<()>
     where
         C: ConsoleDisplayTrait,
     {
         match self {
-            LLMChain::OpenAI(openai) => openai.link(content, console).await,
-            LLMChain::Ollama(ollama) => ollama.link(content, console).await,
-            LLMChain::Claude(claude) => claude.link(content, console).await,
+            LLMChain::Ollama(ollama) => ollama.link(mcp, content, console).await,
+            LLMChain::Claude(claude) => claude.link(mcp, content, console).await,
         }
     }
 
     pub fn reset(&mut self) {
         match self {
-            LLMChain::OpenAI(openai) => openai.reset(),
             LLMChain::Ollama(ollama) => ollama.reset(),
             LLMChain::Claude(claude) => claude.reset(),
         }
@@ -111,7 +107,6 @@ impl LLMChain {
 
     pub fn model(&self) -> &str {
         match self {
-            LLMChain::OpenAI(openai) => openai.model(),
             LLMChain::Ollama(ollama) => ollama.model(),
             LLMChain::Claude(claude) => claude.model(),
         }
@@ -122,7 +117,6 @@ impl LLMChain {
         S: AsRef<str>,
     {
         match self {
-            LLMChain::OpenAI(openai) => openai.change_model(model),
             LLMChain::Ollama(ollama) => ollama.change_model(model),
             LLMChain::Claude(claude) => claude.change_model(model),
         }
@@ -130,7 +124,6 @@ impl LLMChain {
 
     pub fn usage(&self) -> LLMUsage {
         match self {
-            LLMChain::OpenAI(openai) => openai.usage(),
             LLMChain::Ollama(ollama) => ollama.usage(),
             LLMChain::Claude(claude) => claude.usage(),
         }
@@ -138,17 +131,22 @@ impl LLMChain {
 
     pub fn dump_chain(&self) -> Result<AdoData> {
         match self {
-            LLMChain::OpenAI(openai) => openai.dump_chain(),
             LLMChain::Ollama(ollama) => ollama.dump_chain(),
             LLMChain::Claude(claude) => claude.dump_chain(),
         }
     }
 
-    pub fn tool(&mut self, state: LLMToolState) -> Result<()> {
+    pub fn enable_mcp(&mut self, mcp: &McpMatrix) -> Result<()> {
         match self {
-            LLMChain::OpenAI(openai) => openai.tool(state),
-            LLMChain::Ollama(ollama) => ollama.tool(state),
-            LLMChain::Claude(claude) => claude.tool(state),
+            LLMChain::Ollama(ollama) => ollama.enable_mcp(mcp),
+            LLMChain::Claude(claude) => claude.enable_mcp(mcp),
+        }
+    }
+
+    pub fn disable_mcp(&mut self) -> Result<()> {
+        match self {
+            LLMChain::Ollama(ollama) => ollama.disable_mcp(),
+            LLMChain::Claude(claude) => claude.disable_mcp(),
         }
     }
 }

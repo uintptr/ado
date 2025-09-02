@@ -46,7 +46,6 @@ dependencies = [
  "clap",
  "console_error_panic_hook",
  "derive_more",
- "fern",
  "getrandom 0.2.16",
  "glob",
  "gloo-utils",
@@ -1742,9 +1741,7 @@ dependencies = [
 
 [[package]]
 name = "omcp"
-version = "0.1.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9e5fb5cdfb22c9bd9a96874a4b4805db1c273081e4a23256d8c9b40f8b923bae"
+version = "0.1.2"
 dependencies = [
  "async-trait",
  "clap",

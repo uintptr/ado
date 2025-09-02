@@ -1,14 +1,20 @@
 [
     {
-        "type": "function",
         "name": "whois_query",
-        "description": "query the whois database if a domain name exists",
-        "parameters": {
+        "description": "Look up domain registration information using the WHOIS protocol. Returns details about domain ownership, registration dates, nameservers, and contact information.",
+        "inputSchema": {
             "type": "object",
             "properties": {
                 "domain_name": {
                     "type": "string",
-                    "description": "Name of the domain name to query. The input name must look like a proper domain name"
+                    "description": "The domain name to query. Must be a valid domain format without protocol or paths. Examples: 'google.com', 'example.org', 'subdomain.example.net'. Do not include 'https://' or 'www.' prefixes unless they are part of the actual domain name.",
+                    "pattern": "^[a-zA-Z0-9]([a-zA-Z0-9\\-]{0,61}[a-zA-Z0-9])?\\.[a-zA-Z]{2,}$"
+                },
+                "query_type": {
+                    "type": "string",
+                    "description": "Type of WHOIS information to retrieve. Options: 'full' (complete WHOIS record), 'summary' (key details only), 'availability' (check if domain is available for registration).",
+                    "enum": ["full", "summary", "availability"],
+                    "default": "full"
                 }
             },
             "required": ["domain_name"],

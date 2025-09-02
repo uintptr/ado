@@ -1,47 +1,16 @@
-use std::collections::HashMap;
-
 use derive_more::Debug;
 use log::{error, info};
+use omcp::types::McpTool;
 use serde::{Deserialize, Serialize};
 
 use crate::{
     error::Result,
-    mcp::types::ToolType,
     tools::assets::{FunctionAssets, FunctionAssetsPlatform},
 };
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct ToolProperties {
-    #[serde(rename = "type")]
-    pub property_type: ToolType,
-    pub description: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub items: Option<ToolParameters>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct ToolParameters {
-    #[serde(rename = "type")]
-    pub param_type: ToolType,
-    pub properties: HashMap<String, ToolProperties>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub required: Option<Vec<String>>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct ToolFunction {
-    #[serde(rename = "type")]
-    function_type: ToolType,
-    pub name: String,
-    pub description: String,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub parameters: Option<ToolParameters>,
-    returns: Option<ToolParameters>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
 pub struct Tools {
-    pub list: Vec<ToolFunction>,
+    pub list: Vec<McpTool>,
 }
 
 impl Tools {
@@ -63,7 +32,7 @@ impl Tools {
 
             let content = String::from_utf8_lossy(&f.data);
 
-            let inner_list: Vec<ToolFunction> = serde_json::from_str(&content)?;
+            let inner_list: Vec<McpTool> = serde_json::from_str(&content)?;
 
             list.extend(inner_list);
         }
@@ -81,7 +50,7 @@ impl Tools {
 
             let content = String::from_utf8_lossy(&f.data);
 
-            let inner_list: Vec<ToolFunction> = serde_json::from_str(&content)?;
+            let inner_list: Vec<McpTool> = serde_json::from_str(&content)?;
 
             list.extend(inner_list);
         }

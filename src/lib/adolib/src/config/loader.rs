@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     const_vars::{CONFIG_FILE_NAME, DOT_DIRECTORY, STORE_PERMANENT},
     error::{Error, Result},
-    llm::config::{ClaudeConfig, ConfigOllama, OpenAiConfig},
+    llm::config::{ClaudeConfig, ConfigOllama},
     mcp::types::McpConfig,
     search::google::GoogleConfig,
     storage::{PersistentStorageTrait, persistent::PersistentStorage},
@@ -19,7 +19,6 @@ use crate::{
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct ConfigLlm {
-    openai: Option<OpenAiConfig>,
     ollama: Option<ConfigOllama>,
     claude: Option<ClaudeConfig>,
     provider: String,
@@ -101,6 +100,14 @@ impl AdoConfig {
         Ok(AdoConfig::new(source, config_file))
     }
 
+    pub fn from_cwd() -> Result<Self> {
+        let cwd = env::current_dir()?;
+
+        let config_path = cwd.join("config").join("config.toml");
+
+        AdoConfig::from_path(config_path)
+    }
+
     pub fn from_default() -> Result<Self> {
         let rel_config = Path::new("config").join(CONFIG_FILE_NAME);
 
@@ -157,13 +164,6 @@ impl AdoConfig {
         }
     }
 
-    pub fn openai(&self) -> Result<&OpenAiConfig> {
-        match &self.config_file.llm.openai {
-            Some(v) => Ok(v),
-            None => Err(Error::ConfigNotFound),
-        }
-    }
-
     pub fn claude(&self) -> Result<&ClaudeConfig> {
         match &self.config_file.llm.claude {
             Some(v) => Ok(v),
@@ -175,6 +175,13 @@ impl AdoConfig {
         match &self.config_file.search {
             Some(v) => Ok(v),
             None => Err(Error::ConfigNotFound),
+        }
+    }
+
+    pub fn mcp_servers(&self) -> Option<&HashMap<String, McpConfig>> {
+        match &self.config_file.mcp {
+            Some(v) => Some(v),
+            None => None,
         }
     }
 }

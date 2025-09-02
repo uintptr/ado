@@ -1,15 +1,17 @@
 use std::collections::HashMap;
+use std::fs;
 
 use derive_more::Display;
 use log::{error, info};
+use omcp::types::McpTool;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 use crate::error::Error;
 use crate::error::Result;
 use crate::llm::claude::claude_config::ClaudeConfig;
-use crate::mcp::types::McpTool;
-use crate::tools::loader::Tools;
+use crate::mcp::matrix::McpMatrix;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ClaudeErrorMessage {
@@ -58,7 +60,7 @@ pub struct ClaudeContent {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub id: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub input: Option<HashMap<String, String>>,
+    pub input: Option<HashMap<String, Value>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
 }
@@ -184,25 +186,6 @@ impl ClaudeMessages {
         self.system.push(content);
     }
 
-    pub fn with_tools(&mut self, tools: Tools) {
-        self.tools.clear();
-
-        for t in tools.list {
-            let claude_tool: McpTool = match t.try_into() {
-                Ok(v) => v,
-                Err(e) => {
-                    error!("{e}");
-                    continue;
-                }
-            };
-            self.tools.push(claude_tool);
-        }
-    }
-
-    pub fn without_tools(&mut self) {
-        self.tools.clear();
-    }
-
     pub fn add_content<C>(&mut self, role: ClaudeRole, content: C)
     where
         C: AsRef<str>,
@@ -213,6 +196,14 @@ impl ClaudeMessages {
 
     pub fn reset(&mut self) {
         self.messages = vec![]
+    }
+
+    pub fn with_tools(&mut self, mcp: &McpMatrix) {
+        self.tools.clear();
+
+        for tool in mcp.list_tools() {
+            self.tools.push(tool);
+        }
     }
 }
 
@@ -271,6 +262,7 @@ impl ClaudeApi {
                 //
                 // Try to print it nicely, best effort
                 //
+                fs::write("/tmp/claude_serde_error.json", resp_json.as_bytes())?;
                 let claude_error: ClaudeError = serde_json::from_str(resp_json)?;
                 let pretty_error = serde_json::to_string_pretty(&claude_error)?;
                 let pretty_error = format!("# Claude Error\n\n```json\n{pretty_error}\n```");

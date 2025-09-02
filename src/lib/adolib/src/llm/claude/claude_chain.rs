@@ -3,22 +3,22 @@ use crate::{
     data::types::AdoData,
     error::Result,
     llm::{
-        chain::{LLMChainTrait, LLMToolState, LLMUsage},
+        chain::{LLMChainTrait, LLMUsage},
         claude::{
             claude_api::{ClaudeApi, ClaudeContentType, ClaudeMessages, ClaudeResponse, ClaudeRole},
             claude_config::ClaudeToolChoiceType,
         },
     },
-    tools::{handler::ToolHandler, loader::Tools},
+    mcp::matrix::McpMatrix,
     ui::ConsoleDisplayTrait,
 };
 
 use async_trait::async_trait;
+use omcp::types::McpParams;
 
 pub struct ClaudeChain {
     api: ClaudeApi,
     messages: ClaudeMessages,
-    tool_handler: ToolHandler,
     tokens: LLMUsage,
 }
 
@@ -43,8 +43,7 @@ impl ClaudeChain {
                 ClaudeToolChoiceType::None => {}
                 ClaudeToolChoiceType::Any => {
                     // try to load the tools from resources
-                    let tools = Tools::load()?;
-                    messages.with_tools(tools);
+                    todo!()
                 }
             }
         }
@@ -52,12 +51,11 @@ impl ClaudeChain {
         Ok(Self {
             api: ClaudeApi::new(claude)?,
             messages,
-            tool_handler: ToolHandler::new(config)?,
             tokens: LLMUsage::default(),
         })
     }
 
-    async fn process_content<C>(&mut self, response: &ClaudeResponse, console: &mut C) -> Result<()>
+    async fn process_content<C>(&mut self, mcp: &McpMatrix, response: &ClaudeResponse, console: &mut C) -> Result<()>
     where
         C: ConsoleDisplayTrait,
     {
@@ -71,15 +69,14 @@ impl ClaudeChain {
                 }
                 ClaudeContentType::ToolUse => {
                     if let Some(name) = &content.name {
-                        let data = self.tool_handler.call(name, content.input.as_ref()).await?;
+                        let mut params = McpParams::new(name);
 
-                        let str_ret: Result<String> = data.clone().try_into();
-
-                        if let Ok(string_value) = str_ret {
-                            self.messages.add_content(ClaudeRole::User, string_value);
+                        if let Some(input) = &content.input {
+                            let args = input.clone();
+                            params.set_argument(args);
                         }
 
-                        console.display(data)?;
+                        mcp.call(&params).await?;
                     }
                 }
             }
@@ -91,7 +88,7 @@ impl ClaudeChain {
 
 #[async_trait(?Send)]
 impl LLMChainTrait for ClaudeChain {
-    async fn link<C>(&mut self, content: &str, console: &mut C) -> Result<()>
+    async fn link<C>(&mut self, mcp: &McpMatrix, content: &str, console: &mut C) -> Result<()>
     where
         C: ConsoleDisplayTrait,
     {
@@ -104,7 +101,7 @@ impl LLMChainTrait for ClaudeChain {
 
         // in its own function so it can be tested from a local
         // file
-        self.process_content(&resp, console).await
+        self.process_content(mcp, &resp, console).await
     }
 
     async fn message(&self, content: &str) -> Result<String> {
@@ -140,17 +137,8 @@ impl LLMChainTrait for ClaudeChain {
         Ok(AdoData::Json(json_chain))
     }
 
-    fn tool(&mut self, state: LLMToolState) -> Result<()> {
-        match state {
-            LLMToolState::Disable => {
-                self.messages.without_tools();
-            }
-            LLMToolState::Enable => {
-                let tools = Tools::load()?;
-                self.messages.with_tools(tools);
-            }
-        }
-
+    fn enable_mcp(&mut self, mcp: &McpMatrix) -> Result<()> {
+        self.messages.with_tools(mcp);
         Ok(())
     }
 }
@@ -173,6 +161,7 @@ mod tests {
             claude::{claude_api::ClaudeResponse, claude_chain::ClaudeChain},
         },
         logging::logger::setup_logger,
+        mcp::matrix::McpMatrix,
         ui::NopConsole,
     };
 
@@ -197,8 +186,10 @@ mod tests {
 
         let mut console = NopConsole::new();
 
-        chain.link("Hello World", &mut console).await.unwrap();
-        chain.link("Can you tell a joke", &mut console).await.unwrap();
+        let mcp = McpMatrix::new();
+
+        chain.link(&mcp, "Hello World", &mut console).await.unwrap();
+        chain.link(&mcp, "Can you tell a joke", &mut console).await.unwrap();
 
         chain.message("hello world").await.unwrap();
     }
@@ -217,25 +208,33 @@ mod tests {
 
         let mut console = NopConsole::new();
 
-        let ret = chain.process_content(&resp, &mut console).await.unwrap();
+        let mcp = McpMatrix::new();
+
+        let ret = chain.process_content(&mcp, &resp, &mut console).await.unwrap();
 
         info!("ret: {ret:?}");
     }
 
     #[tokio::test]
-    async fn test_tool() {
+    async fn test_mcp_response() {
         setup_logger(true).unwrap();
 
-        let config_file = AdoConfig::from_default().unwrap();
-        let mut chain = ClaudeChain::new(&config_file).unwrap();
+        let config = AdoConfig::from_default().unwrap();
+        let mut chain = ClaudeChain::new(&config).unwrap();
 
-        let test_file = Path::new("test").join("claude_tool_use.json");
+        let test_file = Path::new("test").join("claude_mcp_use.json");
         let test_file = find_file(test_file).unwrap();
         let resp_json = fs::read_to_string(test_file).unwrap();
         let resp: ClaudeResponse = serde_json::from_str(&resp_json).unwrap();
 
         let mut console = NopConsole::new();
 
-        chain.process_content(&resp, &mut console).await.unwrap();
+        let mut mcp = McpMatrix::new();
+
+        mcp.load(&config).await.unwrap();
+
+        chain.process_content(&mcp, &resp, &mut console).await.unwrap();
+
+        info!("done");
     }
 }

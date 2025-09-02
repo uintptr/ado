@@ -39,7 +39,6 @@ wasm-bindgen-futures = { workspace = true }
 console_error_panic_hook = { workspace = true }
 web-sys = { workspace = true }
 gloo-utils = { workspace = true }
-fern = { workspace = true }
 chrono = { workspace = true }
 
 [dev-dependencies]
