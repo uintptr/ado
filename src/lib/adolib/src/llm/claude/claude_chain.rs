@@ -76,7 +76,9 @@ impl ClaudeChain {
                             params.set_argument(args);
                         }
 
-                        mcp.call(&params).await?;
+                        let mcp_data = mcp.call(&params).await?;
+
+                        self.messages.add_content(ClaudeRole::User, mcp_data);
                     }
                 }
             }

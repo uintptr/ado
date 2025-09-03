@@ -270,7 +270,7 @@ impl McpMatrix {
         Ok(())
     }
 
-    pub async fn call<P>(&self, params: P) -> Result<AdoData>
+    pub async fn call<P>(&self, params: P) -> Result<String>
     where
         P: AsRef<McpParams>,
     {
@@ -285,7 +285,7 @@ impl McpMatrix {
 
         let result = client.call(params.as_ref()).await?;
 
-        Ok(AdoData::Json(result))
+        Ok(result)
     }
 
     pub fn list_tools(&self) -> Vec<McpTool> {
