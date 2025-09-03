@@ -5,7 +5,7 @@ use crate::{
     llm::{
         chain::{LLMChainTrait, LLMUsage},
         claude::{
-            claude_api::{ClaudeApi, ClaudeContentType, ClaudeMessages, ClaudeResponse, ClaudeRole},
+            claude_api::{ClaudeApi, ClaudeContentType, ClaudeMessages, ClaudeResponse, ClaudeRole, ClaudeStopReason},
             claude_config::ClaudeToolChoiceType,
         },
     },
@@ -14,6 +14,7 @@ use crate::{
 };
 
 use async_trait::async_trait;
+use log::info;
 use omcp::types::McpParams;
 
 pub struct ClaudeChain {
@@ -96,14 +97,27 @@ impl LLMChainTrait for ClaudeChain {
     {
         self.messages.add_content(ClaudeRole::User, content);
 
-        let resp = self.api.chat(&self.messages).await?;
+        loop {
+            let resp = self.api.chat(&self.messages).await?;
 
-        self.tokens.input_tokens += resp.usage.input_tokens;
-        self.tokens.output_tokens += resp.usage.output_tokens;
+            self.tokens.input_tokens += resp.usage.input_tokens;
+            self.tokens.output_tokens += resp.usage.output_tokens;
 
-        // in its own function so it can be tested from a local
-        // file
-        self.process_content(mcp, &resp, console).await
+            // in its own function so it can be tested from a local
+            // file
+            self.process_content(mcp, &resp, console).await?;
+
+            //
+            // Keep going until it's done
+            //
+            if let ClaudeStopReason::EndTurn = resp.stop_reason {
+                break;
+            } else {
+                info!("{} != EndTurn. Continuing", resp.stop_reason);
+            }
+        }
+
+        Ok(())
     }
 
     async fn message(&self, content: &str) -> Result<String> {
