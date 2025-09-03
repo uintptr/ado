@@ -254,7 +254,7 @@ impl UserCommands {
 
         for t in tools {
             md_vec.push(format!("## {}", t.name));
-            md_vec.push(format!("{}", t.description));
+            md_vec.push(t.description.to_string());
         }
 
         Ok(md_vec.join("\n"))

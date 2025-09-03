@@ -9,7 +9,6 @@ use tokio::sync::Mutex;
 
 use crate::{
     config::loader::AdoConfig,
-    data::types::AdoData,
     error::{Error, Result},
     mcp::{
         assets::{McpAssetsAll, McpAssetsPlatform},
