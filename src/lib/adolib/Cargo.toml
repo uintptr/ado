@@ -40,6 +40,7 @@ console_error_panic_hook = { workspace = true }
 web-sys = { workspace = true }
 gloo-utils = { workspace = true }
 chrono = { workspace = true }
+fern = { workspace = true }
 
 [dev-dependencies]
 uuid = { workspace = true }
