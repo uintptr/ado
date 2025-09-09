@@ -5,7 +5,10 @@ use crate::{
     llm::{
         chain::{LLMChainTrait, LLMUsage},
         claude::{
-            claude_api::{ClaudeApi, ClaudeContentType, ClaudeMessages, ClaudeResponse, ClaudeRole, ClaudeStopReason},
+            claude_api::{
+                ClaudeApi, ClaudeContentType, ClaudeMessages, ClaudeResponse, ClaudeRole, ClaudeStopReason,
+                ClaudeToolResult,
+            },
             claude_config::ClaudeToolChoiceType,
         },
     },
@@ -22,6 +25,9 @@ pub struct ClaudeChain {
     messages: ClaudeMessages,
     tokens: LLMUsage,
 }
+
+// https://docs.anthropic.com/en/api/messages
+// https://docs.anthropic.com/en/docs/agents-and-tools/tool-use/implement-tool-use#example-of-tool-result-with-documents
 
 ///////////////////////////////////////////////////////////////////////////////
 // IMPL
@@ -65,7 +71,7 @@ impl ClaudeChain {
                 ClaudeContentType::Text => {
                     if let Some(text) = &content.text {
                         console.display_string(text)?;
-                        self.messages.add_content(ClaudeRole::Assistant, text);
+                        self.messages.add_message(ClaudeRole::Assistant, text);
                     }
                 }
                 ClaudeContentType::ToolUse => {
@@ -77,10 +83,17 @@ impl ClaudeChain {
                             params.set_argument(args);
                         }
 
+                        self.messages.add_content(ClaudeRole::Assistant, &content)?;
+
                         let mcp_data = mcp.call(&params).await?;
 
-                        self.messages.add_content(ClaudeRole::User, mcp_data);
+                        let result = ClaudeToolResult::with_request(&content, mcp_data);
+
+                        self.messages.add_result(&result)?;
                     }
+                }
+                ClaudeContentType::ToolResult => {
+                    panic!()
                 }
             }
         }
@@ -95,7 +108,7 @@ impl LLMChainTrait for ClaudeChain {
     where
         C: ConsoleDisplayTrait,
     {
-        self.messages.add_content(ClaudeRole::User, content);
+        self.messages.add_message(ClaudeRole::User, content);
 
         loop {
             let resp = self.api.chat(&self.messages).await?;

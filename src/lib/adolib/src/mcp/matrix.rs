@@ -208,10 +208,13 @@ impl McpMatrix {
                     let tool = ToolFileWrite::new();
                     BakedClient::new(tool)
                 }
-                "browse" => {
-                    let tool = ToolBrowse::new();
-                    BakedClient::new(tool)
-                }
+                "browse" => match ToolBrowse::new() {
+                    Ok(v) => BakedClient::new(v),
+                    Err(e) => {
+                        error!("{e}");
+                        continue;
+                    }
+                },
                 "file_find" => {
                     let tool = ToolFileFind::new();
                     BakedClient::new(tool)

@@ -39,7 +39,7 @@ pub enum ClaudeRole {
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ClaudeMessage {
     pub role: ClaudeRole,
-    pub content: String,
+    pub content: Value,
 }
 
 #[derive(Debug, Default, Deserialize, Serialize)]
@@ -49,6 +49,18 @@ pub enum ClaudeContentType {
     Text,
     #[serde(rename = "tool_use")]
     ToolUse,
+    #[serde(rename = "tool_result")]
+    ToolResult,
+}
+
+#[derive(Debug, Default, Deserialize, Serialize)]
+pub struct ClaudeToolResult {
+    #[serde(rename = "type")]
+    pub content_type: ClaudeContentType,
+    pub tool_use_id: String,
+    pub content: String,
+    #[serde(skip_serializing_if = "is_false")]
+    pub is_error: bool,
 }
 
 #[derive(Debug, Default, Deserialize, Serialize)]
@@ -133,19 +145,62 @@ pub struct ClaudeMessages {
     tools: Vec<McpTool>,
 }
 
+fn is_false(value: &bool) -> bool {
+    *value
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // IMPL
 ///////////////////////////////////////////////////////////////////////////////
 
-impl ClaudeMessage {
-    pub fn new<C>(role: ClaudeRole, content: C) -> Self
+impl ClaudeToolResult {
+    pub fn with_request<S>(request: &ClaudeContent, result: S) -> Self
     where
-        C: AsRef<str>,
+        S: AsRef<str>,
+    {
+        let tool_id = match &request.id {
+            Some(v) => v.to_string(),
+            None => "unknown".to_string(),
+        };
+
+        ClaudeToolResult {
+            content_type: ClaudeContentType::ToolResult,
+            tool_use_id: tool_id,
+            content: result.as_ref().to_string(),
+            is_error: false,
+        }
+    }
+}
+
+impl ClaudeMessage {
+    pub fn with_message<S>(role: ClaudeRole, message: S) -> Self
+    where
+        S: AsRef<str>,
     {
         Self {
             role,
-            content: content.as_ref().to_string(),
+            content: Value::String(message.as_ref().to_string()),
         }
+    }
+
+    pub fn with_content_list(role: ClaudeRole, content: Vec<&ClaudeContent>) -> Result<Self> {
+        let object_str = serde_json::to_string(&content)?;
+        let array: Vec<Value> = serde_json::from_str(&object_str)?;
+
+        Ok(Self {
+            role,
+            content: Value::Array(array),
+        })
+    }
+
+    pub fn with_tool_results(role: ClaudeRole, result: Vec<&ClaudeToolResult>) -> Result<Self> {
+        let object_str = serde_json::to_string(&result)?;
+        let array: Vec<Value> = serde_json::from_str(&object_str)?;
+
+        Ok(Self {
+            role,
+            content: Value::Array(array),
+        })
     }
 }
 
@@ -186,12 +241,33 @@ impl ClaudeMessages {
         self.system.push(content);
     }
 
-    pub fn add_content<C>(&mut self, role: ClaudeRole, content: C)
+    pub fn add_message<C>(&mut self, role: ClaudeRole, message: C)
     where
         C: AsRef<str>,
     {
-        let message = ClaudeMessage::new(role, content);
+        let message = ClaudeMessage::with_message(role, message);
         self.messages.push(message);
+    }
+
+    pub fn add_content(&mut self, role: ClaudeRole, content: &ClaudeContent) -> Result<()> {
+        let mut content_list = Vec::new();
+
+        content_list.push(content);
+
+        let message = ClaudeMessage::with_content_list(role, content_list)?;
+
+        self.messages.push(message);
+        Ok(())
+    }
+
+    pub fn add_result(&mut self, tool_result: &ClaudeToolResult) -> Result<()> {
+        let mut content_list = Vec::new();
+
+        content_list.push(tool_result);
+
+        let message = ClaudeMessage::with_tool_results(ClaudeRole::User, content_list)?;
+        self.messages.push(message);
+        Ok(())
     }
 
     pub fn reset(&mut self) {
@@ -277,7 +353,7 @@ impl ClaudeApi {
     {
         let mut chat = ClaudeMessages::new(&self.config.model, 4096);
 
-        chat.add_content(ClaudeRole::User, content.as_ref());
+        chat.add_message(ClaudeRole::User, content);
 
         self.chat(&chat).await
     }
