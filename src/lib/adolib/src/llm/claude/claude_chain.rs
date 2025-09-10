@@ -85,9 +85,12 @@ impl ClaudeChain {
 
                         self.messages.add_content(ClaudeRole::Assistant, &content)?;
 
-                        let mcp_data = mcp.call(&params).await?;
+                        let (mcp_data, success) = match mcp.call(&params).await {
+                            Ok(v) => (v, true),
+                            Err(e) => (format!("error: {e}"), false),
+                        };
 
-                        let result = ClaudeToolResult::with_request(&content, mcp_data);
+                        let result = ClaudeToolResult::new(&content, mcp_data, success);
 
                         self.messages.add_result(&result)?;
                     }

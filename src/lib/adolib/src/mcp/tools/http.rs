@@ -1,3 +1,4 @@
+use async_trait::async_trait;
 use log::info;
 use omcp::{client::types::BakedMcpToolTrait, types::McpParams};
 
@@ -19,10 +20,11 @@ impl ToolHttpGet {
     }
 }
 
+#[async_trait(?Send)]
 impl BakedMcpToolTrait for ToolHttpGet {
     type Error = Error;
 
-    fn call(&mut self, params: &McpParams) -> Result<String> {
+    async fn call(&mut self, params: &McpParams) -> Result<String> {
         info!("Hello from {}", params.tool_name);
         Ok("".into())
     }
@@ -38,10 +40,11 @@ impl ToolHttpPost {
     }
 }
 
+#[async_trait(?Send)]
 impl BakedMcpToolTrait for ToolHttpPost {
     type Error = Error;
 
-    fn call(&mut self, params: &McpParams) -> Result<String> {
+    async fn call(&mut self, params: &McpParams) -> Result<String> {
         info!("Hello from {}", params.tool_name);
         Ok("".into())
     }

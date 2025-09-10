@@ -1,5 +1,6 @@
 use std::{path::PathBuf, process::Command};
 
+use async_trait::async_trait;
 use log::info;
 use omcp::{client::types::BakedMcpToolTrait, types::McpParams};
 use serde::Serialize;
@@ -19,16 +20,16 @@ pub struct ToolBrowse {
 impl ToolBrowse {
     pub fn new() -> Result<Self> {
         let xdg_open = which("xdg-open")?;
-
         Ok(Self { xdg_open })
     }
 }
 
+#[async_trait(?Send)]
 impl BakedMcpToolTrait for ToolBrowse {
     type Error = Error;
 
-    fn call(&mut self, params: &McpParams) -> Result<String> {
-        let url = params.get("url")?.as_str().ok_or(Error::InvalidFormat)?;
+    async fn call(&mut self, params: &McpParams) -> Result<String> {
+        let url = params.get_string("url")?;
 
         info!("browsing to {url}");
 

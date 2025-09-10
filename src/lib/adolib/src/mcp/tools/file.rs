@@ -1,3 +1,4 @@
+use async_trait::async_trait;
 use log::info;
 use omcp::{client::types::BakedMcpToolTrait, types::McpParams};
 
@@ -22,10 +23,11 @@ impl ToolFileRead {
     }
 }
 
+#[async_trait(?Send)]
 impl BakedMcpToolTrait for ToolFileRead {
     type Error = Error;
 
-    fn call(&mut self, params: &McpParams) -> Result<String> {
+    async fn call(&mut self, params: &McpParams) -> Result<String> {
         info!("Hello from {}", params.tool_name);
         Ok("".into())
     }
@@ -41,10 +43,11 @@ impl ToolFileWrite {
     }
 }
 
+#[async_trait(?Send)]
 impl BakedMcpToolTrait for ToolFileWrite {
     type Error = Error;
 
-    fn call(&mut self, params: &McpParams) -> Result<String> {
+    async fn call(&mut self, params: &McpParams) -> Result<String> {
         info!("Hello from {}", params.tool_name);
         Ok("".into())
     }
@@ -60,10 +63,11 @@ impl ToolFileFind {
     }
 }
 
+#[async_trait(?Send)]
 impl BakedMcpToolTrait for ToolFileFind {
     type Error = Error;
 
-    fn call(&mut self, params: &McpParams) -> Result<String> {
+    async fn call(&mut self, params: &McpParams) -> Result<String> {
         info!("Hello from {}", params.tool_name);
         Ok("".into())
     }
@@ -78,10 +82,11 @@ impl ToolFileList {
     }
 }
 
+#[async_trait(?Send)]
 impl BakedMcpToolTrait for ToolFileList {
     type Error = Error;
 
-    fn call(&mut self, params: &McpParams) -> Result<String> {
+    async fn call(&mut self, params: &McpParams) -> Result<String> {
         info!("Hello from {}", params.tool_name);
         Ok("".into())
     }

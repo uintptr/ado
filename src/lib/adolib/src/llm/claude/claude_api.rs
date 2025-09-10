@@ -146,7 +146,7 @@ pub struct ClaudeMessages {
 }
 
 fn is_false(value: &bool) -> bool {
-    *value
+    !*value
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -154,7 +154,7 @@ fn is_false(value: &bool) -> bool {
 ///////////////////////////////////////////////////////////////////////////////
 
 impl ClaudeToolResult {
-    pub fn with_request<S>(request: &ClaudeContent, result: S) -> Self
+    pub fn new<S>(request: &ClaudeContent, result: S, success: bool) -> Self
     where
         S: AsRef<str>,
     {
@@ -167,7 +167,7 @@ impl ClaudeToolResult {
             content_type: ClaudeContentType::ToolResult,
             tool_use_id: tool_id,
             content: result.as_ref().to_string(),
-            is_error: false,
+            is_error: !success,
         }
     }
 }
