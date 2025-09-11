@@ -191,7 +191,7 @@ impl McpMatrix {
         }
     }
 
-    fn load_embedded(&mut self) -> Result<()> {
+    fn load_embedded(&mut self, config: &AdoConfig) -> Result<()> {
         info!("Loading Embedded MCP Tools");
 
         let mcp_tools = load_embedded_tools();
@@ -243,10 +243,13 @@ impl McpMatrix {
                     let tool = ToolHttpPost::new();
                     BakedClient::new(tool)
                 }
-                "search" => {
-                    let tool = ToolWebSearch::new();
-                    BakedClient::new(tool)
-                }
+                "search" => match ToolWebSearch::new(config) {
+                    Ok(v) => BakedClient::new(v),
+                    Err(e) => {
+                        error!("{e}");
+                        continue;
+                    }
+                },
                 unk => {
                     error!("{unk} is not implemented");
                     panic!();
@@ -263,7 +266,7 @@ impl McpMatrix {
     }
 
     pub async fn load(&mut self, config: &AdoConfig) -> Result<()> {
-        if let Err(e) = self.load_embedded() {
+        if let Err(e) = self.load_embedded(config) {
             error!("Error Loading embedded tools ({e})")
         }
 
@@ -325,7 +328,9 @@ mod tests {
 
         let mut matrix = McpMatrix::new();
 
-        matrix.load_embedded()?;
+        let config = AdoConfig::from_default()?;
+
+        matrix.load_embedded(&config)?;
 
         let tools = matrix.list_tools();
 

@@ -2,13 +2,28 @@ use async_trait::async_trait;
 use log::info;
 use omcp::{client::types::BakedMcpToolTrait, types::McpParams};
 
-use crate::error::{Error, Result};
+use crate::{
+    config::loader::AdoConfig,
+    error::{Error, Result},
+    search::google::GoogleCSE,
+};
 
-pub struct ToolWebSearch {}
+pub struct ToolWebSearch {
+    google: GoogleCSE,
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// IMPL
+///////////////////////////////////////////////////////////////////////////////
+
+///////////////////////////////////////
+// WHOIS
+///////////////////////////////////////
 
 impl ToolWebSearch {
-    pub fn new() -> Self {
-        Self {}
+    pub fn new(config: &AdoConfig) -> Result<Self> {
+        let google = GoogleCSE::new(config)?;
+        Ok(Self { google })
     }
 }
 
@@ -17,7 +32,12 @@ impl BakedMcpToolTrait for ToolWebSearch {
     type Error = Error;
 
     async fn call(&mut self, params: &McpParams) -> Result<String> {
-        info!("Hello from {}", params.tool_name);
-        Ok("".into())
+        let query = params.get_string("query")?;
+
+        info!("search query {query}");
+
+        let data = self.google.query(query).await?;
+
+        Ok(data)
     }
 }
