@@ -24,6 +24,10 @@ pub enum Error {
     FileNotFoundError {
         file_path: PathBuf,
     },
+    FileTooLarge {
+        size: u64,
+        limit: u64,
+    },
     HomeDirNotFound,
     InvalidInputType {
         input: String,
@@ -119,6 +123,8 @@ pub enum Error {
     SledError(sled::Error),
     #[from]
     Omcp(omcp::error::Error),
+    #[from]
+    WalkDir(walkdir::Error),
 }
 
 impl core::fmt::Display for Error {
