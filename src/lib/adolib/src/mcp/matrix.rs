@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::Arc};
+use std::{collections::HashMap, rc::Rc};
 
 use log::{error, info};
 use omcp::{
@@ -123,7 +123,7 @@ fn load_embedded_tools() -> Vec<McpTool> {
 ///////////////////////////////////////////////////////////////////////////////
 
 pub struct McpToolEntry {
-    client: Arc<Mutex<Box<dyn OMcpClientTrait>>>,
+    client: Rc<Mutex<Box<dyn OMcpClientTrait>>>,
     tool: McpTool,
 }
 
@@ -133,7 +133,7 @@ pub struct McpMatrix {
 }
 
 impl McpToolEntry {
-    pub fn new(client: Arc<Mutex<Box<dyn OMcpClientTrait>>>, tool: McpTool) -> Self {
+    pub fn new(client: Rc<Mutex<Box<dyn OMcpClientTrait>>>, tool: McpTool) -> Self {
         Self { client, tool }
     }
 }
@@ -144,7 +144,7 @@ impl McpMatrix {
     }
 
     fn add_tools(&mut self, client: Box<dyn OMcpClientTrait>, mcp_tools: Vec<McpTool>) {
-        let client_arc = Arc::new(Mutex::new(client));
+        let client_arc = Rc::new(Mutex::new(client));
 
         for tool in mcp_tools {
             let name = tool.name.to_string();
@@ -259,7 +259,7 @@ impl McpMatrix {
                 }
             };
 
-            let client = Arc::new(Mutex::new(client));
+            let client = Rc::new(Mutex::new(client));
             let entry = McpToolEntry::new(client, t);
 
             self.tools.insert(name, entry);
