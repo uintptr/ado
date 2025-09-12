@@ -14,9 +14,7 @@ pub struct McpAssetsPlatform;
 #[folder = "tools/functions/all"]
 pub struct McpAssetsAll;
 
-/*
 #[cfg(not(target_arch = "wasm32"))]
 #[derive(Embed)]
 #[folder = "tools/whois"]
 pub struct McpWhoisAssets;
-*/

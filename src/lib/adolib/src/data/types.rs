@@ -3,7 +3,6 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     error::{Error, Result},
-    http::req::HttpResponse,
     llm::chain::LLMUsage,
     search::google::GoogleSearchResults,
     shell::ShellExit,
@@ -28,7 +27,6 @@ pub enum AdoData {
     Bytes(Vec<u8>),
     Json(String),
     Base64(String),
-    Http(HttpResponse),
     SearchData(GoogleSearchResults),
     LlmUsage(LLMUsage),
     UsageString(String),
@@ -52,7 +50,6 @@ impl AdoDataMarkdown for &AdoData {
             AdoData::Json(s) => format!("```json\n{s}\n```"),
             AdoData::Base64(b) => b.to_string().to_markdown()?,
             AdoData::SearchData(d) => d.to_markdown()?,
-            AdoData::Http(h) => h.to_markdown()?,
             AdoData::UsageString(s) => s.to_string().to_markdown()?,
             AdoData::Shell(s) => s.to_markdown()?,
             AdoData::Status(s) => s.to_markdown()?,
@@ -72,10 +69,6 @@ impl AdoDataBase64 for AdoData {
             AdoData::Json(s) => BASE64_STANDARD.encode(s),
             AdoData::Base64(s) => BASE64_STANDARD.encode(s),
             AdoData::Bytes(b) => BASE64_STANDARD.encode(b),
-            AdoData::Http(h) => {
-                let json_str = serde_json::to_string(&h)?;
-                BASE64_STANDARD.encode(json_str)
-            }
             AdoData::SearchData(s) => {
                 let json_str = serde_json::to_string(&s)?;
                 BASE64_STANDARD.encode(json_str)

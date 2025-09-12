@@ -231,10 +231,13 @@ impl McpMatrix {
                     let tool = ToolShellExec::new();
                     BakedClient::new(tool)
                 }
-                "whois_query" => {
-                    let tool = ToolWhoisQuery::new();
-                    BakedClient::new(tool)
-                }
+                "whois_query" => match ToolWhoisQuery::new() {
+                    Ok(v) => BakedClient::new(v),
+                    Err(e) => {
+                        error!("{e}");
+                        continue;
+                    }
+                },
                 "http_get" => {
                     let tool = ToolHttpGet::new();
                     BakedClient::new(tool)

@@ -125,6 +125,10 @@ pub enum Error {
     Omcp(omcp::error::Error),
     #[from]
     WalkDir(walkdir::Error),
+    #[from]
+    West1(reqwest::header::InvalidHeaderName),
+    #[from]
+    West2(reqwest::header::InvalidHeaderValue),
 }
 
 impl core::fmt::Display for Error {
