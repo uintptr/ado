@@ -1,15 +1,17 @@
+use std::{
+    path::PathBuf,
+    sync::atomic::{AtomicI32, Ordering},
+};
+
 use crate::{
     config::loader::AdoConfig,
     data::types::AdoData,
     error::Result,
     llm::{
         chain::{LLMChainTrait, LLMUsage},
-        claude::{
-            claude_api::{
-                ClaudeApi, ClaudeContentType, ClaudeMessages, ClaudeResponse, ClaudeRole, ClaudeStopReason,
-                ClaudeToolResult,
-            },
-            claude_config::ClaudeToolChoiceType,
+        claude::claude_api::{
+            ClaudeApi, ClaudeContentType, ClaudeMessages, ClaudeResponse, ClaudeRole, ClaudeStopReason,
+            ClaudeToolResult,
         },
     },
     mcp::matrix::McpMatrix,
@@ -17,11 +19,15 @@ use crate::{
 };
 
 use async_trait::async_trait;
-use log::info;
+use log::{error, info};
 use omcp::types::McpParams;
+use tokio::fs;
+use uuid::Uuid;
 
 pub struct ClaudeChain {
     api: ClaudeApi,
+    msg_id: AtomicI32,
+    log_dir: Option<PathBuf>,
     messages: ClaudeMessages,
     tokens: LLMUsage,
 }
@@ -45,18 +51,32 @@ impl ClaudeChain {
             }
         }
 
-        if let Some(tool_choice) = &claude.tool_choice {
-            match tool_choice.choice_type {
-                ClaudeToolChoiceType::None => {}
-                ClaudeToolChoiceType::Any => {
-                    // try to load the tools from resources
-                    todo!()
+        let log_dir = match &claude.logs {
+            Some(v) => match shellexpand::full(&v) {
+                Ok(v) => {
+                    let uuid = Uuid::new_v4().to_string();
+                    let log_dir = PathBuf::from(v.to_string()).join(uuid);
+
+                    match std::fs::create_dir_all(&log_dir) {
+                        Ok(_) => Some(log_dir),
+                        Err(e) => {
+                            error!("{e}");
+                            None
+                        }
+                    }
                 }
-            }
-        }
+                Err(e) => {
+                    error!("{e}");
+                    None
+                }
+            },
+            None => None,
+        };
 
         Ok(Self {
             api: ClaudeApi::new(claude)?,
+            msg_id: AtomicI32::new(0),
+            log_dir,
             messages,
             tokens: LLMUsage::default(),
         })
@@ -66,7 +86,25 @@ impl ClaudeChain {
     where
         C: ConsoleDisplayTrait,
     {
+        let mut sub_id = 0;
+        let msg_id = self.msg_id.load(Ordering::SeqCst);
+
         for content in response.content.iter() {
+            //
+            // Log response if needed
+            //
+            if let Some(log_dir) = &self.log_dir {
+                let file_name = format!("{msg_id:04}_{sub_id:04}_{}.json", response.id);
+                let file_path = log_dir.join(file_name);
+                sub_id += 1;
+
+                if let Ok(response_json) = serde_json::to_string_pretty(&response)
+                    && let Err(e) = fs::write(file_path, response_json.as_bytes()).await
+                {
+                    error!("{e}");
+                }
+            }
+
             match content.content_type {
                 ClaudeContentType::Text => {
                     if let Some(text) = &content.text {
@@ -83,14 +121,14 @@ impl ClaudeChain {
                             params.set_argument(args);
                         }
 
-                        self.messages.add_content(ClaudeRole::Assistant, &content)?;
+                        self.messages.add_content(ClaudeRole::Assistant, content)?;
 
                         let (mcp_data, success) = match mcp.call(&params).await {
                             Ok(v) => (v, true),
                             Err(e) => (format!("error: {e}"), false),
                         };
 
-                        let result = ClaudeToolResult::new(&content, mcp_data, success);
+                        let result = ClaudeToolResult::new(content, mcp_data, success);
 
                         self.messages.add_result(&result)?;
                     }
@@ -113,6 +151,18 @@ impl LLMChainTrait for ClaudeChain {
     {
         self.messages.add_message(ClaudeRole::User, content);
 
+        if let Some(log_dir) = &self.log_dir {
+            let msg_id = self.msg_id.load(Ordering::SeqCst);
+            let file_name = format!("{msg_id:04}.json");
+            let file_path = log_dir.join(file_name);
+
+            if let Ok(messages) = serde_json::to_string_pretty(&self.messages) &&
+                let Err(e) = fs::write(file_path, messages.as_bytes()).await {
+                    error!("{e}");
+                }
+
+        }
+
         loop {
             let resp = self.api.chat(&self.messages).await?;
 
@@ -133,6 +183,8 @@ impl LLMChainTrait for ClaudeChain {
             }
         }
 
+        self.msg_id.fetch_add(1, Ordering::SeqCst);
+
         Ok(())
     }
 
@@ -142,6 +194,7 @@ impl LLMChainTrait for ClaudeChain {
     }
 
     fn reset(&mut self) {
+        self.msg_id = AtomicI32::new(0);
         self.tokens = LLMUsage::default();
         self.messages.reset()
     }

@@ -39,8 +39,7 @@ pub struct ClaudeConfig {
     pub key: String,
     pub max_tokens: u64,
     pub instructions: Option<Vec<String>>,
-    pub mcp_servers: Option<Vec<ClaudeMcpServer>>,
-    pub tool_choice: Option<ClaudeToolChoice>,
+    pub logs: Option<String>,
 }
 
 fn default_true() -> bool {

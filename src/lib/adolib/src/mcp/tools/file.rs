@@ -140,10 +140,8 @@ impl BakedMcpToolTrait for ToolFileFind {
 
         let mut files = Vec::new();
 
-        for f in glob::glob(&pattern)? {
-            if let Ok(file) = f {
-                files.push(file)
-            }
+        for file in (glob::glob(&pattern)?).flatten() {
+            files.push(file)
         }
 
         let result = ToolFileFindResult { files };
@@ -234,14 +232,8 @@ impl BakedMcpToolTrait for ToolFileList {
 
     async fn call(&mut self, params: &McpParams) -> Result<String> {
         let directory = PathBuf::from(params.get_string("directory")?);
-        let show_hidden = match params.get_bool("show_hidden") {
-            Ok(v) => v,
-            Err(_) => false,
-        };
-        let recursive = match params.get_bool("recursive") {
-            Ok(v) => v,
-            Err(_) => false,
-        };
+        let show_hidden = params.get_bool("show_hidden").unwrap_or_default();
+        let recursive = params.get_bool("recursive").unwrap_or_default();
 
         info!(
             "listing directory={} show_hidden={show_hidden} recursive={recursive}",

@@ -250,9 +250,7 @@ impl ClaudeMessages {
     }
 
     pub fn add_content(&mut self, role: ClaudeRole, content: &ClaudeContent) -> Result<()> {
-        let mut content_list = Vec::new();
-
-        content_list.push(content);
+        let content_list = vec![content];
 
         let message = ClaudeMessage::with_content_list(role, content_list)?;
 
@@ -261,9 +259,7 @@ impl ClaudeMessages {
     }
 
     pub fn add_result(&mut self, tool_result: &ClaudeToolResult) -> Result<()> {
-        let mut content_list = Vec::new();
-
-        content_list.push(tool_result);
+        let content_list = vec![tool_result];
 
         let message = ClaudeMessage::with_tool_results(ClaudeRole::User, content_list)?;
         self.messages.push(message);
@@ -303,11 +299,6 @@ impl ClaudeApi {
             .header("x-api-key", &self.config.key)
             .header("anthropic-version", &self.config.anthropic_version)
             .body(req_json);
-
-        let req_builds = match self.config.mcp_servers {
-            Some(_) => req_builds.header("anthropic-beta", "mcp-client-2025-04-04"),
-            None => req_builds,
-        };
 
         let res = req_builds.send().await?;
 
