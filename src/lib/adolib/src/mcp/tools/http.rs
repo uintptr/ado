@@ -92,8 +92,7 @@ impl ToolHttpPost {
 impl BakedMcpToolTrait for ToolHttpPost {
     type Error = Error;
 
-    async fn call(&mut self, params: &McpParams) -> Result<String> {
-        info!("Hello from {}", params.tool_name);
-        Ok("".into())
+    async fn call(&mut self, _params: &McpParams) -> Result<String> {
+        unimplemented!()
     }
 }
