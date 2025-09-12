@@ -1744,7 +1744,9 @@ dependencies = [
 
 [[package]]
 name = "omcp"
-version = "0.1.9"
+version = "0.1.10"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f4df32a5d04c36f992b75021ef8694d4322f43d00423ebfac5bd39cede46061e"
 dependencies = [
  "async-trait",
  "bytes",
