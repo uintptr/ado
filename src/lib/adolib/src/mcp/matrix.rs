@@ -155,40 +155,32 @@ impl McpMatrix {
         }
     }
 
-    async fn load_remote(&mut self, config: &AdoConfig) {
-        if let Some(servers) = config.mcp_servers() {
-            for (name, config) in servers {
-                let mut client = match config.config_type {
-                    McpTypes::Sse => match init_sse(name, config) {
-                        Ok(v) => v,
-                        Err(e) => {
-                            error!("Unable to intialize to {name} ({e})");
-                            continue;
-                        }
-                    },
-                };
+    async fn load_remote<S>(&mut self, name: S, config: &McpConfig) -> Result<()>
+    where
+        S: AsRef<str>,
+    {
+        let mut client = init_sse(name.as_ref(), config)?;
 
-                if let Err(e) = client.connect().await {
-                    error!("Unable to connect to {name} ({e})");
-                    continue;
+        if let Err(e) = client.connect().await {
+            error!("Unable to connect to {} ({e})", name.as_ref());
+            return Err(e.into());
+        }
+
+        let mcp_tools = match client.list_tools().await {
+            Ok(v) => v,
+            Err(e) => {
+                error!("Unable to list tools for {} ({e})", name.as_ref());
+
+                if let Err(e) = client.disconnect().await {
+                    error!("{e}");
                 }
 
-                let mcp_tools = match client.list_tools().await {
-                    Ok(v) => v,
-                    Err(e) => {
-                        error!("Unable to list tools for {name} ({e})");
-
-                        if let Err(e) = client.disconnect().await {
-                            error!("{e}");
-                        }
-
-                        continue;
-                    }
-                };
-
-                self.add_tools(client, mcp_tools)
+                return Err(e.into());
             }
-        }
+        };
+
+        self.add_tools(client, mcp_tools);
+        Ok(())
     }
 
     fn load_embedded(&mut self, config: &AdoConfig) -> Result<()> {
@@ -268,14 +260,24 @@ impl McpMatrix {
         Ok(())
     }
 
-    pub async fn load(&mut self, config: &AdoConfig) -> Result<()> {
-        if let Err(e) = self.load_embedded(config) {
-            error!("Error Loading embedded tools ({e})")
+    pub async fn load<S>(&mut self, config: &AdoConfig, name: S) -> Result<()>
+    where
+        S: AsRef<str>,
+    {
+        if let Some(mcps) = config.mcp_servers() {
+            for (entry_name, entry_config) in mcps.iter() {
+                if name.as_ref() == entry_name {
+                    let ret = match entry_config.config_type {
+                        McpTypes::Baked => self.load_embedded(config),
+                        McpTypes::Sse => self.load_remote(name, entry_config).await,
+                    };
+
+                    return ret;
+                }
+            }
         }
 
-        self.load_remote(config).await;
-
-        Ok(())
+        Err(Error::NotFound)
     }
 
     pub async fn call<P>(&self, params: P) -> Result<String>

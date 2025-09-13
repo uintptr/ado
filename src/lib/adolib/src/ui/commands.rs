@@ -40,7 +40,7 @@ enum LlmCommmands {
 #[derive(Debug, Subcommand)]
 enum McpCommmands {
     /// Load
-    Load,
+    Load { name: String },
     /// List
     List,
     /// List Tools
@@ -311,8 +311,8 @@ impl UserCommands {
                     console.display(AdoData::Status(s))
                 }
                 Command::Mcp { command } => match command {
-                    McpCommmands::Load => {
-                        let result = match self.mcp.load(&self.config).await {
+                    McpCommmands::Load { name } => {
+                        let result = match self.mcp.load(&self.config, name).await {
                             Ok(_) => {
                                 self.chain.enable_mcp(&self.mcp)?;
                                 "success".into()

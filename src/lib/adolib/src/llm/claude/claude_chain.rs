@@ -156,11 +156,11 @@ impl LLMChainTrait for ClaudeChain {
             let file_name = format!("{msg_id:04}.json");
             let file_path = log_dir.join(file_name);
 
-            if let Ok(messages) = serde_json::to_string_pretty(&self.messages) &&
-                let Err(e) = fs::write(file_path, messages.as_bytes()).await {
-                    error!("{e}");
-                }
-
+            if let Ok(messages) = serde_json::to_string_pretty(&self.messages)
+                && let Err(e) = fs::write(file_path, messages.as_bytes()).await
+            {
+                error!("{e}");
+            }
         }
 
         loop {
@@ -316,7 +316,7 @@ mod tests {
 
         let mut mcp = McpMatrix::new();
 
-        mcp.load(&config).await.unwrap();
+        mcp.load(&config, "ha").await.unwrap();
 
         chain.process_content(&mcp, &resp, &mut console).await.unwrap();
 
