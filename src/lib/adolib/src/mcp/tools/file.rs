@@ -3,7 +3,7 @@ use std::{env, os::unix::fs::FileTypeExt, path::PathBuf, time::UNIX_EPOCH};
 use async_trait::async_trait;
 use base64::{Engine, engine::general_purpose};
 use log::{error, info};
-use omcp::{client::types::BakedMcpToolTrait, types::McpParams};
+use omcp::types::{BakedMcpToolTrait, McpParams};
 use serde::Serialize;
 use tokio::fs;
 use walkdir::{DirEntry, WalkDir};
@@ -275,7 +275,7 @@ impl BakedMcpToolTrait for ToolFileList {
 
 #[cfg(test)]
 mod tests {
-    use omcp::{client::types::BakedMcpToolTrait, types::McpParams};
+    use omcp::types::{BakedMcpToolTrait, McpParams};
     use serde_json::Value;
 
     use crate::{logging::logger::setup_logger, mcp::tools::file::ToolFileList};

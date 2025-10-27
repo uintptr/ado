@@ -1,6 +1,6 @@
 use async_trait::async_trait;
 use log::info;
-use omcp::{client::types::BakedMcpToolTrait, types::McpParams};
+use omcp::types::{BakedMcpToolTrait, McpParams};
 
 use crate::{
     config::loader::AdoConfig,

@@ -3,7 +3,7 @@ use std::{env, path::PathBuf};
 use async_trait::async_trait;
 use base64::{Engine, engine::general_purpose};
 use log::info;
-use omcp::{client::types::BakedMcpToolTrait, types::McpParams};
+use omcp::types::{BakedMcpToolTrait, McpParams};
 use rustyline::hint::Hint;
 use serde::Serialize;
 use tokio::process::Command;
@@ -73,7 +73,7 @@ impl BakedMcpToolTrait for ToolShellExec {
 #[cfg(test)]
 mod tests {
     use log::info;
-    use omcp::{client::types::BakedMcpToolTrait, types::McpParams};
+    use omcp::types::{BakedMcpToolTrait, McpParams};
     use serde_json::Value;
 
     use crate::{logging::logger::setup_logger, mcp::tools::shell::ToolShellExec};

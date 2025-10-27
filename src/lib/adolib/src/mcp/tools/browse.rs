@@ -2,7 +2,7 @@ use std::{path::PathBuf, process::Command};
 
 use async_trait::async_trait;
 use log::info;
-use omcp::{client::types::BakedMcpToolTrait, types::McpParams};
+use omcp::types::{BakedMcpToolTrait, McpParams};
 use serde::Serialize;
 use which::which;
 

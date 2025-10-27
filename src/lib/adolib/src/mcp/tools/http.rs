@@ -3,7 +3,7 @@ use std::str::FromStr;
 use async_trait::async_trait;
 use base64::{Engine, engine::general_purpose};
 use log::info;
-use omcp::{client::types::BakedMcpToolTrait, types::McpParams};
+use omcp::types::{BakedMcpToolTrait, McpParams};
 use reqwest::{
     Client,
     header::{HeaderMap, HeaderName, HeaderValue},
