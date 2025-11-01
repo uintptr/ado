@@ -371,20 +371,6 @@ impl UserCommands {
                 ErrorKind::DisplayHelp | ErrorKind::DisplayHelpOnMissingArgumentOrSubcommand => {
                     console.display(AdoData::UsageString(e.to_string()))
                 }
-                ErrorKind::InvalidSubcommand => {
-                    match e.get(clap::error::ContextKind::SuggestedSubcommand) {
-                        Some(v) => {
-                            let err_msg = format!("did you mean `{}`?", v);
-                            console.display_string(err_msg)
-                        }
-                        None => {
-                            //
-                            // assume it's a query
-                            //
-                            self.chain.link(&self.mcp, line.as_ref(), console).await
-                        }
-                    }
-                }
                 ErrorKind::InvalidValue => {
                     let err_msg = format!("{e}");
                     console.display_string(err_msg)

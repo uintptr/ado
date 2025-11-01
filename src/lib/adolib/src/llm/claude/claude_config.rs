@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 
+/*
 #[derive(Debug, Default, Serialize, Deserialize, Clone)]
 pub enum ClaudeToolChoiceType {
     #[default]
@@ -8,6 +9,7 @@ pub enum ClaudeToolChoiceType {
     #[serde(rename = "none")]
     None,
 }
+
 #[derive(Debug, Default, Serialize, Deserialize, Clone)]
 pub struct ClaudeToolChoice {
     #[serde(rename = "type")]
@@ -31,6 +33,11 @@ pub struct ClaudeMcpServer {
     authorization_token: Option<String>,
 }
 
+fn default_true() -> bool {
+    true
+}
+*/
+
 #[derive(Debug, Default, Serialize, Deserialize, Clone)]
 pub struct ClaudeConfig {
     pub model: String,
@@ -40,8 +47,4 @@ pub struct ClaudeConfig {
     pub max_tokens: u64,
     pub instructions: Option<Vec<String>>,
     pub logs: Option<String>,
-}
-
-fn default_true() -> bool {
-    true
 }
