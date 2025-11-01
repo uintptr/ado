@@ -218,6 +218,9 @@ function display_adodata(ado_data) {
         display_search_results(object.json_string);
     } else if (data == "Reset") {
         display_reset();
+    } else if (data.hasOwnProperty("String")) {
+        let md = data.String.includes("```");
+        display_string(data.String, md);
     } else {
         display_string(ado_data.markdown);
     }
