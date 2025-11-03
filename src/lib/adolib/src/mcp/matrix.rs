@@ -320,7 +320,7 @@ mod tests {
     async fn test_load_remote() -> Result<()> {
         setup_logger(true)?;
 
-        let _config = AdoConfig::from_cwd()?;
+        let _config = AdoConfig::from_default()?;
 
         let _mcp_matrix = McpMatrix::new();
 

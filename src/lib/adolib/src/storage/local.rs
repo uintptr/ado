@@ -1,19 +1,15 @@
-use std::{
-    env::{self, home_dir},
-    fs,
-    path::{Path, PathBuf},
-    time::Duration,
-};
+use std::{fs, path::Path, time::Duration};
 
 use crate::{
-    const_vars::DOT_DIRECTORY,
+    const_vars::{DIRS_APP, DIRS_ORG, DIRS_QUALIFIER},
     error::{Error, Result},
     storage::PersistentStorageTrait,
 };
 use async_trait::async_trait;
+use directories::ProjectDirs;
 use sled::Db;
 
-use log::error;
+use log::{error, info};
 
 #[derive(Debug, Clone)]
 pub struct LocalStorage {
@@ -22,23 +18,17 @@ pub struct LocalStorage {
 
 impl LocalStorage {
     pub fn new() -> Result<Self> {
-        let home = match home_dir() {
-            Some(v) => v,
-            None => {
-                let home_env = env::var("HOME")?;
-                PathBuf::from(home_env)
-            }
-        };
+        let dirs = ProjectDirs::from(DIRS_QUALIFIER, DIRS_ORG, DIRS_APP).ok_or(Error::NotFound)?;
 
-        let ado_dir = home.join(DOT_DIRECTORY);
+        let cache_dir = dirs.cache_dir();
 
-        if !ado_dir.exists() {
-            fs::create_dir(&ado_dir)?;
+        info!("cache dir {}", cache_dir.display());
+
+        if !cache_dir.exists() {
+            fs::create_dir_all(&cache_dir)?;
         }
 
-        let cache_file = ado_dir.join("cache");
-
-        LocalStorage::from_path(cache_file)
+        LocalStorage::from_path(cache_dir)
     }
 
     pub fn from_path<P>(file_path: P) -> Result<Self>

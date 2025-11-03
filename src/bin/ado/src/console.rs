@@ -1,18 +1,21 @@
 use std::{
-    env, fs,
+    fs,
     io::{self, Write},
     path::{Path, PathBuf},
     process::Stdio,
 };
 
 use adolib::{
-    const_vars::{DOT_DIRECTORY, PKG_NAME, PKG_VERSION, VERGEN_BUILD_DATE, VERGEN_RUSTC_COMMIT_HASH},
+    const_vars::{
+        DIRS_APP, DIRS_ORG, DIRS_QUALIFIER, PKG_NAME, PKG_VERSION, VERGEN_BUILD_DATE, VERGEN_RUSTC_COMMIT_HASH,
+    },
     data::types::{AdoData, AdoDataMarkdown},
     error::{Error, Result},
     ui::{ConsoleDisplayTrait, commands::UserCommands},
 };
 use colored;
 use colored::Colorize;
+use directories::ProjectDirs;
 use log::{error, info, warn};
 use spinner::{SpinnerBuilder, SpinnerHandle};
 use which::which;
@@ -56,16 +59,14 @@ fn init_readline(commands: &UserCommands) -> Result<Editor<MyHelper, FileHistory
         .completion_type(CompletionType::List)
         .build();
 
+    let dirs = ProjectDirs::from(DIRS_QUALIFIER, DIRS_ORG, DIRS_APP).ok_or(Error::NotFound)?;
+
     let mut rl = Editor::with_config(config)?;
 
-    let home = env::var("HOME")?;
+    let history_file = dirs.config_dir().join("history.txt");
 
-    let dot_dir = Path::new(&home).join(DOT_DIRECTORY);
-
-    let history_file = Path::new(&dot_dir).join("history.txt");
-
-    if !dot_dir.exists() {
-        fs::create_dir_all(dot_dir)?;
+    if !dirs.config_dir().exists() {
+        fs::create_dir_all(dirs.config_dir())?;
     }
 
     if let Err(e) = rl.load_history(&history_file) {

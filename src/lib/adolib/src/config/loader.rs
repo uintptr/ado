@@ -1,15 +1,15 @@
 use std::{
     collections::HashMap,
-    env, fs,
+    fs,
     path::{Path, PathBuf},
 };
 
-use log::info;
-use rstaples::staples::find_file;
+use directories::ProjectDirs;
+use log::{error, info};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    const_vars::{CONFIG_FILE_NAME, DOT_DIRECTORY, STORE_PERMANENT},
+    const_vars::{CONFIG_FILE_NAME, DIRS_APP, DIRS_ORG, DIRS_QUALIFIER, STORE_PERMANENT},
     error::{Error, Result},
     llm::config::{ClaudeConfig, ConfigOllama},
     mcp::types::McpConfig,
@@ -42,23 +42,6 @@ pub enum AdoConfigSource {
 pub struct AdoConfig {
     source: AdoConfigSource,
     config_file: ConfigFile,
-}
-
-fn find_from_home() -> Result<PathBuf> {
-    let home = env::var("HOME")?;
-
-    let dot_dir = Path::new(&home).join(DOT_DIRECTORY);
-
-    if !dot_dir.exists() {
-        return Err(Error::FileNotFoundError { file_path: dot_dir });
-    }
-
-    let config_file = dot_dir.join(CONFIG_FILE_NAME);
-
-    match config_file.exists() {
-        true => Ok(config_file),
-        false => Err(Error::FileNotFoundError { file_path: config_file }),
-    }
 }
 
 impl ConfigFile {}
@@ -94,27 +77,31 @@ impl AdoConfig {
             path: path.as_ref().into(),
         };
 
-        let file_data = fs::read_to_string(&path)?;
+        info!("Using config file {}", path.as_ref().display());
+
+        let file_data = match fs::read_to_string(&path) {
+            Ok(v) => v,
+            Err(e) => {
+                error!("Unable to read config file @ {}", path.as_ref().display());
+                return Err(e.into());
+            }
+        };
+
         let config_file: ConfigFile = toml::from_str(&file_data)?;
 
         Ok(AdoConfig::new(source, config_file))
     }
 
-    pub fn from_cwd() -> Result<Self> {
-        let cwd = env::current_dir()?;
-
-        let config_path = cwd.join("config").join("config.toml");
-
-        AdoConfig::from_path(config_path)
-    }
-
     pub fn from_default() -> Result<Self> {
-        let rel_config = Path::new("config").join(CONFIG_FILE_NAME);
+        let dirs = ProjectDirs::from(DIRS_QUALIFIER, DIRS_ORG, DIRS_APP).ok_or(Error::NotFound)?;
 
-        let config_file = match find_file(rel_config) {
-            Ok(v) => v,
-            Err(_) => find_from_home()?,
-        };
+        let config_dir = dirs.config_dir();
+
+        if config_dir.exists() {
+            fs::create_dir_all(config_dir)?;
+        }
+
+        let config_file = config_dir.join(CONFIG_FILE_NAME);
 
         AdoConfig::from_path(config_file)
     }

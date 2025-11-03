@@ -23,7 +23,7 @@ struct UserArgs {
     #[arg(short, long)]
     verbose: bool,
 
-    /// verbose
+    /// config file path
     #[arg(short, long)]
     config_file: Option<String>,
 
