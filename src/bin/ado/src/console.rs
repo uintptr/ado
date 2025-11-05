@@ -23,7 +23,6 @@ use which::which;
 use rustyline::completion::FilenameCompleter;
 use rustyline::error::ReadlineError;
 use rustyline::history::FileHistory;
-use rustyline::validate::MatchingBracketValidator;
 use rustyline::{Completer, Helper, Hinter, Validator};
 use rustyline::{CompletionType, Config, Editor};
 use rustyline::{Highlighter, hint::HistoryHinter};
@@ -32,8 +31,6 @@ use rustyline::{Highlighter, hint::HistoryHinter};
 struct MyHelper {
     #[rustyline(Completer)]
     completer: FilenameCompleter,
-    #[rustyline(Validator)]
-    validator: MatchingBracketValidator,
     #[rustyline(Hinter)]
     hinter: HistoryHinter,
 }
@@ -76,7 +73,6 @@ fn init_readline(commands: &UserCommands) -> Result<Editor<MyHelper, FileHistory
     let h = MyHelper {
         completer: FilenameCompleter::new(),
         hinter: HistoryHinter::new(),
-        validator: MatchingBracketValidator::new(),
     };
 
     for c in commands.list_commands() {
