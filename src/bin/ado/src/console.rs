@@ -124,7 +124,11 @@ impl TerminalConsole {
     where
         S: AsRef<str>,
     {
-        let mut child = std::process::Command::new(glow).stdin(Stdio::piped()).spawn()?;
+        let mut child = std::process::Command::new(glow)
+            .arg("-w")
+            .arg("0")
+            .stdin(Stdio::piped())
+            .spawn()?;
 
         if let Some(stdin) = child.stdin.as_mut() {
             stdin.write_all(text.as_ref().as_bytes())?;
