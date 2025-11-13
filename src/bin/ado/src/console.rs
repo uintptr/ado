@@ -5,8 +5,11 @@ use std::{
     process::Stdio,
 };
 
+pub const PKG_VERSION: &str = env!("CARGO_PKG_VERSION");
+pub const PKG_NAME: &str = env!("CARGO_PKG_NAME");
+
 use adolib::{
-    const_vars::{DIRS_APP, DIRS_ORG, DIRS_QUALIFIER, PKG_NAME, PKG_VERSION},
+    const_vars::{DIRS_APP, DIRS_ORG, DIRS_QUALIFIER},
     data::types::{AdoData, AdoDataMarkdown},
     error::{Error, Result},
     ui::{ConsoleDisplayTrait, commands::UserCommands},

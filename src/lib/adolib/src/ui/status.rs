@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     config::loader::AdoConfig,
-    const_vars::{PKG_VERSION, VERGEN_BUILD_DATE, VERGEN_RUSTC_COMMIT_HASH},
+    const_vars::{LIB_VERSION, VERGEN_BUILD_DATE, VERGEN_RUSTC_COMMIT_HASH},
     data::types::AdoDataMarkdown,
     error::Result,
     llm::chain::LLMChain,
@@ -23,7 +23,7 @@ impl StatusInfo {
 
         StatusInfo {
             model: model.to_string(),
-            version: PKG_VERSION.into(),
+            version: LIB_VERSION.into(),
             build_date: VERGEN_BUILD_DATE.into(),
             commit_hash: VERGEN_RUSTC_COMMIT_HASH.into(),
             llm_provider: config_file.llm_provider().to_string(),
