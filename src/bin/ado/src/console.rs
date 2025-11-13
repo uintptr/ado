@@ -130,6 +130,8 @@ impl TerminalConsole {
         let mut child = std::process::Command::new(glow)
             .arg("-w")
             .arg("0")
+            .arg("-s")
+            .arg("dark")
             .stdin(Stdio::piped())
             .spawn()?;
 
