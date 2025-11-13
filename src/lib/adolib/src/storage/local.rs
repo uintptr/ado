@@ -25,7 +25,7 @@ impl LocalStorage {
         info!("cache dir {}", cache_dir.display());
 
         if !cache_dir.exists() {
-            fs::create_dir_all(&cache_dir)?;
+            fs::create_dir_all(cache_dir)?;
         }
 
         LocalStorage::from_path(cache_dir)

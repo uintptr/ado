@@ -88,6 +88,8 @@ pub enum Error {
     Utf8(FromUtf8Error),
     #[from]
     Env(VarError),
+    #[from]
+    StrError(std::string::String),
 
     //
     // 3rd party

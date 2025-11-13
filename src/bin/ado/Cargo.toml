@@ -15,6 +15,9 @@ spinner.workspace = true
 derive_more.workspace = true
 serde_json.workspace = true
 directories.workspace = true
+figlet-rs.workspace = true
+rust-embed.workspace = true
+tempfile.workspace = true
 
 [dev-dependencies]
 tempfile.workspace = true

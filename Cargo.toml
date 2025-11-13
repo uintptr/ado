@@ -57,6 +57,7 @@ fern = "0.7"
 #omcp = { path = "../omcp" }
 omcp = "0.1"
 directories = "6.0"
+figlet-rs = "0.1"
 
 [profile.release]
 lto = true

@@ -6,9 +6,7 @@ use std::{
 };
 
 use adolib::{
-    const_vars::{
-        DIRS_APP, DIRS_ORG, DIRS_QUALIFIER, PKG_NAME, PKG_VERSION, VERGEN_BUILD_DATE, VERGEN_RUSTC_COMMIT_HASH,
-    },
+    const_vars::{DIRS_APP, DIRS_ORG, DIRS_QUALIFIER, PKG_NAME, PKG_VERSION},
     data::types::{AdoData, AdoDataMarkdown},
     error::{Error, Result},
     ui::{ConsoleDisplayTrait, commands::UserCommands},
@@ -26,6 +24,8 @@ use rustyline::history::FileHistory;
 use rustyline::{Completer, Helper, Hinter, Validator};
 use rustyline::{CompletionType, Config, Editor};
 use rustyline::{Highlighter, hint::HistoryHinter};
+
+use crate::banner::display_banner;
 
 #[derive(Helper, Completer, Highlighter, Hinter, Validator)]
 struct MyHelper {
@@ -109,13 +109,16 @@ impl TerminalConsole {
         };
 
         // pretty start
-        clear_console()?;
-        let banner = format!("{PKG_NAME} {PKG_VERSION} {VERGEN_RUSTC_COMMIT_HASH} ({VERGEN_BUILD_DATE})");
-        println!("{}", banner.bold().yellow());
+
+        let mut rl = init_readline(commands)?;
+
+        rl.clear_screen()?;
+
+        let _ = display_banner(format!("{PKG_NAME} {PKG_VERSION}"), "pagga");
 
         Ok(Self {
             glow,
-            rl: init_readline(commands)?,
+            rl,
             spinner: None,
         })
     }
