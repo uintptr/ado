@@ -386,7 +386,7 @@ async function get_user() {
     let config = localStorage.getItem("user_config");
 
     if (null == config) {
-        config = await utils.fetch_as_string("https://keys.pi/user.json");
+        config = await utils.fetch_as_string("https://ado.uintptr.ca/user.json");
     }
 
     if (null != config) {

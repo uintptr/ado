@@ -121,7 +121,7 @@ export function object_to_b64(object) {
 async function get_token_id() {
     //let server = await utils.fetch_as_json("/api/key/server")
     //console.log("server: " + server)
-    let uri = "https://keys.pi/token";
+    let uri = "https://adokeys.uintptr.ca/token";
 
     let token_id = await fetch_as_string(uri);
 
