@@ -32,6 +32,7 @@ const config = {
 let loadingScreen;
 let loadingBar;
 let loadingTextContainer;
+let isInitialized = false;
 
 /**
  * Creates the loading screen DOM structure
@@ -90,6 +91,7 @@ function createLoadingScreen() {
 
     // Add to document
     document.body.appendChild(loadingScreen);
+    isInitialized = true;
 }
 
 /**
@@ -138,13 +140,28 @@ function animateProgressBar(duration) {
 }
 
 /**
+ * Ensures the loading screen is initialized
+ * Creates it immediately if not already done
+ */
+function ensureInitialized() {
+    if (!isInitialized) {
+        createLoadingScreen();
+    }
+}
+
+/**
  * Shows the loading screen
  * @param {string} destination - The URL to navigate to
  * @returns {Promise<void>}
  */
 async function showLoadingScreen(destination) {
+    // Ensure the loading screen DOM elements exist
+    ensureInitialized();
+
     // Select one random ASCII art for this load
-    const randomIndex = Math.floor(Math.random() * config.loadingMessages.length);
+    const randomIndex = Math.floor(
+        Math.random() * config.loadingMessages.length,
+    );
     const currentMessages = [config.loadingMessages[randomIndex]];
 
     // Clear previous content
