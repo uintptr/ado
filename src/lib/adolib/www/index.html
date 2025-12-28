@@ -4,6 +4,10 @@
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>Command Search Terminal | Professional CLI Interface</title>
+        <meta
+            name="description"
+            content="Modern command search interface with advanced terminal features"
+        />
 
         <!-- Search integration -->
         <link
@@ -29,6 +33,61 @@
         <script src="/js/utils.js" type="module"></script>
         <script src="/js/loading-screen.js" type="module"></script>
         <script src="/js/app.js" type="module"></script>
+
+        <style>
+            /* Enhanced visual effects */
+            .brand-icon {
+                width: 24px;
+                height: 24px;
+                filter: drop-shadow(0 0 8px rgba(0, 204, 153, 0.5));
+            }
+
+            .terminal-art svg {
+                width: 64px;
+                height: 64px;
+                filter: drop-shadow(0 0 12px rgba(0, 204, 153, 0.4));
+            }
+
+            /* Enhanced result animations */
+            .result-item {
+                position: relative;
+                overflow: hidden;
+            }
+
+            .result-item::before {
+                content: "";
+                position: absolute;
+                left: 0;
+                top: 0;
+                height: 100%;
+                width: 3px;
+                background: var(--accent-color);
+                transform: scaleY(0);
+                transition: transform 0.3s ease;
+            }
+
+            .result-item:hover::before {
+                transform: scaleY(1);
+            }
+
+            /* Improved empty state */
+
+            .hint {
+                display: inline-flex;
+                align-items: center;
+                gap: 8px;
+                padding: 8px 16px;
+                background: rgba(0, 204, 153, 0.05);
+                border: 1px solid rgba(0, 204, 153, 0.2);
+                border-radius: 20px;
+                margin-top: 12px;
+            }
+
+            .hint::before {
+                content: "💡";
+                font-size: 14px;
+            }
+        </style>
     </head>
 
     <body>
@@ -47,7 +106,7 @@
                         <line x1="12" y1="19" x2="20" y2="19"></line>
                     </svg>
                     <h1 class="brand-title">Command Terminal</h1>
-                    <span id="version-tag" class="version-tag">#</span>
+                    <span id="version-tag" class="version-tag">v2.0</span>
                 </div>
                 <div class="status-indicator">
                     <span id="ready-status" class="status-text">READY</span>
@@ -73,13 +132,9 @@
                             <polyline points="4 17 10 11 4 5"></polyline>
                             <line x1="12" y1="19" x2="20" y2="19"></line>
                         </svg>
-                        <div class="scan-line"></div>
                     </div>
                     <h2>Command Interface Ready</h2>
                     <p>Enter a command to begin your search</p>
-                    <div class="hint">
-                        Try typing a keyword or command below
-                    </div>
                 </div>
             </div>
         </div>
@@ -98,6 +153,7 @@
                     autocapitalize="off"
                     type="text"
                     placeholder="Type your command here..."
+                    aria-label="Command input"
                 />
             </div>
         </div>
@@ -162,6 +218,17 @@
             // Initial setup
             toggleEmptyState();
             cmdLine.focus();
+
+            // Add focus effects
+            cmdLine.addEventListener("focus", () => {
+                document.querySelector(".command-line").style.borderTopColor =
+                    "rgba(0, 204, 153, 0.3)";
+            });
+
+            cmdLine.addEventListener("blur", () => {
+                document.querySelector(".command-line").style.borderTopColor =
+                    "";
+            });
         </script>
     </body>
 </html>

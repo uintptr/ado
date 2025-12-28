@@ -4,6 +4,10 @@
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>Secure Login | Command Search Terminal</title>
+        <meta
+            name="description"
+            content="Secure authentication for Command Terminal"
+        />
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -15,8 +19,166 @@
 
         <!-- Stylesheets -->
         <link rel="stylesheet" href="/css/login.css" />
+
+        <style>
+            /* Enhanced visual effects */
+            .login-icon {
+                width: 56px;
+                height: 56px;
+                filter: drop-shadow(0 0 12px rgba(0, 204, 153, 0.5));
+                animation: shield-pulse 3s ease-in-out infinite;
+            }
+
+            @keyframes shield-pulse {
+                0%,
+                100% {
+                    transform: scale(1);
+                    filter: drop-shadow(0 0 12px rgba(0, 204, 153, 0.5));
+                }
+                50% {
+                    transform: scale(1.05);
+                    filter: drop-shadow(0 0 20px rgba(0, 204, 153, 0.7));
+                }
+            }
+
+            /* Grid pattern overlay */
+            .grid-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background-image:
+                    linear-gradient(
+                        rgba(0, 204, 153, 0.03) 1px,
+                        transparent 1px
+                    ),
+                    linear-gradient(
+                        90deg,
+                        rgba(0, 204, 153, 0.03) 1px,
+                        transparent 1px
+                    );
+                background-size: 50px 50px;
+                pointer-events: none;
+                z-index: 0;
+            }
+
+            /* Enhanced input focus effects */
+            .login-input {
+                position: relative;
+                transition: all 0.3s ease;
+            }
+
+            .login-input:focus {
+                transform: translateY(-1px);
+            }
+
+            /* Enhanced button effects */
+            .login-btn {
+                position: relative;
+                overflow: hidden;
+            }
+
+            .login-btn::after {
+                content: "";
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                width: 0;
+                height: 0;
+                border-radius: 50%;
+                background: rgba(255, 255, 255, 0.2);
+                transform: translate(-50%, -50%);
+                transition:
+                    width 0.6s,
+                    height 0.6s;
+            }
+
+            .login-btn:active::after {
+                width: 300px;
+                height: 300px;
+            }
+
+            /* Glowing icons in hints */
+            .support-info svg,
+            .security-notice svg {
+                width: 14px;
+                height: 14px;
+                filter: drop-shadow(0 0 4px currentColor);
+            }
+
+            /* Security badge animation */
+            .security-badge {
+                animation: badge-glow 2s ease-in-out infinite;
+            }
+
+            @keyframes badge-glow {
+                0%,
+                100% {
+                    box-shadow: 0 0 8px rgba(0, 204, 153, 0.4);
+                }
+                50% {
+                    box-shadow: 0 0 16px rgba(0, 204, 153, 0.6);
+                }
+            }
+
+            /* Wrapper entrance animation */
+            .login-wrapper {
+                animation: slideIn 0.5s ease-out;
+            }
+
+            @keyframes slideIn {
+                from {
+                    opacity: 0;
+                    transform: translateY(30px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+
+            /* Form field animations */
+            .input-group {
+                animation: fadeInUp 0.5s ease-out backwards;
+            }
+
+            .input-group:nth-child(1) {
+                animation-delay: 0.1s;
+            }
+
+            .input-group:nth-child(2) {
+                animation-delay: 0.2s;
+            }
+
+            .login-btn {
+                animation: fadeInUp 0.5s ease-out backwards;
+                animation-delay: 0.3s;
+            }
+
+            @keyframes fadeInUp {
+                from {
+                    opacity: 0;
+                    transform: translateY(20px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+
+            /* Input label animation on focus */
+            .input-group:focus-within .input-label {
+                color: var(--accent-color);
+                transform: translateX(4px);
+                transition: all 0.2s ease;
+            }
+        </style>
     </head>
     <body>
+        <!-- Grid overlay -->
+        <div class="grid-overlay"></div>
+
         <div class="login-wrapper">
             <div class="login-header">
                 <svg
@@ -49,6 +211,7 @@
                         autocomplete="username"
                         required
                         autofocus
+                        aria-label="Username"
                     />
                 </div>
                 <div class="input-group">
@@ -60,6 +223,7 @@
                         name="password"
                         autocomplete="current-password"
                         required
+                        aria-label="Password"
                     />
                 </div>
                 <button class="login-btn" type="submit">Login</button>
@@ -103,5 +267,42 @@
                 </div>
             </div>
         </div>
+
+        <script>
+            // Add input animations
+            const inputs = document.querySelectorAll(".login-input");
+            inputs.forEach((input) => {
+                input.addEventListener("focus", (e) => {
+                    e.target.parentElement.style.transform = "translateX(2px)";
+                });
+
+                input.addEventListener("blur", (e) => {
+                    e.target.parentElement.style.transform = "";
+                });
+            });
+
+            // Add ripple effect to button
+            const loginBtn = document.querySelector(".login-btn");
+            loginBtn.addEventListener("click", function (e) {
+                const rect = this.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+
+                const ripple = document.createElement("span");
+                ripple.style.position = "absolute";
+                ripple.style.left = x + "px";
+                ripple.style.top = y + "px";
+                ripple.style.width = "0";
+                ripple.style.height = "0";
+                ripple.style.borderRadius = "50%";
+                ripple.style.background = "rgba(255, 255, 255, 0.5)";
+                ripple.style.transform = "translate(-50%, -50%)";
+                ripple.style.pointerEvents = "none";
+
+                this.appendChild(ripple);
+
+                setTimeout(() => ripple.remove(), 600);
+            });
+        </script>
     </body>
 </html>
