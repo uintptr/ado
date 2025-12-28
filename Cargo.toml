@@ -1,64 +1,62 @@
 [workspace]
-members = ["src/bin/ado", "src/lib/adolib"]
 resolver = "2"
-
+members = ["src/bin/ado", "src/lib/adolib"]
 
 [workspace.dependencies]
-clap = { version = "4.5", features = ["derive", "suggestions"] }
-log = "0.4"
+adolib = { path = "src/lib/adolib" }
+async-trait = "0.1"
 base64 = "0.22"
 bytes = "1.11"
+chrono = "0.4"
+clap = { version = "4.5", features = ["derive", "suggestions"] }
 colored = "3.0"
-derive_more = { version = "2.1", features = ["debug", "from", "display"] }
+console_error_panic_hook = "0.1"
+derive_more = { version = "2.1", features = ["debug", "display", "from"] }
+directories = "6.0"
+fern = "0.7"
+figlet-rs = "0.1"
+getrandom_js = { package = "getrandom", version = "0.2", features = ["js"] }
 glob = "0.3"
+gloo-utils = "0.2"
+home = "0.5"
+log = "0.4"
+md5 = "0.8"
+# omcp = "0.1"
+omcp = { path = "../omcp" }
 reqwest = { version = "0.12" }
+ring = { version = "0.17", features = ["wasm32_unknown_unknown_js"] }
+rstaples = "0.3"
 rust-embed = { version = "8.9", features = ["debug-embed"] }
+rustyline = { version = "17.0", features = [
+  "derive",
+  "rustyline-derive",
+  "termios",
+  "with-fuzzy",
+] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 shell-words = "1.1"
-spinner = "0.5"
-chrono = "0.4"
 shellexpand = "3.1"
-tokio = { version = "1.48", features = [
-    "macros",
-    "tokio-macros",
-    "test-util",
-    "process"
+sled = "0.34"
+spinner = "0.5"
+tempfile = "3.24"
+tokio = { version = "1.48", default-features = false, features = [
+  "macros",
+  "test-util",
+  "tokio-macros"
 ] }
-wait-timeout = "0.2"
 toml = "0.9"
+uuid = { version = "1.19", features = ["v4"] }
+vergen-git2 = { version = "1.0", features = ["build"] }
+wait-timeout = "0.2"
 walkdir = "2.5"
+wasm-bindgen = "0.2"
+wasm-bindgen-futures = "0.4"
+web-sys = { version = "0.3" }
 which = "8.0"
 whois-rust = "1.6"
 x11rb = "0.13"
-rustyline = { version = "17.0", features = [
-    "derive",
-    "rustyline-derive",
-    "termios",
-    "with-fuzzy",
-] }
-home = "0.5"
-getrandom_js = { package = "getrandom", version = "0.2", features = ["js"] }
-wasm-bindgen = "0.2"
-ring = { version = "0.17", features = ["wasm32_unknown_unknown_js"] }
-wasm-bindgen-futures = "0.4"
-adolib = { path = "src/lib/adolib" }
-console_error_panic_hook = "0.1"
-web-sys = { version = "0.3" }
-gloo-utils = "0.2"
-rstaples = "0.1"
-md5 = "0.8"
-uuid = { version = "1.19", features = ["v4"] }
-vergen-git2 = { version = "1.0", features = ["build"] }
-async-trait = "0.1"
-sled = "0.34"
-tempfile = "3.23"
-fern = "0.7"
-#omcp = { path = "../omcp" }
-omcp = "0.1"
-directories = "6.0"
-figlet-rs = "0.1"
 
 [profile.release]
+opt-level = "s"
 lto = true
-opt-level = 's'

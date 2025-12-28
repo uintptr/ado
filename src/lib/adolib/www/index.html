@@ -5,16 +5,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>Command Search Terminal | Professional CLI Interface</title>
 
-        <!-- Resource hints for better performance -->
-        <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
-        <link
-            rel="preconnect"
-            href="https://cdnjs.cloudflare.com"
-            crossorigin
-        />
-        <link rel="dns-prefetch" href="https://cdn.jsdelivr.net" />
-        <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com" />
-
+        <!-- Search integration -->
         <link
             rel="search"
             type="application/opensearchdescription+xml"
@@ -22,39 +13,39 @@
             href="/opensearch.xml"
         />
 
-        <!-- External CSS files -->
-        <link rel="stylesheet" href="/css/main.css" />
-        <link rel="stylesheet" href="/css/loading-screen.css" />
+        <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
         <link
             href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&display=swap"
             rel="stylesheet"
         />
-        <link
-            rel="stylesheet"
-            href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/atom-one-dark.min.css"
-            media="print"
-            onload="this.media='all'"
-        />
-        <noscript>
-            <link
-                rel="stylesheet"
-                href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/atom-one-dark.min.css"
-            />
-        </noscript>
 
-        <!-- Preload critical scripts -->
-        <link rel="modulepreload" href="/js/utils.js" />
-        <link rel="modulepreload" href="/js/app.js" />
-        <link rel="modulepreload" href="/js/loading-screen.js" />
+        <!-- Stylesheets -->
+        <link rel="stylesheet" href="/css/main.css" />
+        <link rel="stylesheet" href="/css/loading-screen.css" />
+
+        <!-- Application modules -->
+        <script src="/js/utils.js" type="module"></script>
+        <script src="/js/loading-screen.js" type="module"></script>
+        <script src="/js/app.js" type="module"></script>
     </head>
 
     <body>
         <header class="app-header">
             <div class="header-content">
                 <div class="brand">
-                    <i class="fas fa-terminal brand-icon"></i>
+                    <svg
+                        class="brand-icon"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        aria-hidden="true"
+                    >
+                        <polyline points="4 17 10 11 4 5"></polyline>
+                        <line x1="12" y1="19" x2="20" y2="19"></line>
+                    </svg>
                     <h1 class="brand-title">Command Terminal</h1>
                     <span id="version-tag" class="version-tag">#</span>
                 </div>
@@ -72,7 +63,16 @@
                 </div>
                 <div id="empty-state" class="empty-state">
                     <div class="terminal-art">
-                        <i class="fas fa-terminal"></i>
+                        <svg
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            aria-hidden="true"
+                        >
+                            <polyline points="4 17 10 11 4 5"></polyline>
+                            <line x1="12" y1="19" x2="20" y2="19"></line>
+                        </svg>
                         <div class="scan-line"></div>
                     </div>
                     <h2>Command Interface Ready</h2>
@@ -124,108 +124,44 @@
             </div>
         </template>
 
-        <!-- Load critical scripts first -->
-        <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+        <script type="module">
+            // Page initialization
+            const results = document.getElementById("results");
+            const emptyState = document.getElementById("empty-state");
+            const cmdLine = document.getElementById("cmd_line");
 
-        <!-- Load application scripts -->
-        <script src="/js/utils.js" type="module"></script>
-        <script src="/js/loading-screen.js" type="module"></script>
-        <script src="/js/app.js" type="module"></script>
+            // Toggle empty state based on results
+            function toggleEmptyState() {
+                const hasResults =
+                    results.style.display !== "none" &&
+                    results.children.length > 0;
+                emptyState.style.display = hasResults ? "none" : "flex";
+            }
 
-        <script>
-            // Optimized page initialization
-            document.addEventListener("DOMContentLoaded", function () {
-                const results = document.getElementById("results");
-                const emptyState = document.getElementById("empty-state");
-                const cmdLine = document.getElementById("cmd_line");
-
-                // Optimized toggle function
-                function toggleEmptyState() {
-                    const hasResults =
-                        results.style.display !== "none" &&
-                        results.children.length > 0;
-                    emptyState.style.display = hasResults ? "none" : "flex";
-                }
-
-                // Optimized code highlighting with debouncing
-                let highlightTimeout;
-                function highlightAllCode() {
-                    if (highlightTimeout) return;
-                    highlightTimeout = setTimeout(() => {
-                        if (window.hljs) {
-                            document
-                                .querySelectorAll("pre code:not(.hljs)")
-                                .forEach((block) => {
-                                    window.hljs.highlightElement(block);
-                                });
-                        }
-                        highlightTimeout = null;
-                    }, 100);
-                }
-
-                // Single optimized mutation observer
-                const observer = new MutationObserver((mutations) => {
-                    let shouldToggle = false;
-                    let shouldHighlight = false;
-                    let lastAddedElement = null;
-
-                    mutations.forEach((mutation) => {
-                        if (
-                            mutation.type === "childList" ||
-                            (mutation.type === "attributes" &&
-                                mutation.attributeName === "style")
-                        ) {
-                            shouldToggle = true;
-                        }
-                        if (
-                            mutation.type === "childList" &&
-                            mutation.addedNodes.length > 0
-                        ) {
-                            shouldHighlight = true;
-                            // Find the last added element that's an actual Element
-                            for (
-                                let i = mutation.addedNodes.length - 1;
-                                i >= 0;
-                                i--
-                            ) {
-                                const node = mutation.addedNodes[i];
-                                if (node.nodeType === Node.ELEMENT_NODE) {
-                                    lastAddedElement = node;
-                                    break;
-                                }
-                            }
-                        }
-                    });
-
-                    if (shouldToggle) toggleEmptyState();
-                    if (shouldHighlight) highlightAllCode();
-                });
-
-                // Observe with optimized settings
-                observer.observe(results, {
-                    childList: true,
-                    subtree: true,
-                    attributes: true,
-                    attributeFilter: ["style"],
-                });
-
-                // Initial setup
-                toggleEmptyState();
-                requestAnimationFrame(() => cmdLine.focus());
-
-                // Initial code highlighting when hljs loads
-                if (window.hljs) {
-                    highlightAllCode();
-                } else {
-                    const checkHljs = setInterval(() => {
-                        if (window.hljs) {
-                            highlightAllCode();
-                            clearInterval(checkHljs);
-                        }
-                    }, 100);
+            // Observe results changes
+            const observer = new MutationObserver((mutations) => {
+                for (const mutation of mutations) {
+                    if (
+                        mutation.type === "childList" ||
+                        (mutation.type === "attributes" &&
+                            mutation.attributeName === "style")
+                    ) {
+                        toggleEmptyState();
+                        break;
+                    }
                 }
             });
+
+            observer.observe(results, {
+                childList: true,
+                subtree: true,
+                attributes: true,
+                attributeFilter: ["style"],
+            });
+
+            // Initial setup
+            toggleEmptyState();
+            cmdLine.focus();
         </script>
     </body>
 </html>

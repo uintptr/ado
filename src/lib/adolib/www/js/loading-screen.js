@@ -15,14 +15,146 @@ const config = {
     maxAnimationTime: 1500,
     // Array of ASCII art to display during loading
     loadingMessages: [
-        "    ╭─────╮\n    │ ◉ ◉ │\n    │  ∩  │\n    ╰─────╯",
-        "   ┌─────────┐\n   │ Loading │\n   │ ▓▓▓▓▓▓▓ │\n   └─────────┘",
-        "    ╔══════╗\n    ║ ░░░░ ║\n    ║ ░██░ ║\n    ║ ░░░░ ║\n    ╚══════╝",
-        "   ┌─ ◐ ─┐\n   │     │\n   │ >>> │\n   └─────┘",
-        "    ∩───∩\n   │ ● ● │\n   │  ω  │\n    ∪───∪",
-        "   ╭─────╮\n   │ ⚡⚡⚡ │\n   │ ⚡⚡⚡ │\n   ╰─────╯",
-        "    ┌───┐\n    │ ◈ │\n    │ ◈ │\n    │ ◈ │\n    └───┘",
-        "   ╭─────╮\n   │ ≈≈≈ │\n   │ ≈≈≈ │\n   ╰─────╯",
+        // Coffee break
+        `       ╭──────╮
+       │      │
+       │ ☕   │  Loading...
+       │      │  Please wait
+       ╰──────╯`,
+
+        // Hamster wheel
+        `      ┌─────────────┐
+      │  ┌─┐       │
+      │ (◕‿◕)  ⟳   │  Spinning up
+      │  └─┘       │  the hamsters
+      └─────────────┘`,
+
+        // Rubber duck debugging
+        `        ___
+       (o o)_____/
+        (_____)    Debugging
+        | | |      with style
+        | | |`,
+
+        // Loading pizza
+        `      ╭─────────╮
+      │  🍕🍕🍕  │
+      │  🍕💾🍕  │  Delivering
+      │  🍕🍕🍕  │  hot data
+      ╰─────────╯`,
+
+        // Server thinking
+        `      ┌─────────┐
+      │ [▓▓▓▓▓] │
+      │  │ │ │  │  Server is
+      │  ┴ ┴ ┴  │  thinking...
+      └─────────┘`,
+
+        // Pixel cat
+        `      ╱|、
+     (˚ˎ 。7      Fetching
+     |、˜〵       adorable
+     じしˍ,)ノ    content`,
+
+        // Retro computer
+        `      ┌───────────┐
+      │ ■ ■ ■ ■ □ │
+      │           │  Computing
+      │   ▓▓▓▓▓   │  really hard
+      └───────────┘
+         ▓▓▓▓▓▓▓`,
+
+        // Progress arrows
+        `      ╔═══════════╗
+      ║ ═══►     ║
+      ║    ═══►  ║  Making
+      ║       ═══►  progress
+      ╚═══════════╝`,
+
+        // Loading burrito
+        `      ╭──────╮
+      │ ▓▓▓▓ │  Wrapping
+      │ ▓🌯▓ │  up your
+      │ ▓▓▓▓ │  request
+      ╰──────╯`,
+
+        // Disco ball
+        `        ⚬ ⚬ ⚬
+       ⚬  ◆  ⚬
+      ⚬  ◆◆◆  ⚬   Loading
+       ⚬  ◆  ⚬    disco mode
+        ⚬ ⚬ ⚬`,
+
+        // Rocket launch
+        `         /\\
+        /  \\
+       | ▓▓ |     Launching
+       | ▓▓ |     in 3...2...1
+      /|▓▓▓▓|\\
+       \\ ~~ /
+        ~~~~`,
+
+        // Sleepy terminal
+        `      ┌─────────┐
+      │  ─  ─  │
+      │    ω   │  Wake up
+      │  ╰───╯ │  terminal!
+      └─────────┘`,
+
+        // Dancing dots
+        `      ●   ●   ●
+       ●   ●   ●
+      ●   ●   ●    Loading
+       ●   ●   ●   beat by
+      ●   ●   ●    beat`,
+
+        // Wizard hat
+        `         ★
+        ╱ ╲
+       ╱   ╲      Casting
+      ╱  ⚡  ╲     loading
+     ╱───────╲    spell
+    ╱─────────╲`,
+
+        // Gears turning
+        `      ⚙    ⚙
+       ⚙  ⚙  ⚙   Turning
+      ⚙  ⚙  ⚙    the gears
+       ⚙  ⚙  ⚙   of progress
+        ⚙  ⚙`,
+
+        // Pac-Man loading
+        `      ◀ ● ● ●
+         ᗧ···     Chomping
+      ◀ ● ● ●     data`,
+
+        // Matrix style
+        `      ⎡ 1 0 1 ⎤
+      ⎢ 0 1 0 ⎥   Following
+      ⎣ 1 0 1 ⎦   the rabbit`,
+
+        // Hourglass
+        `       ╱╲
+      │  │
+       ╲╱      Time is
+       ╱╲      relative
+      │▓▓│
+       ╲╱`,
+
+        // Musical notes
+        `      ♪ ♫ ♪
+       ♫   ♫      Loading
+      ♪     ♪     to the
+       ♫   ♫      beat
+      ♪ ♫ ♪`,
+
+        // Ninja loading
+        `      ┌─────┐
+      │ ◉ ◉ │
+      │  ▼  │    Stealth
+      └─────┘    loading
+       │   │     mode
+       └   ┘`,
     ],
     // Use existing site theme
     useExistingTheme: true,
@@ -104,7 +236,8 @@ function showLoadingMessage(message, index) {
     return new Promise((resolve) => {
         const lineElement = document.createElement("div");
         lineElement.className = "retro-loading-text-line";
-        lineElement.innerHTML = `<pre>${message}</pre>`;
+        lineElement.style.textAlign = "center";
+        lineElement.innerHTML = `<pre style="display: inline-block; text-align: left;">${message}</pre>`;
 
         loadingTextContainer.appendChild(lineElement);
 

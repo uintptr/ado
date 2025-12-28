@@ -5,39 +5,33 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>Secure Login | Command Search Terminal</title>
 
-        <!-- Resource hints for better performance -->
-        <link
-            rel="preconnect"
-            href="https://cdnjs.cloudflare.com"
-            crossorigin
-        />
-        <link rel="dns-prefetch" href="https://cdnjs.cloudflare.com" />
-
-        <!-- External CSS files -->
-        <link rel="stylesheet" href="/css/login.css" />
+        <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
         <link
             href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&display=swap"
             rel="stylesheet"
         />
-        <link
-            rel="stylesheet"
-            href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-            media="print"
-            onload="this.media='all'"
-        />
-        <noscript>
-            <link
-                rel="stylesheet"
-                href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-            />
-        </noscript>
+
+        <!-- Stylesheets -->
+        <link rel="stylesheet" href="/css/login.css" />
     </head>
     <body>
         <div class="login-wrapper">
             <div class="login-header">
-                <i class="fas fa-shield-alt login-icon"></i>
+                <svg
+                    class="login-icon"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    aria-hidden="true"
+                >
+                    <path
+                        d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"
+                    ></path>
+                    <path d="M9 12l2 2 4-4"></path>
+                </svg>
                 <div class="security-badge">SECURE</div>
             </div>
             <div class="login-title">Authentication Required</div>
@@ -72,13 +66,39 @@
             </form>
             <div class="login-hint">
                 <div class="support-info">
-                    <i class="fas fa-question-circle"></i>
+                    <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        aria-hidden="true"
+                    >
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+                        <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                    </svg>
                     <span
                         >Need assistance? <a href="#">Contact Support</a></span
                     >
                 </div>
                 <div class="security-notice">
-                    <i class="fas fa-lock"></i>
+                    <svg
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        aria-hidden="true"
+                    >
+                        <rect
+                            x="3"
+                            y="11"
+                            width="18"
+                            height="11"
+                            rx="2"
+                            ry="2"
+                        ></rect>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                    </svg>
                     <span>Secure connection established</span>
                 </div>
             </div>
