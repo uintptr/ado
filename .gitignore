@@ -14,3 +14,4 @@ config.toml
 .env
 test_config.json
 ado-update.json
+/Cargo.lock

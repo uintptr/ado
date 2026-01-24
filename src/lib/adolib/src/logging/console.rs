@@ -15,7 +15,7 @@ fn init_logger(verbose: bool) -> Result<()> {
         false => log.with_log_level(LevelFilter::Warn),
     };
 
-    log.start()?;
+    log.start();
 
     Ok(())
 }
