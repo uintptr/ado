@@ -1,4 +1,9 @@
 [workspace]
+
+[workspace.package]
+version = "0.1.4"
+edition = "2024"
+
 resolver = "2"
 members = ["src/bin/ado", "src/lib/adolib"]
 

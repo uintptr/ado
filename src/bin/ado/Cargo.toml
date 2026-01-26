@@ -1,23 +1,23 @@
 [package]
 name = "ado"
-version = "0.1.4"
-edition = "2024"
+version.workspace = true
+edition.workspace = true
 
 [dependencies]
-clap.workspace = true
-log.workspace = true
 adolib.workspace = true
-tokio.workspace = true
-rustyline.workspace = true
+clap.workspace = true
 colored.workspace = true
-which.workspace = true
-spinner.workspace = true
 derive_more.workspace = true
-serde_json.workspace = true
 directories.workspace = true
 figlet-rs.workspace = true
+log.workspace = true
 rust-embed.workspace = true
+rustyline.workspace = true
+serde_json.workspace = true
+spinner.workspace = true
 tempfile.workspace = true
+tokio.workspace = true
+which.workspace = true
 
 [dev-dependencies]
 tempfile.workspace = true
