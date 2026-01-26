@@ -22,10 +22,10 @@ home = "0.5"
 log = "0.4"
 md5 = "0.8"
 # omcp = "0.1"
-omcp = { path = "../omcp" }
+omcp = { path = "../omcp", features = ["client"] }
 reqwest = { version = "0.13", features = ["query"] }
-ring = { version = "0.17", features = ["wasm32_unknown_unknown_js"] }
-rstaples = "0.4"
+ring = { version = "0.17" }
+rstaples = { path = "../rstaples" }
 rust-embed = { version = "8.11", features = ["debug-embed"] }
 rustyline = { version = "17.0", features = [
   "derive",
@@ -46,7 +46,7 @@ tokio = { version = "1.49", default-features = false, features = [
   "tokio-macros"
 ] }
 toml = "0.9"
-uuid = { version = "1.19", features = ["v4"] }
+uuid = { version = "1.20", features = ["v4"] }
 vergen-git2 = { version = "9.1", features = ["build"] }
 wait-timeout = "0.2"
 walkdir = "2.5"

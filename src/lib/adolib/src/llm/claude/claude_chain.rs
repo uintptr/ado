@@ -1,7 +1,4 @@
-use std::{
-    path::PathBuf,
-    sync::atomic::{AtomicI32, Ordering},
-};
+use std::sync::atomic::{AtomicI32, Ordering};
 
 use crate::{
     config::loader::AdoConfig,
@@ -19,15 +16,12 @@ use crate::{
 };
 
 use async_trait::async_trait;
-use log::{error, info};
+use log::info;
 use omcp::types::McpParams;
-use tokio::fs;
-use uuid::Uuid;
 
 pub struct ClaudeChain {
     api: ClaudeApi,
     msg_id: AtomicI32,
-    log_dir: Option<PathBuf>,
     messages: ClaudeMessages,
     tokens: LLMUsage,
 }
@@ -51,32 +45,9 @@ impl ClaudeChain {
             }
         }
 
-        let log_dir = match &claude.logs {
-            Some(v) => match shellexpand::full(&v) {
-                Ok(v) => {
-                    let uuid = Uuid::new_v4().to_string();
-                    let log_dir = PathBuf::from(v.to_string()).join(uuid);
-
-                    match std::fs::create_dir_all(&log_dir) {
-                        Ok(_) => Some(log_dir),
-                        Err(e) => {
-                            error!("{e}");
-                            None
-                        }
-                    }
-                }
-                Err(e) => {
-                    error!("{e}");
-                    None
-                }
-            },
-            None => None,
-        };
-
         Ok(Self {
             api: ClaudeApi::new(claude)?,
             msg_id: AtomicI32::new(0),
-            log_dir,
             messages,
             tokens: LLMUsage::default(),
         })
@@ -86,25 +57,7 @@ impl ClaudeChain {
     where
         C: ConsoleDisplayTrait,
     {
-        let mut sub_id = 0;
-        let msg_id = self.msg_id.load(Ordering::SeqCst);
-
         for content in response.content.iter() {
-            //
-            // Log response if needed
-            //
-            if let Some(log_dir) = &self.log_dir {
-                let file_name = format!("{msg_id:04}_{sub_id:04}_{}.json", response.id);
-                let file_path = log_dir.join(file_name);
-                sub_id += 1;
-
-                if let Ok(response_json) = serde_json::to_string_pretty(&response)
-                    && let Err(e) = fs::write(file_path, response_json.as_bytes()).await
-                {
-                    error!("{e}");
-                }
-            }
-
             match content.content_type {
                 ClaudeContentType::Text => {
                     if let Some(text) = &content.text {
@@ -150,18 +103,6 @@ impl LLMChainTrait for ClaudeChain {
         C: ConsoleDisplayTrait,
     {
         self.messages.add_message(ClaudeRole::User, content);
-
-        if let Some(log_dir) = &self.log_dir {
-            let msg_id = self.msg_id.load(Ordering::SeqCst);
-            let file_name = format!("{msg_id:04}.json");
-            let file_path = log_dir.join(file_name);
-
-            if let Ok(messages) = serde_json::to_string_pretty(&self.messages)
-                && let Err(e) = fs::write(file_path, messages.as_bytes()).await
-            {
-                error!("{e}");
-            }
-        }
 
         loop {
             let resp = self.api.chat(&self.messages).await?;
@@ -237,7 +178,7 @@ mod tests {
     use std::{fs, path::Path};
 
     use log::info;
-    use rstaples::{logging::StaplesLogger, staples::find_file};
+    use rstaples::{file::find_file, logging::StaplesLogger};
 
     use crate::{
         config::loader::AdoConfig,
@@ -252,7 +193,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_message() {
-        StaplesLogger::new().with_stdout().start().unwrap();
+        StaplesLogger::new().with_stdout().start();
 
         let config_file = AdoConfig::from_default().unwrap();
 
@@ -263,7 +204,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_chain() {
-        StaplesLogger::new().with_stdout().start().unwrap();
+        StaplesLogger::new().with_stdout().start();
 
         let config_file = AdoConfig::from_default().unwrap();
 

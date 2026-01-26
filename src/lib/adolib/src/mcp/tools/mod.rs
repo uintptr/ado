@@ -1,4 +1,5 @@
 pub mod browse;
+#[cfg(not(target_arch = "wasm32"))]
 pub mod file;
 pub mod http;
 pub mod network;

@@ -90,7 +90,7 @@ mod ollama_tests {
 
     #[tokio::test]
     async fn test_message() {
-        StaplesLogger::new().with_stdout().start().unwrap();
+        StaplesLogger::new().with_stdout().start();
 
         let config_file = AdoConfig::from_default().unwrap();
 
@@ -101,7 +101,7 @@ mod ollama_tests {
 
     #[tokio::test]
     async fn test_chain() {
-        StaplesLogger::new().with_stdout().start().unwrap();
+        StaplesLogger::new().with_stdout().start();
 
         let config_file = AdoConfig::from_default().unwrap();
 
