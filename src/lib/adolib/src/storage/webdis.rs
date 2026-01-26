@@ -2,7 +2,6 @@ use std::time::Duration;
 
 use crate::{
     error::{Error, Result},
-    http::req::Http,
     storage::PersistentStorageTrait,
 };
 use async_trait::async_trait;
@@ -17,7 +16,7 @@ use serde::Deserialize;
 pub struct WebdisStorage {
     user_id: String,
     url: String,
-    client: Http,
+    client: reqwest::Client,
 }
 
 #[derive(Deserialize)]
@@ -35,7 +34,7 @@ impl WebdisStorage {
         Self {
             user_id: user_id.as_ref().to_string(),
             url: url.as_ref().to_string(),
-            client: Http::new(),
+            client: reqwest::Client::new(),
         }
     }
 
@@ -57,11 +56,10 @@ impl PersistentStorageTrait for WebdisStorage {
         let key = self.build_key(realm, user_key);
         let get_url = format!("{}/GET/{key}", self.url);
 
-        match self.client.get(get_url, None).await {
-            Ok(v) => match v.is_success() {
+        match self.client.get(&get_url).send().await {
+            Ok(resp) => match resp.status().is_success() {
                 true => {
-                    let data_string = String::from_utf8(v.data.to_vec())?;
-                    let data: WebdisData = serde_json::from_str(&data_string)?;
+                    let data: WebdisData = resp.json().await?;
 
                     match data.get {
                         Some(v) => Ok(v),
@@ -72,7 +70,7 @@ impl PersistentStorageTrait for WebdisStorage {
             },
             Err(e) => {
                 error!("{e}");
-                Err(e)
+                Err(e.into())
             }
         }
     }
@@ -91,14 +89,14 @@ impl PersistentStorageTrait for WebdisStorage {
             ttl_sec => format!("{}/SETEX/{}/{}", self.url, key, ttl_sec),
         };
 
-        match self.client.put(set_url, None, data).await {
-            Ok(v) => match v.is_success() {
+        match self.client.put(&set_url).body(data).send().await {
+            Ok(resp) => match resp.status().is_success() {
                 true => Ok(()),
                 false => Err(Error::StorageWriteFailure),
             },
             Err(e) => {
                 error!("{e}");
-                Err(e)
+                Err(e.into())
             }
         }
     }
@@ -110,14 +108,14 @@ impl PersistentStorageTrait for WebdisStorage {
         let key = self.build_key(realm, user_key);
         let del_url = format!("{}/DEL/{}", self.url, key);
 
-        match self.client.get(del_url, None).await {
-            Ok(v) => match v.is_success() {
+        match self.client.get(&del_url).send().await {
+            Ok(resp) => match resp.status().is_success() {
                 true => Ok(()),
                 false => Err(Error::StorageWriteFailure),
             },
             Err(e) => {
                 error!("{e}");
-                Err(e)
+                Err(e.into())
             }
         }
     }

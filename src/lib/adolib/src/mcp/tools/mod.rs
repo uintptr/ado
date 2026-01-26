@@ -1,7 +1,10 @@
+#[cfg(not(target_arch = "wasm32"))]
 pub mod browse;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod file;
 pub mod http;
+#[cfg(not(target_arch = "wasm32"))]
 pub mod network;
+#[cfg(not(target_arch = "wasm32"))]
 pub mod shell;
 pub mod web_search;

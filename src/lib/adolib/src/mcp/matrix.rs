@@ -13,10 +13,7 @@ use crate::{
     mcp::{
         assets::{McpAssetsAll, McpAssetsPlatform},
         tools::{
-            browse::ToolBrowse,
             http::{ToolHttpGet, ToolHttpPost},
-            network::{ToolGetIpAddress, ToolWhoisQuery},
-            shell::ToolShellExec,
             web_search::ToolWebSearch,
         },
         types::McpConfig,
@@ -191,6 +188,7 @@ impl McpMatrix {
             let name = t.name.clone();
 
             let client: Box<dyn OMcpClientTrait> = match t.name.as_str() {
+                /*
                 "browse" => match ToolBrowse::new() {
                     Ok(v) => BakedClient::new(v),
                     Err(e) => {
@@ -198,6 +196,7 @@ impl McpMatrix {
                         continue;
                     }
                 },
+                */
                 /*
                 "file_read" => {
                     let tool = ToolFileRead::new();
@@ -215,7 +214,6 @@ impl McpMatrix {
                     let tool = ToolFileList::new();
                     BakedClient::new(tool)
                 }
-                */
                 "get_ip_address" => {
                     let tool = ToolGetIpAddress::new();
                     BakedClient::new(tool)
@@ -231,6 +229,7 @@ impl McpMatrix {
                         continue;
                     }
                 },
+                */
                 "http_get" => {
                     let tool = ToolHttpGet::new();
                     BakedClient::new(tool)
