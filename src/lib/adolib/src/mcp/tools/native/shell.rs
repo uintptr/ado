@@ -76,7 +76,7 @@ mod tests {
     use omcp::types::{BakedMcpToolTrait, McpParams};
     use serde_json::Value;
 
-    use crate::{logging::logger::setup_logger, mcp::tools::shell::ToolShellExec};
+    use crate::{logging::logger::setup_logger, mcp::tools::ToolShellExec};
 
     #[tokio::test]
     async fn test_shell() {
