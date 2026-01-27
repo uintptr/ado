@@ -54,7 +54,7 @@ def shell_exec(cmd_line: str,
     else:
         ret = 1
 
-    if True == check and 0 != ret:
+    if check and 0 != ret:
         raise AssertionError(cmd_line, ret, out_str, out_err)
 
     return ret, out_str, out_err
