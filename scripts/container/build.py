@@ -1,18 +1,17 @@
 #!/usr/bin/env python3
 
-import os
-import sys
 import argparse
-import tempfile
-import subprocess
-import shutil
 import hashlib
-import tarfile
-import uuid
 import json
+import os
+import shutil
+import subprocess
+import sys
+import tarfile
+import tempfile
+import uuid
 from dataclasses import asdict, dataclass
 from typing import Any
-
 
 WWW_IGNORE_LIST = ["config.toml", "test_config.json"]
 
@@ -76,7 +75,7 @@ def sha256_file(file_path: str) -> str:
 
 def tarball(directory: str, out_file: str, include_root: bool = True) -> None:
 
-    if True == include_root:
+    if include_root:
         rel_dir = os.path.dirname(directory)
     else:
         rel_dir = directory
@@ -117,7 +116,7 @@ def shell_exec(cmd_line: str,
     else:
         ret = 1
 
-    if True == check and 0 != ret:
+    if check and 0 != ret:
         raise AssertionError(cmd_line, ret, out_str, out_err)
 
     return ret, out_str, out_err

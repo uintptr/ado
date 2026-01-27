@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
-import urllib.request
-import urllib
-from dataclasses import dataclass
-import os
-import sys
 import argparse
+import os
 import ssl
-
+import sys
+import urllib
+import urllib.request
+from dataclasses import dataclass
 
 DEF_STORAGE_SERVER = "http://localhost:7379"
 

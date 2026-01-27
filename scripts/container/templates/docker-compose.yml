@@ -1,28 +1,28 @@
-  services:
+services:
     nginx:
-      container_name: ado
-      restart: unless-stopped
-      image: nginx:latest
-      ports:
-        - "443:443"
-      depends_on:
-        - webdis
-      volumes:
-        - ./conf.d:/etc/nginx/conf.d/
-        - ./certs:/etc/certs/
-        - __WWW_ROOT__:/var/www/
+        container_name: ado
+        restart: unless-stopped
+        image: nginx:latest
+        ports:
+            - "443:443"
+        depends_on:
+            - webdis
+        volumes:
+            - ./conf.d:/etc/nginx/conf.d/
+            - ./certs:/etc/certs/
+            - __WWW_ROOT__:/var/www/
 
     webdis:
-      image: nicolas/webdis:latest
-      depends_on:
-        - redis
-      volumes:
-        - ./webdis/webdis.prod.json:/etc/webdis.prod.json
-      environment:
-        - REDIS_HOST=redis
-        - REDIS_PORT=6379
+        image: nicolas/webdis:latest
+        depends_on:
+            - redis
+        volumes:
+            - ./webdis/webdis.prod.json:/etc/webdis.prod.json
+        environment:
+            - REDIS_HOST=redis
+            - REDIS_PORT=6379
     redis:
-      image: redis
-      container_name: redis
-      volumes:
-        - ./redis/data:/data
+        image: redis
+        container_name: redis
+        volumes:
+            - ./redis/data:/data

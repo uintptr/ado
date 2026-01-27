@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
-import os
-import sys
-import subprocess
 import argparse
+import os
 import shutil
+import subprocess
+import sys
 import tarfile
-
-from typing import Any
 from dataclasses import dataclass
+from typing import Any
 
 DEF_ARCHIVE_NAME = "container.tgz"
 
@@ -73,7 +72,7 @@ class DockerCompose:
 
         compose_file = os.path.join(directory, "docker-compose.yml")
 
-        if False == os.path.isfile(compose_file):
+        if not os.path.isfile(compose_file):
             raise FileNotFoundError(f"{compose_file} is missing")
 
     def stop(self) -> None:
@@ -87,7 +86,7 @@ class DockerCompose:
 
         cmd_line = "docker-compose up"
 
-        if True == background:
+        if background:
             cmd_line += " -d"
 
         shell_exec(cmd_line, cwd=self.directory)
@@ -145,7 +144,7 @@ def main() -> int:
                         "--install-directory",
                         type=str,
                         default=def_install,
-                        help=f"/path/to/ado_container")
+                        help="/path/to/ado_container")
 
     try:
         env_check()
@@ -156,7 +155,7 @@ def main() -> int:
         printkv("Archive File", args.archive_file)
         printkv("Install Directory", args.install_directory)
 
-        if True == os.path.isfile(args.archive_file):
+        if os.path.isfile(args.archive_file):
             updated = update_container(args)
             os.unlink(args.archive_file)
         else:

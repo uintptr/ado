@@ -1,28 +1,24 @@
 {
-  "redis_host": "$REDIS_HOST",
-  "redis_port": "$REDIS_PORT",
-  "redis_auth": null,
-  "http_host": "0.0.0.0",
-  "http_port": 7379,
-  "threads": 4,
-  "daemonize": false,
-  "database": 0,
-  "acl": [
-    {
-      "disabled": [
-        "DEBUG"
-      ]
+    "redis_host": "$REDIS_HOST",
+    "redis_port": "$REDIS_PORT",
+    "redis_auth": null,
+    "http_host": "0.0.0.0",
+    "http_port": 7379,
+    "threads": 4,
+    "daemonize": false,
+    "database": 0,
+    "acl": [
+        {
+            "disabled": ["DEBUG"]
+        },
+        {
+            "http_basic_auth": "user:password",
+            "enabled": ["DEBUG"]
+        }
+    ],
+    "hiredis": {
+        "keep_alive_sec": 15
     },
-    {
-      "http_basic_auth": "user:password",
-      "enabled": [
-        "DEBUG"
-      ]
-    }
-  ],
-  "hiredis": {
-    "keep_alive_sec": 15
-  },
-  "verbosity": 3,
-  "logfile": "/var/log/webdis.log"
+    "verbosity": 3,
+    "logfile": "/var/log/webdis.log"
 }
