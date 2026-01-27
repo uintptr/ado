@@ -52,9 +52,7 @@
                         "description": "Name of the domain name to query. The input name must look like a proper domain name"
                     }
                 },
-                "required": [
-                    "domain_name"
-                ]
+                "required": ["domain_name"]
             },
             "strict": true
         },
@@ -74,10 +72,7 @@
                         "description": "the full path of the file to write"
                     }
                 },
-                "required": [
-                    "file_name",
-                    "file_data"
-                ]
+                "required": ["file_name", "file_data"]
             },
             "strict": true
         }
