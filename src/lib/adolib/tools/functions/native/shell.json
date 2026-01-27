@@ -1,34 +1,34 @@
 [
     {
         "name": "shell_exec",
-        "description": "Execute a shell command on the host system. **WARNING**: This provides direct system access and should be used carefully. Avoid commands that could harm the system or expose sensitive data.",
+        "description": "Execute a shell command.",
         "inputSchema": {
             "type": "object",
             "properties": {
                 "command_line": {
                     "type": "string",
-                    "description": "The shell command to execute. Examples: 'ls -la', 'python script.py', 'curl https://api.example.com'. Avoid commands with user input that could cause injection attacks. Always validate and sanitize inputs."
+                    "description": "Command to execute."
                 },
                 "working_directory": {
                     "type": "string",
-                    "description": "Directory to run the command in. Use absolute paths (e.g., '/home/user/project', '/tmp'). If not specified, uses current working directory."
+                    "description": "Working directory. Defaults to cwd."
                 },
                 "timeout": {
                     "type": "integer",
-                    "description": "Maximum execution time in seconds (1-3600). Commands exceeding this will be terminated. Default: 60 seconds. Use 0 for no timeout (dangerous for long-running commands).",
+                    "description": "Timeout in seconds (default: 60).",
                     "minimum": 0,
                     "maximum": 3600
                 },
                 "environment": {
                     "type": "object",
-                    "description": "Environment variables to set for this command execution. Format: {\"VAR_NAME\": \"value\"}. Examples: {\"DEBUG\": \"true\", \"API_KEY\": \"secret123\"}",
+                    "description": "Environment variables as key-value pairs.",
                     "additionalProperties": {
                         "type": "string"
                     }
                 },
                 "shell": {
                     "type": "string",
-                    "description": "Shell interpreter to use. Common options: '/bin/bash' (default on most systems), '/bin/sh' (POSIX shell), '/bin/zsh'. Leave empty to use system default.",
+                    "description": "Shell to use.",
                     "enum": [
                         "/bin/bash",
                         "/bin/sh",

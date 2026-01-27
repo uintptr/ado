@@ -1,27 +1,27 @@
 [
     {
         "name": "http_get",
-        "description": "Make an HTTP GET request to retrieve data from a web server or API endpoint. Use this to fetch web pages, API data, or any publicly accessible HTTP resources.",
+        "description": "Make an HTTP GET request.",
         "inputSchema": {
             "type": "object",
             "properties": {
                 "url": {
                     "type": "string",
-                    "description": "The complete HTTP/HTTPS URL to request. Must include protocol (http:// or https://). Examples: 'https://api.example.com/data', 'https://www.example.com/page.html'"
+                    "description": "URL to request (include http:// or https://)."
                 },
                 "http_headers": {
                     "type": "array",
-                    "description": "Optional HTTP headers to include with the request. Common headers include Authorization, Content-Type, User-Agent, etc.",
+                    "description": "Request headers.",
                     "items": {
                         "type": "object",
                         "properties": {
                             "key": {
                                 "type": "string",
-                                "description": "Header name (e.g., 'Authorization', 'Content-Type', 'User-Agent')"
+                                "description": "Header name."
                             },
                             "value": {
                                 "type": "string",
-                                "description": "Header value (e.g., 'Bearer token123', 'application/json', 'MyApp/1.0')"
+                                "description": "Header value."
                             }
                         },
                         "required": ["key", "value"],
@@ -35,27 +35,27 @@
     },
     {
         "name": "http_post",
-        "description": "Make an HTTP POST request to send data to a web server or API endpoint. Use this to submit forms, send API data, or perform actions that modify server state.",
+        "description": "Make an HTTP POST request.",
         "inputSchema": {
             "type": "object",
             "properties": {
                 "url": {
                     "type": "string",
-                    "description": "The complete HTTP/HTTPS URL to post to. Must include protocol (http:// or https://). Examples: 'https://api.example.com/submit', 'https://forms.example.com/contact'"
+                    "description": "URL to post to (include http:// or https://)."
                 },
                 "http_headers": {
                     "type": "array",
-                    "description": "Optional HTTP headers to include with the request. For JSON APIs, typically include Content-Type: application/json. For authentication, include Authorization header.",
+                    "description": "Request headers.",
                     "items": {
                         "type": "object",
                         "properties": {
                             "key": {
                                 "type": "string",
-                                "description": "Header name (e.g., 'Content-Type', 'Authorization', 'Accept')"
+                                "description": "Header name."
                             },
                             "value": {
                                 "type": "string",
-                                "description": "Header value (e.g., 'application/json', 'Bearer token123', 'application/json')"
+                                "description": "Header value."
                             }
                         },
                         "required": ["key", "value"],
@@ -64,7 +64,7 @@
                 },
                 "body": {
                     "type": "string",
-                    "description": "The request body data to send. For JSON APIs, provide a JSON string. For form data, provide URL-encoded string. Leave empty if no body is needed."
+                    "description": "Request body."
                 }
             },
             "required": ["url"],

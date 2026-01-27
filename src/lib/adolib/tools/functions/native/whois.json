@@ -1,18 +1,18 @@
 [
     {
         "name": "whois_query",
-        "description": "Look up domain registration information using the WHOIS protocol. Returns details about domain ownership, registration dates, nameservers, and contact information.",
+        "description": "Look up domain WHOIS information.",
         "inputSchema": {
             "type": "object",
             "properties": {
                 "domain_name": {
                     "type": "string",
-                    "description": "The domain name to query. Must be a valid domain format without protocol or paths. Examples: 'google.com', 'example.org', 'subdomain.example.net'. Do not include 'https://' or 'www.' prefixes unless they are part of the actual domain name.",
+                    "description": "Domain to query (e.g., 'example.com').",
                     "pattern": "^[a-zA-Z0-9]([a-zA-Z0-9\\-]{0,61}[a-zA-Z0-9])?\\.[a-zA-Z]{2,}$"
                 },
                 "query_type": {
                     "type": "string",
-                    "description": "Type of WHOIS information to retrieve. Options: 'full' (complete WHOIS record), 'summary' (key details only), 'availability' (check if domain is available for registration).",
+                    "description": "Query type.",
                     "enum": ["full", "summary", "availability"],
                     "default": "full"
                 }

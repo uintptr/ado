@@ -1,24 +1,24 @@
 [
     {
         "name": "search",
-        "description": "Perform a web search using a search engine (like Google) to find information on the internet. Returns search results with titles, URLs, and snippets.",
+        "description": "Perform a web search.",
         "inputSchema": {
             "type": "object",
             "properties": {
                 "query": {
                     "type": "string",
-                    "description": "Search query terms to find relevant web pages. Use natural language or keywords. Examples: 'Python machine learning tutorial', 'weather forecast New York', 'best restaurants near me'. Use quotes for exact phrases: '\"machine learning\"'. Use site: for specific sites: 'site:stackoverflow.com python loops'."
+                    "description": "Search query."
                 },
                 "num_results": {
                     "type": "integer",
-                    "description": "Number of search results to return. Typical values: 10 (default), 20, 50. Higher numbers may take longer to process.",
+                    "description": "Number of results (default: 10).",
                     "minimum": 1,
                     "maximum": 100,
                     "default": 10
                 },
                 "search_type": {
                     "type": "string",
-                    "description": "Type of search to perform. Options: 'web' (general web search), 'images' (image search), 'news' (recent news articles), 'videos' (video content).",
+                    "description": "Type of search.",
                     "enum": ["web", "images", "news", "videos"],
                     "default": "web"
                 }

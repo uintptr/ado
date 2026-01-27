@@ -1,19 +1,19 @@
 [
     {
         "name": "get_ip_address",
-        "description": "Retrieve the public IP address of this machine as seen from the internet. This shows your external/WAN IP address that websites and external services see when you connect to them.",
+        "description": "Get public IP address.",
         "inputSchema": {
             "type": "object",
             "properties": {
                 "ip_version": {
                     "type": "string",
-                    "description": "IP version to retrieve. Options: 'ipv4' (default), 'ipv6', 'both'. Most services use IPv4.",
+                    "description": "IP version.",
                     "enum": ["ipv4", "ipv6", "both"],
                     "default": "ipv4"
                 },
                 "include_details": {
                     "type": "boolean",
-                    "description": "Whether to include additional information like ISP, location, etc. Default: false (only returns IP address).",
+                    "description": "Include ISP/location info.",
                     "default": false
                 }
             },
