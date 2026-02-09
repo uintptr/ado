@@ -43,7 +43,7 @@ shell-words = "1.1"
 shellexpand = "3.1"
 sled = "0.34"
 spinner = "0.5"
-tempfile = "3.24"
+tempfile = "3.25"
 tokio = { version = "1.49", default-features = false, features = [
   "macros",
   "test-util",

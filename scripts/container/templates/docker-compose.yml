@@ -1,19 +1,23 @@
 services:
     nginx:
+        dns:
+            - 8.8.8.8
+            - 8.8.4.4
         container_name: ado
         restart: unless-stopped
         image: nginx:latest
         ports:
-            - "443:443"
+            - 8003:80
         depends_on:
             - webdis
         volumes:
             - ./conf.d:/etc/nginx/conf.d/
             - ./certs:/etc/certs/
+            - ./www:/var/www/
             - __WWW_ROOT__:/var/www/
-
     webdis:
         image: nicolas/webdis:latest
+        restart: unless-stopped
         depends_on:
             - redis
         volumes:
@@ -23,6 +27,7 @@ services:
             - REDIS_PORT=6379
     redis:
         image: redis
+        restart: unless-stopped
         container_name: redis
         volumes:
             - ./redis/data:/data
