@@ -23,3 +23,6 @@ tempfile.workspace = true
 
 [build-dependencies]
 home.workspace = true
+
+[lints]
+workspace = true
