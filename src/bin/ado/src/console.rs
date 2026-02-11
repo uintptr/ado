@@ -14,12 +14,12 @@ use adolib::{
     error::{Error, Result},
     ui::{ConsoleDisplayTrait, commands::UserCommands},
 };
-use crossterm::{
+use directories::ProjectDirs;
+use ratatui::crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyModifiers},
     execute,
     terminal::{EnterAlternateScreen, LeaveAlternateScreen, disable_raw_mode, enable_raw_mode},
 };
-use directories::ProjectDirs;
 use ratatui::{
     Terminal,
     backend::CrosstermBackend,
@@ -81,20 +81,33 @@ fn create_input() -> TextArea<'static> {
 
 /// Simple markdown-to-styled-text converter.
 ///
-/// Handles headings, code blocks, bold, and plain text.
+/// Handles headings, code blocks (with syntect highlighting), bold, and plain text.
 /// Produces ratatui `Text<'static>` for display in a Paragraph widget.
 fn render_markdown(input: &str) -> Text<'static> {
     let mut lines: Vec<Line<'static>> = Vec::new();
     let mut in_code_block = false;
+    let mut code_lang = String::new();
+    let mut code_buf: Vec<String> = Vec::new();
 
     for raw_line in input.lines() {
         if raw_line.starts_with("```") {
-            in_code_block = !in_code_block;
+            if in_code_block {
+                // Closing fence — highlight collected code
+                let highlighted = highlight_code_block(&code_buf, &code_lang);
+                lines.extend(highlighted);
+                code_buf.clear();
+                code_lang.clear();
+                in_code_block = false;
+            } else {
+                // Opening fence — extract language hint
+                code_lang = raw_line.trim_start_matches('`').trim().to_string();
+                in_code_block = true;
+            }
             continue;
         }
 
         if in_code_block {
-            lines.push(Line::styled(raw_line.to_string(), Style::default().fg(Color::Green)));
+            code_buf.push(raw_line.to_string());
             continue;
         }
 
@@ -119,16 +132,62 @@ fn render_markdown(input: &str) -> Text<'static> {
             let bullet = format!("  {} {}", "•", &raw_line[2..]);
             lines.push(Line::styled(bullet, Style::default().fg(Color::White)));
         } else if raw_line.starts_with("| ") {
-            // Table rows — render with dim separators
             lines.push(Line::styled(raw_line.to_string(), Style::default().fg(Color::White)));
         } else {
-            // Inline styling: **bold** and `code`
             let spans = parse_inline_styles(raw_line);
             lines.push(Line::from(spans));
         }
     }
 
+    // Handle unclosed code block
+    if in_code_block && !code_buf.is_empty() {
+        let highlighted = highlight_code_block(&code_buf, &code_lang);
+        lines.extend(highlighted);
+    }
+
     Text::from(lines)
+}
+
+/// Highlight a code block using syntect, falling back to plain green on failure.
+fn highlight_code_block(code_lines: &[String], lang: &str) -> Vec<Line<'static>> {
+    use ratatui::text::Span;
+    use syntect::easy::HighlightLines;
+    use syntect::highlighting::ThemeSet;
+    use syntect::parsing::SyntaxSet;
+
+    let ss = SyntaxSet::load_defaults_newlines();
+    let ts = ThemeSet::load_defaults();
+    let theme = &ts.themes["base16-eighties.dark"];
+
+    // Find syntax by language token, fall back to plain text
+    let syntax = ss
+        .find_syntax_by_token(lang)
+        .or_else(|| ss.find_syntax_by_extension(lang))
+        .unwrap_or_else(|| ss.find_syntax_plain_text());
+
+    let mut highlighter = HighlightLines::new(syntax, theme);
+    let mut result = Vec::new();
+
+    for line in code_lines {
+        let line_with_nl = format!("{line}\n");
+        match highlighter.highlight_line(&line_with_nl, &ss) {
+            Ok(ranges) => {
+                let spans: Vec<Span<'static>> = ranges
+                    .into_iter()
+                    .map(|(style, text)| {
+                        let fg = Color::Rgb(style.foreground.r, style.foreground.g, style.foreground.b);
+                        Span::styled(text.trim_end_matches('\n').to_string(), Style::default().fg(fg))
+                    })
+                    .collect();
+                result.push(Line::from(spans));
+            }
+            Err(_) => {
+                result.push(Line::styled(line.to_string(), Style::default().fg(Color::Green)));
+            }
+        }
+    }
+
+    result
 }
 
 /// Parse inline **bold** and `code` markers into styled spans.
