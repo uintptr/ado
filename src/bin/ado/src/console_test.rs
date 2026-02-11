@@ -13,11 +13,16 @@ mod tests {
 
     use adolib::storage::persistent::PersistentStorage;
 
-    use crate::console::TerminalConsole;
     use adolib::ui::{ConsoleDisplayTrait, NopConsole};
 
+    // Tests using TerminalConsole require a real terminal (alternate screen, raw mode).
+    // They are marked #[ignore] so they don't run in CI.
+
+    #[ignore]
     #[test]
     fn display_text() {
+        use crate::console::TerminalConsole;
+
         setup_logger(true).unwrap();
 
         let config = AdoConfig::from_default().unwrap();
@@ -47,8 +52,11 @@ mod tests {
         cmd.handler("/quit", &mut console).await.unwrap();
     }
 
+    #[ignore]
     #[test]
     fn display_search() {
+        use crate::console::TerminalConsole;
+
         setup_logger(true).unwrap();
 
         let manifest_dir = env!("CARGO_MANIFEST_DIR");
@@ -76,8 +84,11 @@ mod tests {
         console.display(data).unwrap();
     }
 
+    #[ignore]
     #[test]
     fn display_shell_test() {
+        use crate::console::TerminalConsole;
+
         setup_logger(true).unwrap();
 
         let sh = AdoShell::new();

@@ -1,14 +1,17 @@
 use std::path::PathBuf;
 
-use adolib::error::Result;
 use figlet_rs::FIGfont;
+use ratatui::{
+    style::{Color, Style},
+    text::Text,
+};
 use rust_embed::{Embed, EmbeddedFile};
 
 #[derive(Embed)]
 #[folder = "fonts"]
 struct FigFonts;
 
-pub fn display_banner<S, F>(text: S, font: F) -> Result<()>
+pub fn generate_banner<S, F>(text: S, font: F) -> Text<'static>
 where
     S: AsRef<str>,
     F: AsRef<str>,
@@ -28,16 +31,24 @@ where
     let fig = match font_data {
         Some(v) => {
             let font_str = String::from_utf8_lossy(&v.data);
-            FIGfont::from_content(&font_str)?
+            match FIGfont::from_content(&font_str) {
+                Ok(f) => f,
+                Err(_) => return Text::raw(""),
+            }
         }
-        None => FIGfont::standard()?,
+        None => match FIGfont::standard() {
+            Ok(f) => f,
+            Err(_) => return Text::raw(""),
+        },
     };
 
     let content = fig.convert(text.as_ref());
 
-    if let Some(banner) = content {
-        println!("{}", banner);
+    match content {
+        Some(banner) => {
+            let banner_str = banner.to_string();
+            Text::styled(banner_str, Style::default().fg(Color::Cyan))
+        }
+        None => Text::raw(""),
     }
-
-    Ok(())
 }

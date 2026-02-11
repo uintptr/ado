@@ -4,7 +4,6 @@ use async_trait::async_trait;
 use base64::{Engine, engine::general_purpose};
 use log::info;
 use omcp::types::{BakedMcpToolTrait, McpParams};
-use rustyline::hint::Hint;
 use serde::Serialize;
 use tokio::process::Command;
 
@@ -50,7 +49,7 @@ impl BakedMcpToolTrait for ToolShellExec {
         info!(
             "pwd={} shell={} timeout={} args={:?}",
             wd.display(),
-            shell.display(),
+            shell,
             timeout,
             args
         );
