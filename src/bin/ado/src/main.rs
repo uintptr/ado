@@ -1,6 +1,6 @@
 use std::{fs, path::Path};
 
-use ado::console::{TerminalConsole, wait_for_ctrl_c};
+use ado::console::TerminalConsole;
 use adolib::{
     config::loader::AdoConfig,
     error::{Error, Result},
@@ -47,22 +47,15 @@ async fn main_loop(mut console: TerminalConsole, mut command: UserCommands, opt_
     let mut init_query = opt_input;
 
     loop {
-        let input = match init_query.take() {
+        let input = match init_query {
             Some(v) => v,
             None => console.read_input().await?,
         };
 
         //
-        // process the command, cancellable with Ctrl+C
+        // process the command
         //
-        let ret = tokio::select! {
-            result = command.handler(&input, &mut console) => result,
-            _ = wait_for_ctrl_c() => {
-                console.stop_spinner();
-                console.display_string("Cancelled.")?;
-                continue;
-            }
-        };
+        let ret = command.handler(&input, &mut console).await;
 
         match ret {
             Ok(()) => {}
@@ -71,6 +64,8 @@ async fn main_loop(mut console: TerminalConsole, mut command: UserCommands, opt_
             Err(Error::EOF) => return Ok(()),
             Err(e) => console.display_error(e)?,
         }
+
+        init_query = None
     }
 }
 

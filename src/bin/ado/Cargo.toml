@@ -6,17 +6,18 @@ edition.workspace = true
 [dependencies]
 adolib.workspace = true
 clap.workspace = true
-crossterm.workspace = true
+colored.workspace = true
 derive_more.workspace = true
 directories.workspace = true
 figlet-rs.workspace = true
 log.workspace = true
-ratatui.workspace = true
 rust-embed.workspace = true
+rustyline.workspace = true
 serde_json.workspace = true
+spinner.workspace = true
 tempfile.workspace = true
 tokio.workspace = true
-tui-textarea.workspace = true
+which.workspace = true
 
 [dev-dependencies]
 tempfile.workspace = true
