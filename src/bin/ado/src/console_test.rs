@@ -8,6 +8,7 @@ mod tests {
 
     use adolib::{
         config::loader::AdoConfig, data::types::AdoData, logging::logger::setup_logger, shell::AdoShell,
+        search::results::{WebResult, WebResultEntry},
         ui::commands::UserCommands,
     };
 
@@ -61,7 +62,7 @@ mod tests {
             .canonicalize()
             .unwrap();
 
-        let json_data = fs::read_to_string(json_file).unwrap();
+        let _json_data = fs::read_to_string(json_file).unwrap();
 
         let config = AdoConfig::from_default().unwrap();
 
@@ -71,7 +72,14 @@ mod tests {
         let command = UserCommands::new(&config, cache).unwrap();
         let mut console = TerminalConsole::new(&command).unwrap();
 
-        let data = AdoData::SearchData(GoogleSearchResults { json_string: json_data });
+        let data = AdoData::SearchData(WebResult {
+            entries: vec![WebResultEntry {
+                title: "Test Result".to_string(),
+                link: "https://example.com".to_string(),
+                link_display: "example.com".to_string(),
+                snippet: "A test search result snippet.".to_string(),
+            }],
+        });
 
         console.display(data).unwrap();
     }
