@@ -1,11 +1,6 @@
+use async_trait::async_trait;
 use reqwest::Client;
-use serde_json::Value;
-
-use crate::{
-    config::loader::AdoConfig,
-    data::types::AdoDataMarkdown,
-    error::{Error, Result},
-};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct GoogleConfig {
@@ -21,94 +16,47 @@ pub struct GoogleCSE {
     google: GoogleConfig,
 }
 
-use serde::{Deserialize, Serialize};
+use crate::{
+    config::loader::AdoConfig,
+    error::Result,
+    search::{
+        SearchTrait,
+        results::{WebResult, WebResultEntry},
+    },
+};
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct GoogleSearchResults {
-    pub json_string: String,
+#[derive(Deserialize)]
+struct GoogleItem {
+    title: String,
+    link: String,
+    #[serde(rename = "displayLink")]
+    display_link: String,
+    snippet: String,
 }
 
-impl GoogleSearchResults {
-    pub fn new(json_string: String) -> Self {
-        Self { json_string }
-    }
+#[derive(Deserialize)]
+struct GoogleResponse {
+    items: Vec<GoogleItem>,
 }
 
-impl AdoDataMarkdown for &GoogleSearchResults {
-    fn to_markdown(self) -> crate::error::Result<String> {
-        let value: Value = serde_json::from_str(&self.json_string)?;
-
-        let items = value.get("items").ok_or(Error::InvalidFormat)?;
-
-        let items = items.as_array().ok_or(Error::InvalidFormat)?;
-
-        let mut md_lines = Vec::new();
-
-        md_lines.push("# Search Results".to_string());
-
-        for (i, item) in items.iter().enumerate() {
-            let title = match item.get("title").and_then(|v| v.as_str()) {
-                Some(v) => v,
-                None => continue,
-            };
-
-            let link = match item.get("link").and_then(|v| v.as_str()) {
-                Some(v) => v,
-                None => continue,
-            };
-
-            let link_display = match item.get("displayLink").and_then(|v| v.as_str()) {
-                Some(v) => v,
-                None => continue,
-            };
-
-            let snippet = match item.get("snippet").and_then(|v| v.as_str()) {
-                Some(v) => v,
-                None => continue,
-            };
-
-            md_lines.push(format!("## {i} {title}"));
-            md_lines.push(format!(" * [{link_display}]({link})"));
-            md_lines.push(format!("> {snippet}"));
-        }
-
-        Ok(md_lines.join("\n"))
-    }
-}
-
-impl GoogleCSE {
-    pub fn new(config: &AdoConfig) -> Result<Self> {
-        let google = config.search()?.clone();
-
-        Ok(Self {
-            http_client: Client::new(),
-            google,
+fn parse_results(data: &str) -> Result<WebResult> {
+    let response: GoogleResponse = serde_json::from_str(data)?;
+    let entries = response
+        .items
+        .into_iter()
+        .map(|item| WebResultEntry {
+            title: item.title,
+            link: item.link,
+            link_display: item.display_link,
+            snippet: item.snippet,
         })
-    }
+        .collect();
+    Ok(WebResult { entries })
+}
 
-    pub async fn lucky<S>(&self, query: S) -> Result<String>
-    where
-        S: AsRef<str>,
-    {
-        let data = self.query(query).await?;
-
-        let dict: Value = serde_json::from_str(&data)?;
-
-        let items = dict.get("items").ok_or(Error::EmptySearchResult)?;
-
-        let first = items.as_array().ok_or(Error::InvalidJsonType)?.first().ok_or(Error::Empty)?;
-
-        let link = first.get("link").ok_or(Error::Empty)?;
-
-        let link = link.as_str().ok_or(Error::InvalidJsonType)?;
-
-        Ok(link.into())
-    }
-
-    pub async fn query<S>(&self, query: S) -> Result<String>
-    where
-        S: AsRef<str>,
-    {
+#[async_trait(?Send)]
+impl SearchTrait for GoogleCSE {
+    async fn query<S: AsRef<str>>(&self, query: S) -> Result<WebResult> {
         let res = self
             .http_client
             .get(&self.google.url)
@@ -123,15 +71,28 @@ impl GoogleCSE {
 
         let body = res.text().await?;
 
-        Ok(body)
+        parse_results(&body)
+    }
+}
+
+impl GoogleCSE {
+    pub fn new(config: &AdoConfig) -> Result<Self> {
+        let google = config.search_google()?.clone();
+
+        Ok(Self {
+            http_client: Client::new(),
+            google,
+        })
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use std::{fs, path::PathBuf};
+
     use log::info;
 
-    use crate::logging::logger::setup_logger;
+    use crate::{config::loader::AdoConfig, logging::logger::setup_logger};
 
     use super::*;
 
@@ -146,5 +107,18 @@ mod tests {
         let d = search.lucky("test").await;
 
         info!("{d:?}");
+    }
+
+    #[test]
+    fn test_parse_results() {
+        setup_logger(true).unwrap();
+
+        let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let test_file = root.join("test").join("search_test.json");
+
+        let data = fs::read_to_string(test_file).unwrap();
+
+        let result = parse_results(&data).unwrap();
+        info!("{result:?}");
     }
 }

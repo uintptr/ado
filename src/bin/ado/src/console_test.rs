@@ -7,8 +7,8 @@ mod tests {
     use std::{fs, path::Path};
 
     use adolib::{
-        config::loader::AdoConfig, data::types::AdoData, logging::logger::setup_logger,
-        search::google::GoogleSearchResults, shell::AdoShell, ui::commands::UserCommands,
+        config::loader::AdoConfig, data::types::AdoData, logging::logger::setup_logger, shell::AdoShell,
+        ui::commands::UserCommands,
     };
 
     use adolib::storage::persistent::PersistentStorage;

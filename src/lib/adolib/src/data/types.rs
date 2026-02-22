@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     error::{Error, Result},
     llm::chain::LLMUsage,
-    search::google::GoogleSearchResults,
+    search::results::WebResult,
     shell::ShellExit,
     ui::status::StatusInfo,
 };
@@ -27,7 +27,7 @@ pub enum AdoData {
     Bytes(Vec<u8>),
     Json(String),
     Base64(String),
-    SearchData(GoogleSearchResults),
+    SearchData(WebResult),
     LlmUsage(LLMUsage),
     UsageString(String),
     Shell(ShellExit),
@@ -103,7 +103,7 @@ impl TryFrom<AdoData> for String {
             AdoData::Json(s) => s,
             AdoData::Base64(s) => s,
             AdoData::Bytes(b) => BASE64_STANDARD.encode(b),
-            AdoData::SearchData(s) => s.json_string,
+            AdoData::SearchData(s) => serde_json::to_string_pretty(&s)?,
             AdoData::UsageString(s) => s,
             u => serde_json::to_string(&u)?,
         };

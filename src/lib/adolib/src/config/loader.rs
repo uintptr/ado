@@ -13,7 +13,7 @@ use crate::{
     error::{Error, Result},
     llm::config::{ClaudeConfig, ConfigOllama},
     mcp::types::McpConfig,
-    search::google::GoogleConfig,
+    search::{google::GoogleConfig, serp::SerpApiConfig},
     storage::{PersistentStorageTrait, persistent::PersistentStorage},
 };
 
@@ -25,9 +25,15 @@ pub struct ConfigLlm {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ConfigSearch {
+    pub google: Option<GoogleConfig>,
+    pub serp: Option<SerpApiConfig>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
 struct ConfigFile {
     llm: ConfigLlm,
-    search: Option<GoogleConfig>,
+    search: Option<ConfigSearch>,
     mcp: Option<HashMap<String, McpConfig>>,
 }
 
@@ -87,7 +93,13 @@ impl AdoConfig {
             }
         };
 
-        let config_file: ConfigFile = toml::from_str(&file_data)?;
+        let config_file: ConfigFile = match toml::from_str(&file_data) {
+            Ok(v) => v,
+            Err(e) => {
+                error!("Unable to deserialize {e}");
+                return Err(e.into());
+            }
+        };
 
         Ok(AdoConfig::new(source, config_file))
     }
@@ -97,7 +109,7 @@ impl AdoConfig {
 
         let config_dir = dirs.config_dir();
 
-        if config_dir.exists() {
+        if !config_dir.exists() {
             fs::create_dir_all(config_dir)?;
         }
 
@@ -158,10 +170,23 @@ impl AdoConfig {
         }
     }
 
-    pub fn search(&self) -> Result<&GoogleConfig> {
-        match &self.config_file.search {
-            Some(v) => Ok(v),
-            None => Err(Error::ConfigNotFound),
+    pub fn search_google(&self) -> Result<&GoogleConfig> {
+        if let Some(search) = &self.config_file.search
+            && let Some(google) = &search.google
+        {
+            Ok(google)
+        } else {
+            Err(Error::ConfigNotFound)
+        }
+    }
+
+    pub fn search_setp(&self) -> Result<&SerpApiConfig> {
+        if let Some(search) = &self.config_file.search
+            && let Some(serp) = &search.serp
+        {
+            Ok(serp)
+        } else {
+            Err(Error::ConfigNotFound)
         }
     }
 

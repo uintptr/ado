@@ -17,6 +17,7 @@ glob.workspace = true
 log.workspace = true
 md5.workspace = true
 omcp.workspace = true
+rand.workspace = true
 reqwest.workspace = true
 rstaples.workspace = true
 rust-embed.workspace = true

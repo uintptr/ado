@@ -225,6 +225,11 @@ class DockerBuilder:
         with open(nginx_conf, "w+") as f:
             f.write(template)
 
+        nginx_main = os.path.join(container_root, "nginx.conf")
+
+        with open(nginx_main, "w+") as f:
+            f.write(self.__get_template("nginx_main.conf"))
+
     def __build_webdis(self, webdis_root: str) -> None:
 
         webdis_json = os.path.join(self.script_root,

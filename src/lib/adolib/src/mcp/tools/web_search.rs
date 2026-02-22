@@ -5,11 +5,11 @@ use omcp::types::{BakedMcpToolTrait, McpParams};
 use crate::{
     config::loader::AdoConfig,
     error::{Error, Result},
-    search::google::GoogleCSE,
+    search::{SearchTrait, WebSearch},
 };
 
 pub struct ToolWebSearch {
-    google: GoogleCSE,
+    web_search: WebSearch,
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -22,8 +22,8 @@ pub struct ToolWebSearch {
 
 impl ToolWebSearch {
     pub fn new(config: &AdoConfig) -> Result<Self> {
-        let google = GoogleCSE::new(config)?;
-        Ok(Self { google })
+        let web_search = WebSearch::new(config)?;
+        Ok(Self { web_search })
     }
 }
 
@@ -36,7 +36,8 @@ impl BakedMcpToolTrait for ToolWebSearch {
 
         info!("search query {query}");
 
-        let data = self.google.query(query).await?;
+        let data = self.web_search.query(query).await?;
+        let data = serde_json::to_string_pretty(&data)?;
 
         Ok(data)
     }

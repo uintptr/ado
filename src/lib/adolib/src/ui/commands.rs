@@ -5,7 +5,7 @@ use crate::{
     error::{Error, Result},
     llm::chain::LLMChain,
     mcp::matrix::McpMatrix,
-    search::google::{GoogleCSE, GoogleSearchResults},
+    search::{SearchTrait, WebSearch, results::WebResult},
     storage::{PersistentStorageTrait, persistent::PersistentStorage},
     ui::{ConsoleDisplayTrait, reddit::RedditQuery, status::StatusInfo},
 };
@@ -103,7 +103,7 @@ pub struct CommandInfo {
 
 pub struct UserCommands {
     config: AdoConfig,
-    search: GoogleCSE,
+    search: WebSearch,
     chain: LLMChain,
     cache: PersistentStorage,
     reddit: RedditQuery,
@@ -116,7 +116,7 @@ pub struct UserCommands {
 
 impl UserCommands {
     pub fn new(config: &AdoConfig, cache: PersistentStorage) -> Result<UserCommands> {
-        let search = GoogleCSE::new(config)?;
+        let search = WebSearch::new(config)?;
         let mcp = McpMatrix::new();
         let chain = LLMChain::new(config)?;
         let reddit = RedditQuery::new();
@@ -142,6 +142,7 @@ impl UserCommands {
             }
             Err(_) => {
                 let data = self.search.query(query.as_ref()).await?;
+                let data = serde_json::to_string_pretty(&data)?;
 
                 let data = data.replace("www.reddit.com", "old.reddit.com");
 
@@ -167,6 +168,7 @@ impl UserCommands {
             }
             Err(_) => {
                 let data = self.search.lucky(query.as_ref()).await?;
+                let data = serde_json::to_string_pretty(&data)?;
 
                 let data = data.replace("www.reddit.com", "old.reddit.com");
 
@@ -288,7 +290,9 @@ impl UserCommands {
 
                     let json_str = self.cached_search(query).await?;
 
-                    let data = AdoData::SearchData(GoogleSearchResults::new(json_str));
+                    let results: WebResult = json_str.parse()?;
+
+                    let data = AdoData::SearchData(results);
 
                     console.display(data)
                 }
