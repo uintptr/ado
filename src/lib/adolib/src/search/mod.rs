@@ -1,8 +1,14 @@
 use async_trait::async_trait;
+use log::info;
 
 use crate::{
+    config::loader::AdoConfig,
     error::{Error, Result},
-    search::results::{WebResult, WebResultEntry},
+    search::{
+        google::GoogleCSE,
+        results::{WebResult, WebResultEntry},
+        serp::SerpApi,
+    },
 };
 
 pub(crate) mod google;
@@ -10,7 +16,36 @@ pub(crate) mod serp;
 
 pub mod results;
 
-pub use google::GoogleCSE as WebSearch;
+pub enum WebSearch {
+    Google(GoogleCSE),
+    Serp(SerpApi),
+}
+
+impl WebSearch {
+    pub fn new(config: &AdoConfig) -> Result<Self> {
+        if let Ok(google) = GoogleCSE::new(config) {
+            info!("Using google API");
+            return Ok(WebSearch::Google(google));
+        }
+
+        if let Ok(serp) = SerpApi::new(config) {
+            info!("Using Serp API");
+            return Ok(WebSearch::Serp(serp));
+        }
+
+        Err(Error::ConfigNotFound)
+    }
+}
+
+#[async_trait(?Send)]
+impl SearchTrait for WebSearch {
+    async fn query<S: AsRef<str>>(&self, query: S) -> Result<WebResult> {
+        match self {
+            WebSearch::Google(g) => g.query(query).await,
+            WebSearch::Serp(s) => s.query(query).await,
+        }
+    }
+}
 
 #[async_trait(?Send)]
 pub trait SearchTrait {
