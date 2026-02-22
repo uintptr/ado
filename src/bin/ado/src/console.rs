@@ -203,22 +203,20 @@ impl TerminalConsole {
     }
 
     fn readline(&mut self) -> Result<String> {
-        loop {
-            match self.rl.readline("> ") {
-                Ok(line) => {
-                    if !line.trim().is_empty() {
-                        let _ = self.rl.add_history_entry(&line);
-                    }
-                    return Ok(line);
+        match self.rl.readline("> ") {
+            Ok(line) => {
+                if !line.trim().is_empty() {
+                    let _ = self.rl.add_history_entry(&line);
                 }
-                // CTRL+D
-                Err(ReadlineError::Eof) => return Err(Error::EOF),
-                // CTRL+C
-                Err(ReadlineError::Interrupted) => return Err(Error::EOF),
-                Err(e) => {
-                    error!("{e}");
-                    return Err(e.into());
-                }
+                Ok(line)
+            }
+            // CTRL+D
+            Err(ReadlineError::Eof) => Err(Error::EOF),
+            // CTRL+C
+            Err(ReadlineError::Interrupted) => Err(Error::EOF),
+            Err(e) => {
+                error!("{e}");
+                Err(e.into())
             }
         }
     }
