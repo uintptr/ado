@@ -1,7 +1,6 @@
 use crate::{data::types::AdoData, error::Result};
 
 pub mod commands;
-mod reddit;
 pub mod status;
 
 #[derive(Default)]

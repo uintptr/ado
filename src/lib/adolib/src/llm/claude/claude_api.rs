@@ -130,10 +130,6 @@ pub struct ClaudeMessages {
     tools: Vec<McpTool>,
 }
 
-fn is_false(value: &bool) -> bool {
-    !*value
-}
-
 ///////////////////////////////////////////////////////////////////////////////
 // IMPL
 ///////////////////////////////////////////////////////////////////////////////
@@ -147,16 +143,6 @@ impl ClaudeMessage {
             role,
             content: Value::String(message.as_ref().to_string()),
         }
-    }
-
-    pub fn with_content_list(role: ClaudeRole, content: Vec<&ClaudeContent>) -> Result<Self> {
-        let object_str = serde_json::to_string(&content)?;
-        let array: Vec<Value> = serde_json::from_str(&object_str)?;
-
-        Ok(Self {
-            role,
-            content: Value::Array(array),
-        })
     }
 }
 
@@ -203,15 +189,6 @@ impl ClaudeMessages {
     {
         let message = ClaudeMessage::with_message(role, message);
         self.messages.push(message);
-    }
-
-    pub fn add_content(&mut self, role: ClaudeRole, content: &ClaudeContent) -> Result<()> {
-        let content_list = vec![content];
-
-        let message = ClaudeMessage::with_content_list(role, content_list)?;
-
-        self.messages.push(message);
-        Ok(())
     }
 
     pub fn reset(&mut self) {

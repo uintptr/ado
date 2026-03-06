@@ -1,12 +1,9 @@
 use crate::{
     config::loader::AdoConfig,
-    const_vars::CACHE_05_DAYS,
     data::types::AdoData,
     error::{Error, Result},
     llm::chain::LLMChain,
-    search::{SearchTrait, WebSearch, results::WebResult},
-    storage::{PersistentStorageTrait, persistent::PersistentStorage},
-    ui::{ConsoleDisplayTrait, reddit::RedditQuery, status::StatusInfo},
+    ui::{ConsoleDisplayTrait, status::StatusInfo},
 };
 use clap::{CommandFactory, Parser, Subcommand, ValueEnum, error::ErrorKind};
 
@@ -16,7 +13,7 @@ struct CommandCli {
     commands: Command,
 }
 
-use log::{error, info};
+use log::error;
 
 #[derive(ValueEnum, Clone, Debug)]
 enum McpState {
@@ -61,25 +58,6 @@ enum Command {
     /// quit
     #[command(alias = "exit")]
     Quit,
-    /// Google search
-    #[command(alias = "s")]
-    Search {
-        /// query string
-        #[arg(trailing_var_arg = true)]
-        query: Vec<String>,
-    },
-    /// Find a sub reddit from description
-    Reddit {
-        /// query string
-        #[arg(trailing_var_arg = true)]
-        query: Vec<String>,
-    },
-    /// Return the first URL from the search result
-    Lucky {
-        /// query string
-        #[arg(trailing_var_arg = true)]
-        query: Vec<String>,
-    },
     /// Print status information
     Status,
     /// LLM related Commands
@@ -97,10 +75,7 @@ pub struct CommandInfo {
 
 pub struct UserCommands {
     config: AdoConfig,
-    search: WebSearch,
     chain: LLMChain,
-    cache: PersistentStorage,
-    reddit: RedditQuery,
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -108,93 +83,13 @@ pub struct UserCommands {
 ///////////////////////////////////////////////////////////////////////////////
 
 impl UserCommands {
-    pub fn new(config: &AdoConfig, cache: PersistentStorage) -> Result<UserCommands> {
-        let search = WebSearch::new(config)?;
+    pub fn new(config: &AdoConfig) -> Result<UserCommands> {
         let chain = LLMChain::new(config)?;
-        let reddit = RedditQuery::new();
 
         Ok(UserCommands {
             config: config.clone(),
-            search,
             chain,
-            cache,
-            reddit,
         })
-    }
-
-    async fn cached_search<S>(&self, query: S) -> Result<String>
-    where
-        S: AsRef<str>,
-    {
-        let search_data = match self.cache.get("cmd_search", query.as_ref()).await {
-            Ok(v) => {
-                info!("query was cached");
-                v
-            }
-            Err(_) => {
-                let data = self.search.query(query.as_ref()).await?;
-                let data = serde_json::to_string_pretty(&data)?;
-
-                let data = data.replace("www.reddit.com", "old.reddit.com");
-
-                if let Err(e) = self.cache.set("cmd_search", query.as_ref(), &data, CACHE_05_DAYS).await {
-                    error!("{e}");
-                }
-
-                data
-            }
-        };
-
-        Ok(search_data)
-    }
-
-    async fn cached_lucky<S>(&self, query: S) -> Result<String>
-    where
-        S: AsRef<str>,
-    {
-        let sub_reddit = match self.cache.get("cmd_lucky", query.as_ref()).await {
-            Ok(v) => {
-                info!("query was cached");
-                v
-            }
-            Err(_) => {
-                let data = self.search.lucky(query.as_ref()).await?;
-                let data = serde_json::to_string_pretty(&data)?;
-
-                let data = data.replace("www.reddit.com", "old.reddit.com");
-
-                if let Err(e) = self.cache.set("cmd_lucky", query.as_ref(), &data, CACHE_05_DAYS).await {
-                    error!("{e}");
-                }
-
-                data
-            }
-        };
-
-        Ok(sub_reddit)
-    }
-
-    async fn cached_reddit<S>(&self, query: S) -> Result<String>
-    where
-        S: AsRef<str>,
-    {
-        let sub_reddit = match self.cache.get("cmd_reddit", query.as_ref()).await {
-            Ok(v) => {
-                info!("query was cached");
-                v
-            }
-            Err(_) => {
-                let data = self.reddit.find_sub(&self.chain, query.as_ref()).await?;
-
-                if let Err(e) = self.cache.set("cmd_reddit", query.as_ref(), &data, CACHE_05_DAYS).await {
-                    error!("{e}");
-                }
-
-                data
-            }
-        };
-
-        Ok(sub_reddit)
     }
 
     async fn update_llm<S>(&mut self, llm: S) -> Result<()>
@@ -239,31 +134,6 @@ impl UserCommands {
                 Command::Reset => {
                     self.chain.reset();
                     console.display(AdoData::Reset)
-                }
-                Command::Search { query } => {
-                    let query = query.join(" ");
-
-                    let json_str = self.cached_search(query).await?;
-
-                    let results: WebResult = json_str.parse()?;
-
-                    let data = AdoData::SearchData(results);
-
-                    console.display(data)
-                }
-                Command::Reddit { query } => {
-                    if !query.is_empty() {
-                        let query = query.join(" ");
-                        let sub = self.cached_reddit(query).await?;
-                        console.display_string(sub)
-                    } else {
-                        console.display_string("missing description")
-                    }
-                }
-                Command::Lucky { query } => {
-                    let query = query.join(" ");
-                    let url = self.cached_lucky(query).await?;
-                    console.display_string(url)
                 }
                 Command::Status => {
                     let s = StatusInfo::new(&self.config, &self.chain);
@@ -375,7 +245,6 @@ impl UserCommands {
 #[cfg(test)]
 mod tests {
     use crate::config::loader::AdoConfig;
-    use crate::storage::persistent::PersistentStorage;
     use crate::ui::NopConsole;
     use crate::ui::commands::UserCommands;
 
@@ -383,13 +252,7 @@ mod tests {
     fn test_handler() {
         let config = AdoConfig::from_default().unwrap();
 
-        let td = tempfile::Builder::new().prefix("console_test_").tempdir().unwrap();
-
-        let cache_file = td.path().join("cache.db");
-
-        let cache = PersistentStorage::from_path(cache_file).unwrap();
-
-        let mut cmd = UserCommands::new(&config, cache).unwrap();
+        let mut cmd = UserCommands::new(&config).unwrap();
 
         let mut console = NopConsole::new();
 

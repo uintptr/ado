@@ -7,12 +7,13 @@ mod tests {
     use std::{fs, path::Path};
 
     use adolib::{
-        config::loader::AdoConfig, data::types::AdoData, logging::logger::setup_logger, shell::AdoShell,
+        config::loader::AdoConfig,
+        data::types::AdoData,
+        logging::logger::setup_logger,
         search::results::{WebResult, WebResultEntry},
+        shell::AdoShell,
         ui::commands::UserCommands,
     };
-
-    use adolib::storage::persistent::PersistentStorage;
 
     use crate::console::TerminalConsole;
     use adolib::ui::{ConsoleDisplayTrait, NopConsole};
@@ -23,10 +24,7 @@ mod tests {
 
         let config = AdoConfig::from_default().unwrap();
 
-        let td = tempfile::Builder::new().prefix("console_test_").tempdir().unwrap();
-        let cache_file = td.path().join("cache.db");
-        let cache = PersistentStorage::from_path(cache_file).unwrap();
-        let command = UserCommands::new(&config, cache).unwrap();
+        let command = UserCommands::new(&config).unwrap();
         let mut console = TerminalConsole::new(&command).unwrap();
         console.display(AdoData::String("Hello, World!".to_string())).unwrap();
     }
@@ -37,11 +35,7 @@ mod tests {
 
         let config = AdoConfig::from_default().unwrap();
 
-        let td = tempfile::Builder::new().prefix("console_test_").tempdir().unwrap();
-        let cache_file = td.path().join("cache.db");
-        let cache = PersistentStorage::from_path(cache_file).unwrap();
-
-        let mut cmd = UserCommands::new(&config, cache).unwrap();
+        let mut cmd = UserCommands::new(&config).unwrap();
 
         let mut console = NopConsole {};
 
@@ -66,10 +60,7 @@ mod tests {
 
         let config = AdoConfig::from_default().unwrap();
 
-        let td = tempfile::Builder::new().prefix("console_test_").tempdir().unwrap();
-        let cache_file = td.path().join("cache.db");
-        let cache = PersistentStorage::from_path(cache_file).unwrap();
-        let command = UserCommands::new(&config, cache).unwrap();
+        let command = UserCommands::new(&config).unwrap();
         let mut console = TerminalConsole::new(&command).unwrap();
 
         let data = AdoData::SearchData(WebResult {
@@ -94,11 +85,7 @@ mod tests {
 
         let config = AdoConfig::from_default().unwrap();
 
-        let td = tempfile::Builder::new().prefix("console_test_").tempdir().unwrap();
-        let cache_file = td.path().join("cache.db");
-        let cache = PersistentStorage::from_path(cache_file).unwrap();
-
-        let command = UserCommands::new(&config, cache).unwrap();
+        let command = UserCommands::new(&config).unwrap();
 
         let mut console = TerminalConsole::new(&command).unwrap();
 

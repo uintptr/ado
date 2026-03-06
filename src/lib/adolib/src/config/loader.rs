@@ -8,11 +8,10 @@ use log::{error, info};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    const_vars::{CONFIG_FILE_NAME, DIRS_APP, DIRS_ORG, DIRS_QUALIFIER, STORE_PERMANENT},
+    const_vars::{CONFIG_FILE_NAME, DIRS_APP, DIRS_ORG, DIRS_QUALIFIER},
     error::{Error, Result},
     llm::config::{ClaudeConfig, ConfigOllama},
     search::{google::GoogleConfig, serp::SerpApiConfig},
-    storage::{PersistentStorageTrait, persistent::PersistentStorage},
 };
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -37,7 +36,6 @@ struct ConfigFile {
 #[derive(Clone)]
 pub enum AdoConfigSource {
     File { path: PathBuf },
-    Webdis { storage: PersistentStorage },
     String,
 }
 
@@ -65,7 +63,6 @@ impl AdoConfig {
                 info!("syncing {}", path.display());
                 fs::write(path, toml_file.as_bytes())?
             }
-            AdoConfigSource::Webdis { storage } => storage.set("global", "config", toml_file, STORE_PERMANENT).await?,
             _ => return Err(Error::NotImplemented),
         }
 

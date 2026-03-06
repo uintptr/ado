@@ -6,7 +6,6 @@ use adolib::{
     error::{Error, Result},
     llm::question::question_detection,
     logging::logger::setup_logger,
-    storage::persistent::PersistentStorage,
     ui::ConsoleDisplayTrait,
     ui::commands::UserCommands,
 };
@@ -101,9 +100,7 @@ async fn main() -> Result<()> {
 
     let config = load_config_local(&args.config_file)?;
 
-    let cache = PersistentStorage::new()?;
-
-    let command = UserCommands::new(&config, cache)?;
+    let command = UserCommands::new(&config)?;
 
     let console = TerminalConsole::new(&command)?;
 
