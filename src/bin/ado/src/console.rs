@@ -9,14 +9,12 @@ pub const PKG_VERSION: &str = env!("CARGO_PKG_VERSION");
 pub const PKG_NAME: &str = env!("CARGO_PKG_NAME");
 
 use adolib::{
-    const_vars::{DIRS_APP, DIRS_ORG, DIRS_QUALIFIER},
     data::types::{AdoData, AdoDataMarkdown},
     error::{Error, Result},
     ui::{ConsoleDisplayTrait, commands::UserCommands},
 };
 use colored;
 use colored::Colorize;
-use directories::ProjectDirs;
 use log::{error, info, warn};
 use spinner::{SpinnerBuilder, SpinnerHandle};
 use which::which;
@@ -108,14 +106,14 @@ fn init_readline(commands: &UserCommands) -> Result<(Editor<MyHelper, FileHistor
         .keyseq_timeout(Some(50))
         .build();
 
-    let dirs = ProjectDirs::from(DIRS_QUALIFIER, DIRS_ORG, DIRS_APP).ok_or(Error::NotFound)?;
+    let config_dir = dirs::config_dir().ok_or(Error::ConfigNotFound)?;
 
     let mut rl = Editor::with_config(config)?;
 
-    let history_file = dirs.config_dir().join("history.txt");
+    let history_file = config_dir.join("history.txt");
 
-    if !dirs.config_dir().exists() {
-        fs::create_dir_all(dirs.config_dir())?;
+    if !config_dir.exists() {
+        fs::create_dir_all(&config_dir)?;
     }
 
     if let Err(e) = rl.load_history(&history_file) {

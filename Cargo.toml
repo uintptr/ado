@@ -16,7 +16,6 @@ clap = { version = "4.5", features = ["derive", "suggestions"] }
 colored = "3.1"
 console_error_panic_hook = "0.1"
 derive_more = { version = "2.1", features = ["debug", "display", "from"] }
-directories = "6.0"
 fern = "0.7"
 figlet-rs = "0.1"
 getrandom_js = { package = "getrandom", version = "0.2", features = ["js"] }
@@ -62,6 +61,7 @@ web-sys = { version = "0.3" }
 which = "8.0"
 whois-rust = "1.6"
 x11rb = "0.13"
+dirs = "6.0"
 
 [profile.release]
 opt-level = "s"

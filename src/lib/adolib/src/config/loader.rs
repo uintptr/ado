@@ -3,12 +3,11 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use directories::ProjectDirs;
 use log::{error, info};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    const_vars::{CONFIG_FILE_NAME, DIRS_APP, DIRS_ORG, DIRS_QUALIFIER},
+    const_vars::CONFIG_FILE_NAME,
     error::{Error, Result},
     llm::config::{ClaudeConfig, ConfigOllama},
 };
@@ -91,12 +90,10 @@ impl AdoConfig {
     }
 
     pub fn from_default() -> Result<Self> {
-        let dirs = ProjectDirs::from(DIRS_QUALIFIER, DIRS_ORG, DIRS_APP).ok_or(Error::NotFound)?;
-
-        let config_dir = dirs.config_dir();
+        let config_dir = dirs::config_dir().ok_or(Error::ConfigNotFound)?;
 
         if !config_dir.exists() {
-            fs::create_dir_all(config_dir)?;
+            fs::create_dir_all(&config_dir)?;
         }
 
         let config_file = config_dir.join(CONFIG_FILE_NAME);

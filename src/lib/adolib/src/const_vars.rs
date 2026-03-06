@@ -10,7 +10,3 @@ pub const CONFIG_FILE_NAME: &str = "config.toml";
 pub const CACHE_05_DAYS: Duration = Duration::from_secs(5 * 24 * 60 * 60);
 pub const CACHE_30_DAYS: Duration = Duration::from_secs(30 * 24 * 60 * 60);
 pub const STORE_PERMANENT: Duration = Duration::from_secs(0);
-
-pub const DIRS_QUALIFIER: &str = "org";
-pub const DIRS_ORG: &str = "acme";
-pub const DIRS_APP: &str = "ado";
