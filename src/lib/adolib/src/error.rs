@@ -108,27 +108,11 @@ pub enum Error {
     Glob(glob::PatternError),
     #[from]
     #[cfg(not(target_arch = "wasm32"))]
-    Which(which::Error),
-    #[from]
-    ShellToken(shell_words::ParseError),
-    #[from]
-    #[cfg(not(target_arch = "wasm32"))]
-    Whois(whois_rust::WhoIsError),
-    #[from]
-    #[cfg(not(target_arch = "wasm32"))]
     Readline(rustyline::error::ReadlineError),
     #[from]
     Http(reqwest::Error),
     #[from]
-    Staples(rstaples::error::Error),
-    #[from]
-    SledError(sled::Error),
-    #[from]
     WalkDir(walkdir::Error),
-    #[from]
-    West1(reqwest::header::InvalidHeaderName),
-    #[from]
-    West2(reqwest::header::InvalidHeaderValue),
 }
 
 impl core::fmt::Display for Error {
