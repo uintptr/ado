@@ -3,7 +3,6 @@ use std::fs;
 
 use derive_more::Display;
 use log::{error, info};
-use omcp::types::McpTool;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -126,8 +125,6 @@ pub struct ClaudeMessages {
     stream: bool,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     system: Vec<ClaudeContent>,
-    #[serde(skip_serializing_if = "Vec::is_empty")]
-    tools: Vec<McpTool>,
 }
 
 ///////////////////////////////////////////////////////////////////////////////

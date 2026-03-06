@@ -1,14 +1,13 @@
 use std::{fs, path::Path};
 
-use ado::console::TerminalConsole;
+use ado::{commands::UserCommands, console::TerminalConsole};
 use adolib::{
     config::loader::AdoConfig,
     error::{Error, Result},
     llm::question::question_detection,
-    ui::ConsoleDisplayTrait,
-    ui::commands::UserCommands,
 };
 use clap::Parser;
+use log::LevelFilter;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -41,7 +40,7 @@ where
     Ok(data)
 }
 
-async fn main_loop(mut console: TerminalConsole, mut command: UserCommands, opt_input: Option<String>) -> Result<()> {
+async fn main_loop(mut console: TerminalConsole, command: UserCommands, opt_input: Option<String>) -> Result<()> {
     let mut init_query = opt_input;
 
     loop {
@@ -74,9 +73,16 @@ fn load_config_local(local_config: &Option<String>) -> Result<AdoConfig> {
     }
 }
 
-#[tokio::main]
+fn init_logging(verbose: bool) {
+    let level = if verbose { LevelFilter::Info } else { LevelFilter::Error };
+    env_logger::builder().filter_level(level).build();
+}
+
+#[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<()> {
     let args = UserArgs::parse();
+
+    init_logging(args.verbose);
 
     let query_opt = match args.shell_handler {
         Some(v) => match question_detection(&v) {
@@ -95,13 +101,13 @@ async fn main() -> Result<()> {
         },
     };
 
-    let config = load_config_local(&args.config_file)?;
+    let _config = load_config_local(&args.config_file)?;
 
-    let command = UserCommands::new(&config)?;
+    let commands = UserCommands::new();
 
-    let console = TerminalConsole::new(&command)?;
+    let console = TerminalConsole::new(&commands)?;
 
-    match main_loop(console, command, query_opt).await {
+    match main_loop(console, commands, query_opt).await {
         Ok(_) | Err(Error::EOF) => Ok(()),
         Err(e) => Err(e),
     }

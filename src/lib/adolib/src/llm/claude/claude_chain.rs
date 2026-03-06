@@ -10,7 +10,6 @@ use crate::{
             ClaudeApi, ClaudeContentType, ClaudeMessages, ClaudeResponse, ClaudeRole, ClaudeStopReason,
         },
     },
-    ui::ConsoleDisplayTrait,
 };
 
 use async_trait::async_trait;
@@ -50,15 +49,15 @@ impl ClaudeChain {
         })
     }
 
-    async fn process_content<C>(&mut self, response: &ClaudeResponse, console: &mut C) -> Result<()>
+    async fn process_content<C>(&mut self, response: &ClaudeResponse, console: C) -> Result<()>
     where
-        C: ConsoleDisplayTrait,
+        C: Fn(AdoData) -> Result<()> + Send + Sync,
     {
         for content in response.content.iter() {
             match content.content_type {
                 ClaudeContentType::Text => {
                     if let Some(text) = &content.text {
-                        console.display_string(text)?;
+                        console(AdoData::String(text.clone()))?;
                         self.messages.add_message(ClaudeRole::Assistant, text);
                     }
                 }
@@ -71,9 +70,9 @@ impl ClaudeChain {
 
 #[async_trait(?Send)]
 impl LLMChainTrait for ClaudeChain {
-    async fn link<C>(&mut self, content: &str, console: &mut C) -> Result<()>
+    async fn link<C>(&mut self, content: &str, console: C) -> Result<()>
     where
-        C: ConsoleDisplayTrait,
+        C: Fn(AdoData) -> Result<()> + Send + Sync,
     {
         self.messages.add_message(ClaudeRole::User, content);
 
@@ -85,7 +84,7 @@ impl LLMChainTrait for ClaudeChain {
 
             // in its own function so it can be tested from a local
             // file
-            self.process_content(&resp, console).await?;
+            self.process_content(&resp, &console).await?;
 
             //
             // Keep going until it's done
@@ -150,12 +149,17 @@ mod tests {
 
     use crate::{
         config::loader::AdoConfig,
+        data::types::AdoData,
+        error::Result,
         llm::{
             chain::LLMChainTrait,
             claude::{claude_api::ClaudeResponse, claude_chain::ClaudeChain},
         },
-        ui::NopConsole,
     };
+
+    fn nop_console(_data: AdoData) -> Result<()> {
+        Ok(())
+    }
 
     #[tokio::test]
     async fn test_message() {
@@ -176,10 +180,8 @@ mod tests {
 
         let mut chain = ClaudeChain::new(&config_file).unwrap();
 
-        let mut console = NopConsole::new();
-
-        chain.link("Hello World", &mut console).await.unwrap();
-        chain.link("Can you tell a joke", &mut console).await.unwrap();
+        chain.link("Hello World", nop_console).await.unwrap();
+        chain.link("Can you tell a joke", nop_console).await.unwrap();
 
         chain.message("hello world").await.unwrap();
     }
@@ -195,9 +197,7 @@ mod tests {
         let config_file = AdoConfig::from_default().unwrap();
         let mut chain = ClaudeChain::new(&config_file).unwrap();
 
-        let mut console = NopConsole::new();
-
-        let ret = chain.process_content(&resp, &mut console).await.unwrap();
+        let ret = chain.process_content(&resp, nop_console).await.unwrap();
 
         info!("ret: {ret:?}");
     }
@@ -212,9 +212,7 @@ mod tests {
         let resp_json = fs::read_to_string(test_file).unwrap();
         let resp: ClaudeResponse = serde_json::from_str(&resp_json).unwrap();
 
-        let mut console = NopConsole::new();
-
-        chain.process_content(&resp, &mut console).await.unwrap();
+        chain.process_content(&resp, nop_console).await.unwrap();
 
         info!("done");
     }

@@ -124,8 +124,6 @@ pub enum Error {
     #[from]
     SledError(sled::Error),
     #[from]
-    Omcp(omcp::error::Error),
-    #[from]
     WalkDir(walkdir::Error),
     #[from]
     West1(reqwest::header::InvalidHeaderName),

@@ -1,22 +1,18 @@
 use std::{
+    fmt::Display,
     fs,
-    io::{self, Write},
-    path::{Path, PathBuf},
-    process::Stdio,
+    io::Write,
+    path::PathBuf,
+    process::{Command, Stdio},
 };
 
 pub const PKG_VERSION: &str = env!("CARGO_PKG_VERSION");
 pub const PKG_NAME: &str = env!("CARGO_PKG_NAME");
 
-use adolib::{
-    data::types::{AdoData, AdoDataMarkdown},
-    error::{Error, Result},
-    ui::{ConsoleDisplayTrait, commands::UserCommands},
-};
+use adolib::error::{Error, Result};
 use colored;
 use colored::Colorize;
 use log::{error, info, warn};
-use spinner::{SpinnerBuilder, SpinnerHandle};
 use which::which;
 
 use rustyline::completion::{Completer, FilenameCompleter, Pair};
@@ -26,7 +22,7 @@ use rustyline::{Cmd, CompletionType, Config, Editor, KeyCode, KeyEvent, Modifier
 use rustyline::{Context, Helper, Hinter, Validator};
 use rustyline::{Highlighter, hint::HistoryHinter};
 
-use crate::banner::display_banner;
+use crate::{banner::display_banner, commands::UserCommands};
 
 struct CommandCompleter {
     commands: Vec<String>,
@@ -88,17 +84,19 @@ pub struct TerminalConsole {
     glow: Option<PathBuf>,
     rl: Editor<MyHelper, FileHistory>,
     history_file: PathBuf,
-    spinner: Option<SpinnerHandle>,
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 // FUNC
 ///////////////////////////////////////////////////////////////////////////////
+
+/*
 fn clear_console() -> Result<()> {
     print!("{esc}c", esc = 27 as char);
     io::stdout().flush()?;
     Ok(())
 }
+*/
 
 fn init_readline(commands: &UserCommands) -> Result<(Editor<MyHelper, FileHistory>, PathBuf)> {
     let config = Config::builder()
@@ -123,7 +121,7 @@ fn init_readline(commands: &UserCommands) -> Result<(Editor<MyHelper, FileHistor
     let mut command_names = Vec::new();
     for c in commands.list_commands() {
         command_names.push(c.name);
-        for a in c.alias {
+        for a in c.aliases {
             command_names.push(a);
         }
     }
@@ -163,41 +161,44 @@ impl TerminalConsole {
 
         let _ = display_banner(format!("{PKG_NAME} {PKG_VERSION}"), "pagga");
 
-        Ok(Self {
-            glow,
-            rl,
-            history_file,
-            spinner: None,
-        })
+        Ok(Self { glow, rl, history_file })
     }
 
-    fn display_glow<S>(&self, glow: &Path, text: S) -> Result<()>
+    fn display_glow<S>(&self, text: S) -> Result<()>
     where
-        S: AsRef<str>,
+        S: AsRef<str> + Display,
     {
-        let mut child = std::process::Command::new(glow)
-            .arg("-w")
-            .arg("0")
-            .arg("-s")
-            .arg("dark")
-            .stdin(Stdio::piped())
-            .spawn()?;
+        if let Some(glob_path) = &self.glow {
+            let mut child = Command::new(glob_path)
+                .arg("-w")
+                .arg("0")
+                .arg("-s")
+                .arg("dark")
+                .stdin(Stdio::piped())
+                .spawn()?;
 
-        if let Some(stdin) = child.stdin.as_mut() {
-            stdin.write_all(text.as_ref().as_bytes())?;
+            if let Some(stdin) = child.stdin.as_mut() {
+                stdin.write_all(text.as_ref().as_bytes())?;
+            }
+
+            child.wait()?;
+
+            Ok(())
+        } else {
+            Err(Error::NotFound)
         }
-
-        child.wait()?;
-
-        Ok(())
     }
 
-    fn display_boring<S>(&self, text: S) -> Result<()>
+    pub fn display_string<S>(&self, text: S) -> Result<()>
     where
-        S: AsRef<str>,
+        S: AsRef<str> + Display,
     {
-        print!("{}", text.as_ref());
-        Ok(())
+        if self.glow.is_some() {
+            self.display_glow(text)
+        } else {
+            print!("{text}");
+            Ok(())
+        }
     }
 
     fn readline(&mut self) -> Result<String> {
@@ -234,9 +235,10 @@ impl TerminalConsole {
         }
     }
 
+    /*
     fn display_usage<S>(&mut self, usage: S) -> Result<()>
     where
-        S: AsRef<str>,
+        S: AsRef<str> + Display,
     {
         self.display_string(usage)
     }
@@ -255,6 +257,7 @@ impl TerminalConsole {
     {
         unimplemented!()
     }
+    */
 
     pub fn display_error(&mut self, err: Error) -> Result<()> {
         match err {
@@ -273,46 +276,6 @@ impl Drop for TerminalConsole {
     fn drop(&mut self) {
         if let Err(e) = self.rl.save_history(&self.history_file) {
             error!("saving history error={e}");
-        }
-    }
-}
-
-impl ConsoleDisplayTrait for TerminalConsole {
-    fn start_spinner(&mut self) {
-        let spinner = SpinnerBuilder::new("".into()).start();
-        self.spinner = Some(spinner)
-    }
-    fn stop_spinner(&mut self) {
-        self.spinner = None
-    }
-
-    fn display<D>(&mut self, data: D) -> Result<()>
-    where
-        D: AsRef<AdoData>,
-    {
-        match data.as_ref() {
-            AdoData::Empty => Ok(()),
-            AdoData::Reset => clear_console(),
-            AdoData::Json(s) => {
-                let json_str = format!("```json\n{s}\n```");
-                self.display_string(json_str)
-            }
-            AdoData::String(s) => self.display_string(s),
-            AdoData::Base64(s) => self.display_base64(s),
-            AdoData::UsageString(s) => self.display_usage(s),
-            AdoData::Status(s) => self.display_md(s),
-            AdoData::LlmUsage(u) => self.display_md(u),
-            AdoData::Bytes(_b) => todo!(),
-        }
-    }
-
-    fn display_string<S>(&mut self, value: S) -> Result<()>
-    where
-        S: AsRef<str>,
-    {
-        match &self.glow {
-            Some(v) => self.display_glow(v, value),
-            None => self.display_boring(value),
         }
     }
 }

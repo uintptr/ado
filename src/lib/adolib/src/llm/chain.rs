@@ -7,7 +7,6 @@ use crate::{
     data::types::{AdoData, AdoDataMarkdown},
     error::{Error, Result},
     llm::{claude::claude_chain::ClaudeChain, ollama::ollama_chain::OllamaChain},
-    ui::ConsoleDisplayTrait,
 };
 
 use log::error;
@@ -38,9 +37,9 @@ pub enum LLMToolState {
 
 #[async_trait(?Send)]
 pub trait LLMChainTrait {
-    async fn link<C>(&mut self, content: &str, console: &mut C) -> Result<()>
+    async fn link<C>(&mut self, content: &str, console: C) -> Result<()>
     where
-        C: ConsoleDisplayTrait;
+        C: Fn(AdoData) -> Result<()> + Send + Sync;
     async fn message(&self, content: &str) -> Result<String>;
     fn reset(&mut self);
     fn model(&self) -> &str;
@@ -81,9 +80,9 @@ impl LLMChain {
         }
     }
 
-    pub async fn link<C>(&mut self, content: &str, console: &mut C) -> Result<()>
+    pub async fn link<C>(&mut self, content: &str, console: C) -> Result<()>
     where
-        C: ConsoleDisplayTrait,
+        C: Fn(AdoData) -> Result<()> + Send + Sync,
     {
         match self {
             LLMChain::Ollama(ollama) => ollama.link(content, console).await,
