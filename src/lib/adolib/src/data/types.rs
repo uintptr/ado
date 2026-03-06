@@ -4,8 +4,6 @@ use serde::{Deserialize, Serialize};
 use crate::{
     error::{Error, Result},
     llm::chain::LLMUsage,
-    search::results::WebResult,
-    shell::ShellExit,
     ui::status::StatusInfo,
 };
 
@@ -27,10 +25,8 @@ pub enum AdoData {
     Bytes(Vec<u8>),
     Json(String),
     Base64(String),
-    SearchData(WebResult),
     LlmUsage(LLMUsage),
     UsageString(String),
-    Shell(ShellExit),
     Status(StatusInfo),
 }
 
@@ -49,9 +45,7 @@ impl AdoDataMarkdown for &AdoData {
             AdoData::Bytes(_) => unimplemented!(),
             AdoData::Json(s) => format!("```json\n{s}\n```"),
             AdoData::Base64(b) => b.to_string().to_markdown()?,
-            AdoData::SearchData(d) => d.to_markdown()?,
             AdoData::UsageString(s) => s.to_string().to_markdown()?,
-            AdoData::Shell(s) => s.to_markdown()?,
             AdoData::Status(s) => s.to_markdown()?,
             AdoData::LlmUsage(s) => s.to_markdown()?,
         };
@@ -69,15 +63,7 @@ impl AdoDataBase64 for AdoData {
             AdoData::Json(s) => BASE64_STANDARD.encode(s),
             AdoData::Base64(s) => BASE64_STANDARD.encode(s),
             AdoData::Bytes(b) => BASE64_STANDARD.encode(b),
-            AdoData::SearchData(s) => {
-                let json_str = serde_json::to_string(&s)?;
-                BASE64_STANDARD.encode(json_str)
-            }
             AdoData::UsageString(s) => BASE64_STANDARD.encode(s),
-            AdoData::Shell(e) => {
-                let json_str = serde_json::to_string(&e)?;
-                BASE64_STANDARD.encode(json_str)
-            }
             AdoData::Status(s) => {
                 let json_str = serde_json::to_string(&s)?;
                 BASE64_STANDARD.encode(json_str)
@@ -103,7 +89,6 @@ impl TryFrom<AdoData> for String {
             AdoData::Json(s) => s,
             AdoData::Base64(s) => s,
             AdoData::Bytes(b) => BASE64_STANDARD.encode(b),
-            AdoData::SearchData(s) => serde_json::to_string_pretty(&s)?,
             AdoData::UsageString(s) => s,
             u => serde_json::to_string(&u)?,
         };

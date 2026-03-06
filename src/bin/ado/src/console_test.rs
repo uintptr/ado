@@ -4,24 +4,13 @@
 #[cfg(test)]
 mod tests {
 
-    use std::{fs, path::Path};
-
-    use adolib::{
-        config::loader::AdoConfig,
-        data::types::AdoData,
-        logging::logger::setup_logger,
-        search::results::{WebResult, WebResultEntry},
-        shell::AdoShell,
-        ui::commands::UserCommands,
-    };
+    use adolib::{config::loader::AdoConfig, data::types::AdoData, ui::commands::UserCommands};
 
     use crate::console::TerminalConsole;
     use adolib::ui::{ConsoleDisplayTrait, NopConsole};
 
     #[test]
     fn display_text() {
-        setup_logger(true).unwrap();
-
         let config = AdoConfig::from_default().unwrap();
 
         let command = UserCommands::new(&config).unwrap();
@@ -31,8 +20,6 @@ mod tests {
 
     #[tokio::test]
     async fn arg_parser() {
-        setup_logger(true).unwrap();
-
         let config = AdoConfig::from_default().unwrap();
 
         let mut cmd = UserCommands::new(&config).unwrap();
@@ -40,55 +27,5 @@ mod tests {
         let mut console = NopConsole {};
 
         cmd.handler("/quit", &mut console).await.unwrap();
-    }
-
-    #[test]
-    fn display_search() {
-        setup_logger(true).unwrap();
-
-        let manifest_dir = env!("CARGO_MANIFEST_DIR");
-        let json_file = Path::new(manifest_dir)
-            .join("..")
-            .join("..")
-            .join("..")
-            .join("test")
-            .join("search_test.json")
-            .canonicalize()
-            .unwrap();
-
-        let _json_data = fs::read_to_string(json_file).unwrap();
-
-        let config = AdoConfig::from_default().unwrap();
-
-        let command = UserCommands::new(&config).unwrap();
-        let mut console = TerminalConsole::new(&command).unwrap();
-
-        let data = AdoData::SearchData(WebResult {
-            entries: vec![WebResultEntry {
-                title: "Test Result".to_string(),
-                link: "https://example.com".to_string(),
-                link_display: "example.com".to_string(),
-                snippet: "A test search result snippet.".to_string(),
-            }],
-        });
-
-        console.display(data).unwrap();
-    }
-
-    #[test]
-    fn display_shell_test() {
-        setup_logger(true).unwrap();
-
-        let sh = AdoShell::new();
-
-        let data = sh.exec("uname -a").unwrap();
-
-        let config = AdoConfig::from_default().unwrap();
-
-        let command = UserCommands::new(&config).unwrap();
-
-        let mut console = TerminalConsole::new(&command).unwrap();
-
-        console.display(data).unwrap();
     }
 }

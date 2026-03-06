@@ -154,7 +154,6 @@ mod tests {
             chain::LLMChainTrait,
             claude::{claude_api::ClaudeResponse, claude_chain::ClaudeChain},
         },
-        logging::logger::setup_logger,
         ui::NopConsole,
     };
 
@@ -187,7 +186,6 @@ mod tests {
 
     #[tokio::test]
     async fn test_content_response() {
-        setup_logger(true).unwrap();
         let test_file = Path::new("/tmp").join("claude_response.json");
 
         let resp = fs::read_to_string(test_file).unwrap();
@@ -206,8 +204,6 @@ mod tests {
 
     #[tokio::test]
     async fn test_mcp_response() {
-        setup_logger(true).unwrap();
-
         let config = AdoConfig::from_default().unwrap();
         let mut chain = ClaudeChain::new(&config).unwrap();
 

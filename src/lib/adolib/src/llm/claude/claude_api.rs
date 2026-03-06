@@ -277,11 +277,10 @@ mod tests {
 
     use log::info;
 
-    use crate::{llm::claude::claude_api::ClaudeResponse, logging::logger::setup_logger};
+    use crate::llm::claude::claude_api::ClaudeResponse;
 
     #[test]
     fn test_response() {
-        setup_logger(true).unwrap();
         let test_file = Path::new("/tmp").join("claude_response.json");
 
         let resp = fs::read_to_string(test_file).unwrap();

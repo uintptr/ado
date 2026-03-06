@@ -11,7 +11,6 @@ use crate::{
     const_vars::{CONFIG_FILE_NAME, DIRS_APP, DIRS_ORG, DIRS_QUALIFIER},
     error::{Error, Result},
     llm::config::{ClaudeConfig, ConfigOllama},
-    search::{google::GoogleConfig, serp::SerpApiConfig},
 };
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -22,15 +21,8 @@ pub struct ConfigLlm {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct ConfigSearch {
-    pub google: Option<GoogleConfig>,
-    pub serp: Option<SerpApiConfig>,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
 struct ConfigFile {
     llm: ConfigLlm,
-    search: Option<ConfigSearch>,
 }
 
 #[derive(Clone)]
@@ -161,26 +153,6 @@ impl AdoConfig {
         match &self.config_file.llm.claude {
             Some(v) => Ok(v),
             None => Err(Error::ConfigNotFound),
-        }
-    }
-
-    pub fn search_google(&self) -> Result<&GoogleConfig> {
-        if let Some(search) = &self.config_file.search
-            && let Some(google) = &search.google
-        {
-            Ok(google)
-        } else {
-            Err(Error::ConfigNotFound)
-        }
-    }
-
-    pub fn search_setp(&self) -> Result<&SerpApiConfig> {
-        if let Some(search) = &self.config_file.search
-            && let Some(serp) = &search.serp
-        {
-            Ok(serp)
-        } else {
-            Err(Error::ConfigNotFound)
         }
     }
 }

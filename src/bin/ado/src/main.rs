@@ -5,7 +5,6 @@ use adolib::{
     config::loader::AdoConfig,
     error::{Error, Result},
     llm::question::question_detection,
-    logging::logger::setup_logger,
     ui::ConsoleDisplayTrait,
     ui::commands::UserCommands,
 };
@@ -78,8 +77,6 @@ fn load_config_local(local_config: &Option<String>) -> Result<AdoConfig> {
 #[tokio::main]
 async fn main() -> Result<()> {
     let args = UserArgs::parse();
-
-    setup_logger(args.verbose)?;
 
     let query_opt = match args.shell_handler {
         Some(v) => match question_detection(&v) {
