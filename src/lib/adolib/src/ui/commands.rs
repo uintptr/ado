@@ -4,7 +4,6 @@ use crate::{
     data::types::AdoData,
     error::{Error, Result},
     llm::chain::LLMChain,
-    mcp::matrix::McpMatrix,
     search::{SearchTrait, WebSearch, results::WebResult},
     storage::{PersistentStorageTrait, persistent::PersistentStorage},
     ui::{ConsoleDisplayTrait, reddit::RedditQuery, status::StatusInfo},
@@ -88,11 +87,6 @@ enum Command {
         #[command(subcommand)]
         command: LlmCommmands,
     },
-    /// Mcp related commands
-    Mcp {
-        #[command(subcommand)]
-        command: McpCommmands,
-    },
 }
 
 pub struct CommandInfo {
@@ -107,7 +101,6 @@ pub struct UserCommands {
     chain: LLMChain,
     cache: PersistentStorage,
     reddit: RedditQuery,
-    mcp: McpMatrix,
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -117,7 +110,6 @@ pub struct UserCommands {
 impl UserCommands {
     pub fn new(config: &AdoConfig, cache: PersistentStorage) -> Result<UserCommands> {
         let search = WebSearch::new(config)?;
-        let mcp = McpMatrix::new();
         let chain = LLMChain::new(config)?;
         let reddit = RedditQuery::new();
 
@@ -127,7 +119,6 @@ impl UserCommands {
             chain,
             cache,
             reddit,
-            mcp,
         })
     }
 
@@ -226,42 +217,6 @@ impl UserCommands {
         Ok(())
     }
 
-    fn list_mcp_servers(&self) -> Result<String> {
-        let mut md_vec = Vec::new();
-
-        md_vec.push("MCP Servers:".to_string());
-
-        if let Some(servers) = self.config.mcp_servers() {
-            for (name, config) in servers.iter() {
-                md_vec.push(format!("* {}", name));
-
-                let url = match &config.url {
-                    Some(v) => v.as_str(),
-                    None => "",
-                };
-
-                md_vec.push(format!("    * {} {}", config.config_type, url));
-            }
-        }
-
-        Ok(md_vec.join("\n"))
-    }
-
-    fn list_mcp_tools(&self) -> Result<String> {
-        let mut md_vec = Vec::new();
-
-        md_vec.push("# MCP Tools:".to_string());
-
-        let tools = self.mcp.list_tools();
-
-        for t in tools {
-            md_vec.push(format!("## {}", t.name));
-            md_vec.push(t.description.to_string());
-        }
-
-        Ok(md_vec.join("\n"))
-    }
-
     async fn command_table<S, C>(&mut self, line: S, console: &mut C) -> Result<()>
     where
         S: AsRef<str>,
@@ -278,7 +233,7 @@ impl UserCommands {
                 Command::Query { input } => {
                     let input_str = input.join(" ");
 
-                    self.chain.link(&self.mcp, &input_str, console).await
+                    self.chain.link(&input_str, console).await
                 }
                 Command::Quit => Err(Error::EOF),
                 Command::Reset => {
@@ -314,26 +269,6 @@ impl UserCommands {
                     let s = StatusInfo::new(&self.config, &self.chain);
                     console.display(AdoData::Status(s))
                 }
-                Command::Mcp { command } => match command {
-                    McpCommmands::Load { name } => {
-                        let result = match self.mcp.load(&self.config, name).await {
-                            Ok(_) => {
-                                self.chain.enable_mcp(&self.mcp)?;
-                                "success".into()
-                            }
-                            Err(e) => format!("error: {e}"),
-                        };
-                        console.display_string(result)
-                    }
-                    McpCommmands::List => {
-                        let md = self.list_mcp_servers()?;
-                        console.display_string(md)
-                    }
-                    McpCommmands::Tools => {
-                        let md = self.list_mcp_tools()?;
-                        console.display_string(md)
-                    }
-                },
                 Command::Llm { command } => match command {
                     LlmCommmands::Provider { llm } => {
                         if let Some(llm) = llm {
@@ -388,7 +323,7 @@ impl UserCommands {
                     //
                     // assume it's a query
                     //
-                    self.chain.link(&self.mcp, line.as_ref(), console).await
+                    self.chain.link(line.as_ref(), console).await
                 }
             },
         }

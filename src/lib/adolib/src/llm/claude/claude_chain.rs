@@ -8,16 +8,13 @@ use crate::{
         chain::{LLMChainTrait, LLMUsage},
         claude::claude_api::{
             ClaudeApi, ClaudeContentType, ClaudeMessages, ClaudeResponse, ClaudeRole, ClaudeStopReason,
-            ClaudeToolResult,
         },
     },
-    mcp::matrix::McpMatrix,
     ui::ConsoleDisplayTrait,
 };
 
 use async_trait::async_trait;
 use log::info;
-use omcp::types::McpParams;
 
 pub struct ClaudeChain {
     api: ClaudeApi,
@@ -53,7 +50,7 @@ impl ClaudeChain {
         })
     }
 
-    async fn process_content<C>(&mut self, mcp: &McpMatrix, response: &ClaudeResponse, console: &mut C) -> Result<()>
+    async fn process_content<C>(&mut self, response: &ClaudeResponse, console: &mut C) -> Result<()>
     where
         C: ConsoleDisplayTrait,
     {
@@ -65,30 +62,6 @@ impl ClaudeChain {
                         self.messages.add_message(ClaudeRole::Assistant, text);
                     }
                 }
-                ClaudeContentType::ToolUse => {
-                    if let Some(name) = &content.name {
-                        let mut params = McpParams::new(name);
-
-                        if let Some(input) = &content.input {
-                            let args = input.clone();
-                            params.set_argument(args);
-                        }
-
-                        self.messages.add_content(ClaudeRole::Assistant, content)?;
-
-                        let (mcp_data, success) = match mcp.call(&params).await {
-                            Ok(v) => (v, true),
-                            Err(e) => (format!("error: {e}"), false),
-                        };
-
-                        let result = ClaudeToolResult::new(content, mcp_data, success);
-
-                        self.messages.add_result(&result)?;
-                    }
-                }
-                ClaudeContentType::ToolResult => {
-                    panic!()
-                }
             }
         }
 
@@ -98,7 +71,7 @@ impl ClaudeChain {
 
 #[async_trait(?Send)]
 impl LLMChainTrait for ClaudeChain {
-    async fn link<C>(&mut self, mcp: &McpMatrix, content: &str, console: &mut C) -> Result<()>
+    async fn link<C>(&mut self, content: &str, console: &mut C) -> Result<()>
     where
         C: ConsoleDisplayTrait,
     {
@@ -112,7 +85,7 @@ impl LLMChainTrait for ClaudeChain {
 
             // in its own function so it can be tested from a local
             // file
-            self.process_content(mcp, &resp, console).await?;
+            self.process_content(&resp, console).await?;
 
             //
             // Keep going until it's done
@@ -162,11 +135,6 @@ impl LLMChainTrait for ClaudeChain {
         let json_chain = serde_json::to_string_pretty(&self.messages)?;
         Ok(AdoData::Json(json_chain))
     }
-
-    fn enable_mcp(&mut self, mcp: &McpMatrix) -> Result<()> {
-        self.messages.with_tools(mcp);
-        Ok(())
-    }
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -187,7 +155,6 @@ mod tests {
             claude::{claude_api::ClaudeResponse, claude_chain::ClaudeChain},
         },
         logging::logger::setup_logger,
-        mcp::matrix::McpMatrix,
         ui::NopConsole,
     };
 
@@ -212,10 +179,8 @@ mod tests {
 
         let mut console = NopConsole::new();
 
-        let mcp = McpMatrix::new();
-
-        chain.link(&mcp, "Hello World", &mut console).await.unwrap();
-        chain.link(&mcp, "Can you tell a joke", &mut console).await.unwrap();
+        chain.link("Hello World", &mut console).await.unwrap();
+        chain.link("Can you tell a joke", &mut console).await.unwrap();
 
         chain.message("hello world").await.unwrap();
     }
@@ -234,9 +199,7 @@ mod tests {
 
         let mut console = NopConsole::new();
 
-        let mcp = McpMatrix::new();
-
-        let ret = chain.process_content(&mcp, &resp, &mut console).await.unwrap();
+        let ret = chain.process_content(&resp, &mut console).await.unwrap();
 
         info!("ret: {ret:?}");
     }
@@ -255,11 +218,7 @@ mod tests {
 
         let mut console = NopConsole::new();
 
-        let mut mcp = McpMatrix::new();
-
-        mcp.load(&config, "ha").await.unwrap();
-
-        chain.process_content(&mcp, &resp, &mut console).await.unwrap();
+        chain.process_content(&resp, &mut console).await.unwrap();
 
         info!("done");
     }

@@ -1,5 +1,4 @@
 use std::{
-    collections::HashMap,
     fs,
     path::{Path, PathBuf},
 };
@@ -12,7 +11,6 @@ use crate::{
     const_vars::{CONFIG_FILE_NAME, DIRS_APP, DIRS_ORG, DIRS_QUALIFIER, STORE_PERMANENT},
     error::{Error, Result},
     llm::config::{ClaudeConfig, ConfigOllama},
-    mcp::types::McpConfig,
     search::{google::GoogleConfig, serp::SerpApiConfig},
     storage::{PersistentStorageTrait, persistent::PersistentStorage},
 };
@@ -34,7 +32,6 @@ pub struct ConfigSearch {
 struct ConfigFile {
     llm: ConfigLlm,
     search: Option<ConfigSearch>,
-    mcp: Option<HashMap<String, McpConfig>>,
 }
 
 #[derive(Clone)]
@@ -187,13 +184,6 @@ impl AdoConfig {
             Ok(serp)
         } else {
             Err(Error::ConfigNotFound)
-        }
-    }
-
-    pub fn mcp_servers(&self) -> Option<&HashMap<String, McpConfig>> {
-        match &self.config_file.mcp {
-            Some(v) => Some(v),
-            None => None,
         }
     }
 }

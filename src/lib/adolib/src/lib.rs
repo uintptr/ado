@@ -4,7 +4,6 @@ pub mod data;
 pub mod error;
 pub mod llm;
 pub mod logging;
-pub mod mcp;
 pub mod search;
 pub mod shell;
 pub mod storage;

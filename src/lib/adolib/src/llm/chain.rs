@@ -7,7 +7,6 @@ use crate::{
     data::types::{AdoData, AdoDataMarkdown},
     error::{Error, Result},
     llm::{claude::claude_chain::ClaudeChain, ollama::ollama_chain::OllamaChain},
-    mcp::matrix::McpMatrix,
     ui::ConsoleDisplayTrait,
 };
 
@@ -39,7 +38,7 @@ pub enum LLMToolState {
 
 #[async_trait(?Send)]
 pub trait LLMChainTrait {
-    async fn link<C>(&mut self, mcp: &McpMatrix, content: &str, console: &mut C) -> Result<()>
+    async fn link<C>(&mut self, content: &str, console: &mut C) -> Result<()>
     where
         C: ConsoleDisplayTrait;
     async fn message(&self, content: &str) -> Result<String>;
@@ -48,12 +47,6 @@ pub trait LLMChainTrait {
     fn change_model<S: AsRef<str>>(&mut self, _model: S);
     fn usage(&self) -> LLMUsage;
     fn dump_chain(&self) -> Result<AdoData>;
-    fn enable_mcp(&mut self, _mcp: &McpMatrix) -> Result<()> {
-        Err(Error::NotImplemented)
-    }
-    fn disable_mcp(&mut self) -> Result<()> {
-        Err(Error::NotImplemented)
-    }
 }
 
 pub enum LLMChain {
@@ -88,13 +81,13 @@ impl LLMChain {
         }
     }
 
-    pub async fn link<C>(&mut self, mcp: &McpMatrix, content: &str, console: &mut C) -> Result<()>
+    pub async fn link<C>(&mut self, content: &str, console: &mut C) -> Result<()>
     where
         C: ConsoleDisplayTrait,
     {
         match self {
-            LLMChain::Ollama(ollama) => ollama.link(mcp, content, console).await,
-            LLMChain::Claude(claude) => claude.link(mcp, content, console).await,
+            LLMChain::Ollama(ollama) => ollama.link(content, console).await,
+            LLMChain::Claude(claude) => claude.link(content, console).await,
         }
     }
 
@@ -133,20 +126,6 @@ impl LLMChain {
         match self {
             LLMChain::Ollama(ollama) => ollama.dump_chain(),
             LLMChain::Claude(claude) => claude.dump_chain(),
-        }
-    }
-
-    pub fn enable_mcp(&mut self, mcp: &McpMatrix) -> Result<()> {
-        match self {
-            LLMChain::Ollama(ollama) => ollama.enable_mcp(mcp),
-            LLMChain::Claude(claude) => claude.enable_mcp(mcp),
-        }
-    }
-
-    pub fn disable_mcp(&mut self) -> Result<()> {
-        match self {
-            LLMChain::Ollama(ollama) => ollama.disable_mcp(),
-            LLMChain::Claude(claude) => claude.disable_mcp(),
         }
     }
 }

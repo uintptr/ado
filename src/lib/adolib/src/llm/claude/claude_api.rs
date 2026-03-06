@@ -11,7 +11,6 @@ use serde_json::Value;
 use crate::error::Error;
 use crate::error::Result;
 use crate::llm::claude::claude_config::ClaudeConfig;
-use crate::mcp::matrix::McpMatrix;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ClaudeErrorMessage {
@@ -47,20 +46,6 @@ pub enum ClaudeContentType {
     #[default]
     #[serde(rename = "text")]
     Text,
-    #[serde(rename = "tool_use")]
-    ToolUse,
-    #[serde(rename = "tool_result")]
-    ToolResult,
-}
-
-#[derive(Debug, Default, Deserialize, Serialize)]
-pub struct ClaudeToolResult {
-    #[serde(rename = "type")]
-    pub content_type: ClaudeContentType,
-    pub tool_use_id: String,
-    pub content: String,
-    #[serde(skip_serializing_if = "is_false")]
-    pub is_error: bool,
 }
 
 #[derive(Debug, Default, Deserialize, Serialize)]
@@ -153,25 +138,6 @@ fn is_false(value: &bool) -> bool {
 // IMPL
 ///////////////////////////////////////////////////////////////////////////////
 
-impl ClaudeToolResult {
-    pub fn new<S>(request: &ClaudeContent, result: S, success: bool) -> Self
-    where
-        S: AsRef<str>,
-    {
-        let tool_id = match &request.id {
-            Some(v) => v.to_string(),
-            None => "unknown".to_string(),
-        };
-
-        ClaudeToolResult {
-            content_type: ClaudeContentType::ToolResult,
-            tool_use_id: tool_id,
-            content: result.as_ref().to_string(),
-            is_error: !success,
-        }
-    }
-}
-
 impl ClaudeMessage {
     pub fn with_message<S>(role: ClaudeRole, message: S) -> Self
     where
@@ -185,16 +151,6 @@ impl ClaudeMessage {
 
     pub fn with_content_list(role: ClaudeRole, content: Vec<&ClaudeContent>) -> Result<Self> {
         let object_str = serde_json::to_string(&content)?;
-        let array: Vec<Value> = serde_json::from_str(&object_str)?;
-
-        Ok(Self {
-            role,
-            content: Value::Array(array),
-        })
-    }
-
-    pub fn with_tool_results(role: ClaudeRole, result: Vec<&ClaudeToolResult>) -> Result<Self> {
-        let object_str = serde_json::to_string(&result)?;
         let array: Vec<Value> = serde_json::from_str(&object_str)?;
 
         Ok(Self {
@@ -258,24 +214,8 @@ impl ClaudeMessages {
         Ok(())
     }
 
-    pub fn add_result(&mut self, tool_result: &ClaudeToolResult) -> Result<()> {
-        let content_list = vec![tool_result];
-
-        let message = ClaudeMessage::with_tool_results(ClaudeRole::User, content_list)?;
-        self.messages.push(message);
-        Ok(())
-    }
-
     pub fn reset(&mut self) {
         self.messages = vec![]
-    }
-
-    pub fn with_tools(&mut self, mcp: &McpMatrix) {
-        self.tools.clear();
-
-        for tool in mcp.list_tools() {
-            self.tools.push(tool);
-        }
     }
 }
 

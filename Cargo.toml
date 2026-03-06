@@ -45,14 +45,14 @@ shell-words = "1.1"
 shellexpand = "3.1"
 sled = "0.34"
 spinner = "0.5"
-tempfile = "3.25"
-tokio = { version = "1.49", default-features = false, features = [
+tempfile = "3.26"
+tokio = { version = "1.50", default-features = false, features = [
   "macros",
   "test-util",
   "tokio-macros"
 ] }
 toml = "1.0"
-uuid = { version = "1.21", features = ["v4"] }
+uuid = { version = "1.22", features = ["v4"] }
 vergen-git2 = { version = "9.1", features = ["build"] }
 wait-timeout = "0.2"
 walkdir = "2.5"
