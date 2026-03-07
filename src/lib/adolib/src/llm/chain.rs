@@ -36,6 +36,12 @@ pub enum LLMToolState {
 }
 
 pub trait LLMChainTrait {
+    fn add_prompt<P>(&mut self, _prompt: P)
+    where
+        P: AsRef<str> + Display,
+    {
+        todo!()
+    }
     fn link<C, S>(&mut self, content: S, console: C) -> Result<()>
     where
         C: Fn(AdoData) -> Result<()> + Send + Sync,
@@ -75,6 +81,16 @@ impl LLMChain {
         };
 
         Ok(chain)
+    }
+
+    pub fn add_prompt<P>(&mut self, prompt: P)
+    where
+        P: AsRef<str> + Display,
+    {
+        match self {
+            LLMChain::Claude(claude) => claude.add_prompt(prompt),
+            LLMChain::Ollama(ollama) => ollama.add_prompt(prompt),
+        }
     }
 
     pub fn message<S>(&self, content: S) -> Result<String>

@@ -1,8 +1,10 @@
 use std::fmt::Display;
 
 use adolib::{config::loader::AdoConfig, data::types::AdoData, llm::chain::LLMChain};
-use anyhow::Result;
+use anyhow::{Context, Result};
 use log::info;
+
+use crate::intrinsics::IntrinsicPrompts;
 
 pub struct UserCommands {
     chain: LLMChain,
@@ -13,9 +15,19 @@ pub struct UserCommandEntry {
     pub aliases: Vec<String>,
 }
 
+fn init_chain(config: &AdoConfig) -> Result<LLMChain> {
+    let chain = LLMChain::new(config)?;
+
+    for p in IntrinsicPrompts::iter() {
+        print!("name: {}", p)
+    }
+
+    Ok(chain)
+}
+
 impl UserCommands {
     pub fn new(config: &AdoConfig) -> Result<Self> {
-        let chain = LLMChain::new(config)?;
+        let chain = init_chain(config).context("Unable to initialize llm chain")?;
 
         Ok(Self { chain })
     }

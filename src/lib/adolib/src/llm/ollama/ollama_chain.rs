@@ -27,6 +27,13 @@ impl OllamaChain {
 }
 
 impl LLMChainTrait for OllamaChain {
+    fn add_prompt<P>(&mut self, prompt: P)
+    where
+        P: AsRef<str> + Display,
+    {
+        self.chat.add_content("system", prompt)
+    }
+
     fn link<C, S>(&mut self, content: S, console: C) -> Result<()>
     where
         C: Fn(AdoData) -> Result<()> + Send + Sync,
