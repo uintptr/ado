@@ -1,103 +1,72 @@
-use base64::{Engine, prelude::BASE64_STANDARD};
+use std::{path::PathBuf, str::FromStr};
+
+use log::error;
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    error::{Error, Result},
-    llm::chain::LLMUsage,
-    ui::status::StatusInfo,
-};
-
-pub trait AdoDataMarkdown {
-    fn to_markdown(self) -> Result<String>;
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum AdoDataArtifactType {
+    Code,
+    Diff,
+    File,
+    Command,
+    Note,
 }
 
-pub trait AdoDataBase64 {
-    fn to_base64(self) -> Result<String>;
+#[derive(Serialize, Deserialize)]
+pub struct AdoDataMeta {
+    pub status: String,
+    pub intent: String,
+    pub confidence: f32,
 }
 
-pub trait AdoDataDisplay: AdoDataMarkdown + AdoDataBase64 {}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub enum AdoData {
-    Empty,
-    Reset,
-    String(String),
-    Bytes(Vec<u8>),
-    Json(String),
-    Base64(String),
-    LlmUsage(LLMUsage),
-    UsageString(String),
-    Status(StatusInfo),
+#[derive(Serialize, Deserialize)]
+pub struct AdoDataArtifact {
+    #[serde(rename = "type")]
+    pub artifact_type: AdoDataArtifactType,
+    pub language: Option<String>,
+    pub path: Option<PathBuf>,
+    pub content: String,
 }
 
-impl AdoDataMarkdown for String {
-    fn to_markdown(self) -> Result<String> {
-        Ok(format!("```\n{}\n```", self))
-    }
+#[derive(Serialize, Deserialize)]
+pub struct AdoDataResponse {
+    pub message: String,
+    pub artifacts: Vec<AdoDataArtifact>,
 }
 
-impl AdoDataMarkdown for &AdoData {
-    fn to_markdown(self) -> Result<String> {
-        let md = match self {
-            AdoData::Empty => "".to_string(),
-            AdoData::Reset => "".to_string(),
-            AdoData::String(s) => s.to_string().to_markdown()?,
-            AdoData::Bytes(_) => unimplemented!(),
-            AdoData::Json(s) => format!("```json\n{s}\n```"),
-            AdoData::Base64(b) => b.to_string().to_markdown()?,
-            AdoData::UsageString(s) => s.to_string().to_markdown()?,
-            AdoData::Status(s) => s.to_markdown()?,
-            AdoData::LlmUsage(s) => s.to_markdown()?,
-        };
-
-        Ok(md)
-    }
+#[derive(Serialize, Deserialize)]
+pub struct AdoDataError {
+    pub code: String,
+    pub message: String,
 }
 
-impl AdoDataBase64 for AdoData {
-    fn to_base64(self) -> Result<String> {
-        let out = match self {
-            AdoData::Empty => BASE64_STANDARD.encode(""),
-            AdoData::Reset => BASE64_STANDARD.encode(""),
-            AdoData::String(s) => BASE64_STANDARD.encode(s),
-            AdoData::Json(s) => BASE64_STANDARD.encode(s),
-            AdoData::Base64(s) => BASE64_STANDARD.encode(s),
-            AdoData::Bytes(b) => BASE64_STANDARD.encode(b),
-            AdoData::UsageString(s) => BASE64_STANDARD.encode(s),
-            AdoData::Status(s) => {
-                let json_str = serde_json::to_string(&s)?;
-                BASE64_STANDARD.encode(json_str)
-            }
-            AdoData::LlmUsage(u) => {
-                let json_str = serde_json::to_string(&u)?;
-                BASE64_STANDARD.encode(json_str)
+#[derive(Serialize, Deserialize)]
+pub struct AdoData {
+    pub meta: AdoDataMeta,
+    pub response: AdoDataResponse,
+    pub error: Option<AdoDataError>,
+}
+
+impl FromStr for AdoData {
+    type Err = crate::error::Error;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let data: AdoData = match serde_json::from_str(s) {
+            Ok(v) => v,
+            Err(e) => {
+                error!("Deserialization failure ({e})\n{s}\n");
+                return Err(e.into());
             }
         };
 
-        Ok(out)
+        Ok(data)
     }
 }
 
-impl TryFrom<AdoData> for String {
-    type Error = Error;
-
-    fn try_from(value: AdoData) -> Result<String> {
-        let s = match value {
-            AdoData::Empty => "".into(),
-            AdoData::Reset => "".into(),
-            AdoData::String(s) => s,
-            AdoData::Json(s) => s,
-            AdoData::Base64(s) => s,
-            AdoData::Bytes(b) => BASE64_STANDARD.encode(b),
-            AdoData::UsageString(s) => s,
-            u => serde_json::to_string(&u)?,
-        };
-
-        Ok(s)
-    }
-}
-impl AsRef<AdoData> for AdoData {
-    fn as_ref(&self) -> &AdoData {
-        self
+impl ToString for AdoData {
+    fn to_string(&self) -> String {
+        let str = serde_json::to_string_pretty(self).unwrap_or_default();
+        str
     }
 }

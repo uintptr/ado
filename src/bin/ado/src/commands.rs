@@ -35,6 +35,15 @@ impl UserCommands {
         Ok(Self { chain })
     }
 
+    pub fn command_models(&self) -> Result<()> {
+        println!("Models:");
+        for m in self.chain.models() {
+            println!("* {m}")
+        }
+
+        Ok(())
+    }
+
     pub fn handler<C, S>(&mut self, input: S, console: C) -> Result<()>
     where
         C: Fn(AdoData) -> std::result::Result<(), adolib::error::Error> + Send + Sync,
@@ -43,7 +52,10 @@ impl UserCommands {
         info!("input: {input}");
 
         if let Some(command) = input.as_ref().strip_prefix("/") {
-            info!("command: {command}");
+            match command {
+                "models" => self.command_models()?,
+                _ => println!("Command Not Found ({command})"),
+            }
         } else {
             //
             // forward to

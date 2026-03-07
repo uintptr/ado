@@ -116,6 +116,16 @@ pub struct ClaudeResponse {
     pub usage: ClaudeUsage,
 }
 
+#[derive(Deserialize)]
+pub struct ClaudeModel {
+    pub id: String,
+}
+
+#[derive(Deserialize)]
+pub struct ClaudeModelResponse {
+    pub data: Vec<ClaudeModel>,
+}
+
 pub struct ClaudeApi {
     pub config: ClaudeConfig,
 }
@@ -199,6 +209,33 @@ impl ClaudeMessages {
 impl ClaudeApi {
     pub fn new(config: &ClaudeConfig) -> Result<Self> {
         Ok(Self { config: config.clone() })
+    }
+
+    pub fn models(&self) -> Result<Vec<ClaudeModel>> {
+        let url = format!("{}/v1/models", self.config.url);
+
+        let mut res = ureq::get(&url)
+            .header("x-api-key", &self.config.key)
+            .header("anthropic-version", &self.config.anthropic_version)
+            .call()?;
+
+        let log_msg = format!(
+            "get {} -> code={} reason={}",
+            url,
+            res.status().as_u16(),
+            res.status().as_str()
+        );
+
+        match res.status().is_success() {
+            true => info!("{log_msg}"),
+            false => error!("{log_msg}"),
+        }
+
+        let resp_json = &res.body_mut().read_to_string()?;
+
+        let resp: ClaudeModelResponse = serde_json::from_str(&resp_json)?;
+
+        Ok(resp.data)
     }
 
     pub fn chat(&self, chat: &ClaudeMessages) -> Result<ClaudeResponse> {

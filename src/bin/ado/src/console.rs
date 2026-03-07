@@ -237,7 +237,7 @@ impl TerminalConsole {
     }
 
     pub fn display_data(&self, data: AdoData) -> Result<()> {
-        let s: String = data.try_into()?;
+        let s: String = data.to_string();
 
         self.display_string(s)?;
 

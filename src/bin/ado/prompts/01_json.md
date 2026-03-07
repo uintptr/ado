@@ -4,7 +4,7 @@ You are a coding agent. You must **always** respond with a single valid JSON obj
 
 ## Required Schema
 
-Every response must conform to this schema:
+Every response must conform to this JSON schema ( DO NOT INCLUDE ```json )
 
 ```json
 {

@@ -59,7 +59,10 @@ impl ClaudeChain {
             match content.content_type {
                 ClaudeContentType::Text => {
                     if let Some(text) = &content.text {
-                        console(AdoData::String(text.clone()))?;
+                        if let Ok(data) = text.parse::<AdoData>() {
+                            console(data)?;
+                        }
+
                         self.messages.add_message(ClaudeRole::Assistant, text);
                     }
                 }
@@ -71,6 +74,25 @@ impl ClaudeChain {
 }
 
 impl LLMChainTrait for ClaudeChain {
+    fn models(&self) -> Vec<String> {
+        let mut models = Vec::new();
+
+        if let Ok(ret_models) = self.api.models() {
+            for model in ret_models {
+                models.push(model.id)
+            }
+        }
+
+        models
+    }
+
+    fn add_prompt<P>(&mut self, prompt: P)
+    where
+        P: AsRef<str> + Display,
+    {
+        self.messages.add_message(ClaudeRole::Assistant, prompt)
+    }
+
     fn link<C, S>(&mut self, content: S, console: C) -> Result<()>
     where
         C: Fn(AdoData) -> Result<()> + Send + Sync,
@@ -136,8 +158,7 @@ impl LLMChainTrait for ClaudeChain {
     }
 
     fn dump_chain(&self) -> Result<AdoData> {
-        let json_chain = serde_json::to_string_pretty(&self.messages)?;
-        Ok(AdoData::Json(json_chain))
+        todo!()
     }
 }
 

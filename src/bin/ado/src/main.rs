@@ -48,9 +48,10 @@ fn main_loop(mut console: TerminalConsole, mut command: UserCommands) -> Result<
             }
             Ok(())
         }) {
-            spinner.stop();
             error!("{e}");
         }
+
+        spinner.stop();
     }
 
     spinner.quit()?;
@@ -85,8 +86,6 @@ fn init_logging(verbose: bool) -> Result<()> {
         .create(true)
         .open(&log_file)
         .with_context(|| format!("Unable to open {} for writing", log_file.display()))?;
-
-    println!("log file: {}", log_file.display());
 
     let target = env_logger::Target::Pipe(Box::new(log_fd));
 

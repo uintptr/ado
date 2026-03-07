@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     config::loader::AdoConfig,
-    data::types::{AdoData, AdoDataMarkdown},
+    data::types::AdoData,
     error::{Error, Result},
     llm::{claude::claude_chain::ClaudeChain, ollama::ollama_chain::OllamaChain},
 };
@@ -17,19 +17,6 @@ pub struct LLMUsage {
     pub output_tokens: u64,
 }
 
-impl AdoDataMarkdown for &LLMUsage {
-    fn to_markdown(self) -> Result<String> {
-        let mut lines = Vec::new();
-
-        lines.push("# LLM Usage".to_string());
-        lines.push(format!(" * Input Tokens: {}", self.input_tokens));
-        lines.push(format!(" * Ouput Tokens: {}", self.output_tokens));
-
-        let md = lines.join("\n");
-        Ok(md)
-    }
-}
-
 pub enum LLMToolState {
     Enable,
     Disable,
@@ -38,10 +25,7 @@ pub enum LLMToolState {
 pub trait LLMChainTrait {
     fn add_prompt<P>(&mut self, _prompt: P)
     where
-        P: AsRef<str> + Display,
-    {
-        todo!()
-    }
+        P: AsRef<str> + Display;
     fn link<C, S>(&mut self, content: S, console: C) -> Result<()>
     where
         C: Fn(AdoData) -> Result<()> + Send + Sync,
@@ -50,6 +34,7 @@ pub trait LLMChainTrait {
     where
         S: AsRef<str> + Display;
     fn reset(&mut self);
+    fn models(&self) -> Vec<String>;
     fn model(&self) -> &str;
     fn change_model<S>(&mut self, _model: S)
     where
@@ -81,6 +66,13 @@ impl LLMChain {
         };
 
         Ok(chain)
+    }
+
+    pub fn models(&self) -> Vec<String> {
+        match self {
+            LLMChain::Claude(claude) => claude.models(),
+            LLMChain::Ollama(ollama) => ollama.models(),
+        }
     }
 
     pub fn add_prompt<P>(&mut self, prompt: P)

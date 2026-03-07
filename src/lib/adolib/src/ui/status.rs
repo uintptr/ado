@@ -3,8 +3,6 @@ use serde::{Deserialize, Serialize};
 use crate::{
     config::loader::AdoConfig,
     const_vars::{LIB_VERSION, VERGEN_BUILD_DATE, VERGEN_RUSTC_COMMIT_HASH},
-    data::types::AdoDataMarkdown,
-    error::Result,
     llm::chain::LLMChain,
 };
 
@@ -28,23 +26,5 @@ impl StatusInfo {
             commit_hash: VERGEN_RUSTC_COMMIT_HASH.into(),
             llm_provider: config_file.llm_provider().to_string(),
         }
-    }
-}
-
-impl AdoDataMarkdown for &StatusInfo {
-    fn to_markdown(self) -> Result<String> {
-        let table = format!(
-            r#"
-|             |                     |
-|-------------|---------------------|
-| Version     |  `{}` |
-| Build Date  |  `{}` |
-| Commit Hash |  `{}` |
-| LLM         |  `{}` |
-| LLM Model   |  `{}` |"#,
-            self.version, self.build_date, self.commit_hash, self.llm_provider, self.model
-        );
-
-        Ok(table)
     }
 }

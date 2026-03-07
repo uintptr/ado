@@ -27,6 +27,11 @@ impl OllamaChain {
 }
 
 impl LLMChainTrait for OllamaChain {
+    fn models(&self) -> Vec<String> {
+        let models = Vec::new();
+        models
+    }
+
     fn add_prompt<P>(&mut self, prompt: P)
     where
         P: AsRef<str> + Display,
@@ -45,9 +50,13 @@ impl LLMChainTrait for OllamaChain {
 
         let resp_str = resp.message.content.to_string();
 
+        if let Ok(data) = resp_str.parse::<AdoData>() {
+            console(data)?;
+        }
+
         self.chat.add_message(resp.message);
 
-        console(AdoData::String(resp_str))
+        Ok(())
     }
 
     fn message<S>(&self, content: S) -> Result<String>
