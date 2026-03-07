@@ -1,5 +1,3 @@
-#![allow(dead_code)] // message is dead code for native but required for wasm
-use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -35,12 +33,11 @@ pub enum LLMToolState {
     Disable,
 }
 
-#[async_trait(?Send)]
 pub trait LLMChainTrait {
-    async fn link<C>(&mut self, content: &str, console: C) -> Result<()>
+    fn link<C>(&mut self, content: &str, console: C) -> Result<()>
     where
         C: Fn(AdoData) -> Result<()> + Send + Sync;
-    async fn message(&self, content: &str) -> Result<String>;
+    fn message(&self, content: &str) -> Result<String>;
     fn reset(&mut self);
     fn model(&self) -> &str;
     fn change_model<S: AsRef<str>>(&mut self, _model: S);
@@ -73,20 +70,20 @@ impl LLMChain {
         Ok(chain)
     }
 
-    pub async fn message(&self, content: &str) -> Result<String> {
+    pub fn message(&self, content: &str) -> Result<String> {
         match self {
-            LLMChain::Ollama(ollama) => ollama.message(content).await,
-            LLMChain::Claude(claude) => claude.message(content).await,
+            LLMChain::Ollama(ollama) => ollama.message(content),
+            LLMChain::Claude(claude) => claude.message(content),
         }
     }
 
-    pub async fn link<C>(&mut self, content: &str, console: C) -> Result<()>
+    pub fn link<C>(&mut self, content: &str, console: C) -> Result<()>
     where
         C: Fn(AdoData) -> Result<()> + Send + Sync,
     {
         match self {
-            LLMChain::Ollama(ollama) => ollama.link(content, console).await,
-            LLMChain::Claude(claude) => claude.link(content, console).await,
+            LLMChain::Ollama(ollama) => ollama.link(content, console),
+            LLMChain::Claude(claude) => claude.link(content, console),
         }
     }
 

@@ -1,7 +1,6 @@
 use std::vec;
 
 use log::{error, info};
-use reqwest::Client;
 use serde::{Deserialize, Serialize};
 
 use crate::{error::Result, llm::ollama::ollama_config::ConfigOllama};
@@ -79,30 +78,20 @@ impl OllamaChat {
 
 // https://github.com/ollama/ollama/blob/main/docs/api.md
 pub struct OllamaApi {
-    client: Client,
     pub config: ConfigOllama,
 }
 
 impl OllamaApi {
     pub fn new(config: &ConfigOllama) -> Result<Self> {
-        Ok(Self {
-            client: Client::new(),
-            config: config.clone(),
-        })
+        Ok(Self { config: config.clone() })
     }
 
-    pub async fn chat(&self, chat: &OllamaChat) -> Result<OllamaChatResponse> {
+    pub fn chat(&self, chat: &OllamaChat) -> Result<OllamaChatResponse> {
         let req_json = serde_json::to_string_pretty(&chat)?;
 
         let url = format!("{}/api/chat", self.config.endpoint);
 
-        let res = self
-            .client
-            .post(&url)
-            .header("Content-Type", "application/json")
-            .body(req_json)
-            .send()
-            .await?;
+        let mut res = ureq::post(&url).header("Content-Type", "application/json").send(&req_json)?;
 
         let log_msg = format!(
             "post {} -> code={} reason={}",
@@ -116,14 +105,14 @@ impl OllamaApi {
             false => error!("{log_msg}"),
         }
 
-        let resp_json = res.text().await?;
+        let resp_json = res.body_mut().read_to_string()?;
 
         let resp: OllamaChatResponse = serde_json::from_str(&resp_json)?;
 
         Ok(resp)
     }
 
-    pub async fn message<S>(&self, content: S) -> Result<OllamaChatResponse>
+    pub fn message<S>(&self, content: S) -> Result<OllamaChatResponse>
     where
         S: AsRef<str>,
     {
@@ -131,6 +120,6 @@ impl OllamaApi {
 
         chat.add_content("user", content.as_ref());
 
-        self.chat(&chat).await
+        self.chat(&chat)
     }
 }

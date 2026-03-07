@@ -9,7 +9,8 @@ use std::{
 pub const PKG_VERSION: &str = env!("CARGO_PKG_VERSION");
 pub const PKG_NAME: &str = env!("CARGO_PKG_NAME");
 
-use adolib::error::{Error, Result};
+use adolib::error::Error;
+use anyhow::Result;
 use colored;
 use colored::Colorize;
 use log::{error, info, warn};
@@ -185,7 +186,7 @@ impl TerminalConsole {
 
             Ok(())
         } else {
-            Err(Error::NotFound)
+            Err(Error::NotFound.into())
         }
     }
 
@@ -210,9 +211,9 @@ impl TerminalConsole {
                 Ok(line)
             }
             // CTRL+D
-            Err(ReadlineError::Eof) => Err(Error::EOF),
+            Err(ReadlineError::Eof) => Err(Error::EOF.into()),
             // CTRL+C
-            Err(ReadlineError::Interrupted) => Err(Error::EOF),
+            Err(ReadlineError::Interrupted) => Err(Error::EOF.into()),
             Err(e) => {
                 error!("{e}");
                 Err(e.into())
@@ -220,7 +221,7 @@ impl TerminalConsole {
         }
     }
 
-    pub async fn read_input(&mut self) -> Result<String> {
+    pub fn read_input(&mut self) -> Result<String> {
         loop {
             let line = self.readline()?;
 

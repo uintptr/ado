@@ -8,8 +8,6 @@ use crate::{
     },
 };
 
-use async_trait::async_trait;
-
 pub struct OllamaChain {
     api: OllamaApi,
     chat: OllamaChat,
@@ -26,15 +24,14 @@ impl OllamaChain {
     }
 }
 
-#[async_trait(?Send)]
 impl LLMChainTrait for OllamaChain {
-    async fn link<C>(&mut self, content: &str, console: C) -> Result<()>
+    fn link<C>(&mut self, content: &str, console: C) -> Result<()>
     where
         C: Fn(AdoData) -> Result<()> + Send + Sync,
     {
         self.chat.add_content("user", content);
 
-        let resp = self.api.chat(&self.chat).await?;
+        let resp = self.api.chat(&self.chat)?;
 
         let resp_str = resp.message.content.to_string();
 
@@ -43,8 +40,8 @@ impl LLMChainTrait for OllamaChain {
         console(AdoData::String(resp_str))
     }
 
-    async fn message(&self, content: &str) -> Result<String> {
-        let resp = self.api.message(content).await?;
+    fn message(&self, content: &str) -> Result<String> {
+        let resp = self.api.message(content)?;
         Ok(resp.message.content)
     }
 
@@ -90,28 +87,28 @@ mod ollama_tests {
         Ok(())
     }
 
-    #[tokio::test]
-    async fn test_message() {
+    #[test]
+    fn test_message() {
         StaplesLogger::new().with_stdout().start();
 
         let config_file = AdoConfig::from_default().unwrap();
 
         let chain = OllamaChain::new(&config_file).unwrap();
 
-        chain.message("hello world").await.unwrap();
+        chain.message("hello world").unwrap();
     }
 
-    #[tokio::test]
-    async fn test_chain() {
+    #[test]
+    fn test_chain() {
         StaplesLogger::new().with_stdout().start();
 
         let config_file = AdoConfig::from_default().unwrap();
 
         let mut chain = OllamaChain::new(&config_file).unwrap();
 
-        chain.link("Hello World", nop_console).await.unwrap();
-        chain.link("Can you tell a joke", nop_console).await.unwrap();
+        chain.link("Hello World", nop_console).unwrap();
+        chain.link("Can you tell a joke", nop_console).unwrap();
 
-        chain.message("hello world").await.unwrap();
+        chain.message("hello world").unwrap();
     }
 }

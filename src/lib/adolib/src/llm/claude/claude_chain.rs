@@ -12,7 +12,6 @@ use crate::{
     },
 };
 
-use async_trait::async_trait;
 use log::info;
 
 pub struct ClaudeChain {
@@ -49,7 +48,7 @@ impl ClaudeChain {
         })
     }
 
-    async fn process_content<C>(&mut self, response: &ClaudeResponse, console: C) -> Result<()>
+    fn process_content<C>(&mut self, response: &ClaudeResponse, console: C) -> Result<()>
     where
         C: Fn(AdoData) -> Result<()> + Send + Sync,
     {
@@ -68,23 +67,22 @@ impl ClaudeChain {
     }
 }
 
-#[async_trait(?Send)]
 impl LLMChainTrait for ClaudeChain {
-    async fn link<C>(&mut self, content: &str, console: C) -> Result<()>
+    fn link<C>(&mut self, content: &str, console: C) -> Result<()>
     where
         C: Fn(AdoData) -> Result<()> + Send + Sync,
     {
         self.messages.add_message(ClaudeRole::User, content);
 
         loop {
-            let resp = self.api.chat(&self.messages).await?;
+            let resp = self.api.chat(&self.messages)?;
 
             self.tokens.input_tokens += resp.usage.input_tokens;
             self.tokens.output_tokens += resp.usage.output_tokens;
 
             // in its own function so it can be tested from a local
             // file
-            self.process_content(&resp, &console).await?;
+            self.process_content(&resp, &console)?;
 
             //
             // Keep going until it's done
@@ -101,8 +99,8 @@ impl LLMChainTrait for ClaudeChain {
         Ok(())
     }
 
-    async fn message(&self, content: &str) -> Result<String> {
-        let resp = self.api.message(content).await?;
+    fn message(&self, content: &str) -> Result<String> {
+        let resp = self.api.message(content)?;
         Ok(resp.message()?.to_string())
     }
 
@@ -161,33 +159,33 @@ mod tests {
         Ok(())
     }
 
-    #[tokio::test]
-    async fn test_message() {
+    #[test]
+    fn test_message() {
         StaplesLogger::new().with_stdout().start();
 
         let config_file = AdoConfig::from_default().unwrap();
 
         let chain = ClaudeChain::new(&config_file).unwrap();
 
-        chain.message("hello world").await.unwrap();
+        chain.message("hello world").unwrap();
     }
 
-    #[tokio::test]
-    async fn test_chain() {
+    #[test]
+    fn test_chain() {
         StaplesLogger::new().with_stdout().start();
 
         let config_file = AdoConfig::from_default().unwrap();
 
         let mut chain = ClaudeChain::new(&config_file).unwrap();
 
-        chain.link("Hello World", nop_console).await.unwrap();
-        chain.link("Can you tell a joke", nop_console).await.unwrap();
+        chain.link("Hello World", nop_console).unwrap();
+        chain.link("Can you tell a joke", nop_console).unwrap();
 
-        chain.message("hello world").await.unwrap();
+        chain.message("hello world").unwrap();
     }
 
-    #[tokio::test]
-    async fn test_content_response() {
+    #[test]
+    fn test_content_response() {
         let test_file = Path::new("/tmp").join("claude_response.json");
 
         let resp = fs::read_to_string(test_file).unwrap();
@@ -197,13 +195,13 @@ mod tests {
         let config_file = AdoConfig::from_default().unwrap();
         let mut chain = ClaudeChain::new(&config_file).unwrap();
 
-        let ret = chain.process_content(&resp, nop_console).await.unwrap();
+        let ret = chain.process_content(&resp, nop_console).unwrap();
 
         info!("ret: {ret:?}");
     }
 
-    #[tokio::test]
-    async fn test_mcp_response() {
+    #[test]
+    fn test_mcp_response() {
         let config = AdoConfig::from_default().unwrap();
         let mut chain = ClaudeChain::new(&config).unwrap();
 
@@ -212,7 +210,7 @@ mod tests {
         let resp_json = fs::read_to_string(test_file).unwrap();
         let resp: ClaudeResponse = serde_json::from_str(&resp_json).unwrap();
 
-        chain.process_content(&resp, nop_console).await.unwrap();
+        chain.process_content(&resp, nop_console).unwrap();
 
         info!("done");
     }

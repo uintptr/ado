@@ -1,6 +1,6 @@
 use std::fmt::Display;
 
-use adolib::error::Result;
+use anyhow::Result;
 use log::info;
 
 use crate::console::TerminalConsole;
@@ -17,11 +17,19 @@ impl UserCommands {
         Self {}
     }
 
-    pub async fn handler<S>(&self, input: S, mut _console: &TerminalConsole) -> Result<()>
+    pub fn handler<S>(&self, input: S, mut _console: &TerminalConsole) -> Result<()>
     where
         S: AsRef<str> + Display,
     {
         info!("input: {input}");
+
+        if let Some(command) = input.as_ref().strip_prefix("/") {
+            info!("command: {command}");
+        } else {
+            //
+            // forward to
+            //
+        }
         Ok(())
     }
 

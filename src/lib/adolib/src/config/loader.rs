@@ -43,7 +43,7 @@ impl AdoConfig {
         Self { source, config_file }
     }
 
-    pub async fn sync(&self) -> Result<()> {
+    pub fn sync(&self) -> Result<()> {
         let toml_file = toml::to_string(&self.config_file)?;
 
         //
@@ -109,23 +109,6 @@ impl AdoConfig {
         let config_file: ConfigFile = toml::from_str(value.as_ref())?;
 
         Ok(AdoConfig::new(AdoConfigSource::String, config_file))
-    }
-
-    #[cfg(target_arch = "wasm32")]
-    pub async fn from_webdis<U, S>(user_id: U, server: S) -> Result<Self>
-    where
-        U: AsRef<str>,
-        S: AsRef<str>,
-    {
-        let storage = PersistentStorage::new(&user_id, server);
-
-        let data = storage.get("global", "config").await?;
-
-        let source = AdoConfigSource::Webdis { storage: storage };
-
-        let config_file: ConfigFile = toml::from_str(&data)?;
-
-        Ok(AdoConfig::new(source, config_file))
     }
 
     pub fn llm_provider(&self) -> &str {

@@ -1,9 +1,7 @@
 use std::collections::HashMap;
 use std::fs;
 
-use derive_more::Display;
 use log::{error, info};
-use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
@@ -77,7 +75,7 @@ pub struct ClaudeUsage {
     pub service_tier: String,
 }
 
-#[derive(Debug, Display, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub enum ClaudeStopReason {
     #[serde(rename = "end_turn")]
     EndTurn,
@@ -91,6 +89,12 @@ pub enum ClaudeStopReason {
     PauseTurn,
     #[serde(rename = "refusal")]
     Resusal,
+}
+
+impl core::fmt::Display for ClaudeStopReason {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+        write!(f, "{self:?}")
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -113,7 +117,6 @@ pub struct ClaudeResponse {
 }
 
 pub struct ClaudeApi {
-    client: Client,
     pub config: ClaudeConfig,
 }
 
@@ -195,26 +198,19 @@ impl ClaudeMessages {
 
 impl ClaudeApi {
     pub fn new(config: &ClaudeConfig) -> Result<Self> {
-        Ok(Self {
-            client: Client::new(),
-            config: config.clone(),
-        })
+        Ok(Self { config: config.clone() })
     }
 
-    pub async fn chat(&self, chat: &ClaudeMessages) -> Result<ClaudeResponse> {
+    pub fn chat(&self, chat: &ClaudeMessages) -> Result<ClaudeResponse> {
         let req_json = serde_json::to_string_pretty(&chat)?;
 
         let url = format!("{}/v1/messages", self.config.url);
 
-        let req_builds = self
-            .client
-            .post(&url)
+        let mut res = ureq::post(&url)
             .header("Content-Type", "application/json")
             .header("x-api-key", &self.config.key)
             .header("anthropic-version", &self.config.anthropic_version)
-            .body(req_json);
-
-        let res = req_builds.send().await?;
+            .send(req_json)?;
 
         let log_msg = format!(
             "post {} -> code={} reason={}",
@@ -230,7 +226,7 @@ impl ClaudeApi {
 
         let success = res.status().is_success();
 
-        let resp_json = &res.text().await?;
+        let resp_json = &res.body_mut().read_to_string()?;
 
         if !success {
             error!("{resp_json}")
@@ -252,7 +248,7 @@ impl ClaudeApi {
         }
     }
 
-    pub async fn message<S>(&self, content: S) -> Result<ClaudeResponse>
+    pub fn message<S>(&self, content: S) -> Result<ClaudeResponse>
     where
         S: AsRef<str>,
     {
@@ -260,7 +256,7 @@ impl ClaudeApi {
 
         chat.add_message(ClaudeRole::User, content);
 
-        self.chat(&chat).await
+        self.chat(&chat)
     }
 }
 

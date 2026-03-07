@@ -13,8 +13,8 @@ base64 = "0.22"
 chrono = "0.4"
 clap = { version = "4.5", features = ["derive", "suggestions"] }
 colored = "3.1"
-derive_more = { version = "2.1", features = ["debug", "display", "from"] }
 dirs = "6.0"
+thiserror = "2"
 env_logger = "0.11"
 figlet-rs = "0.1"
 glob = "0.3"
@@ -44,6 +44,8 @@ uuid = { version = "1.22", features = ["v4"] }
 vergen-git2 = { version = "9.1", features = ["build"] }
 walkdir = "2.5"
 which = "8.0"
+anyhow = "1.0"
+ureq = "3.2"
 
 [profile.release]
 opt-level = "s"

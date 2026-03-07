@@ -1,6 +1,6 @@
 use std::path::PathBuf;
 
-use adolib::error::Result;
+use anyhow::{Result, bail};
 use figlet_rs::FIGfont;
 use rust_embed::{Embed, EmbeddedFile};
 
@@ -25,12 +25,17 @@ where
         }
     }
 
-    let fig = match font_data {
+    let fig_ret = match font_data {
         Some(v) => {
             let font_str = String::from_utf8_lossy(&v.data);
-            FIGfont::from_content(&font_str)?
+            FIGfont::from_content(&font_str)
         }
-        None => FIGfont::standard()?,
+        None => FIGfont::standard(),
+    };
+
+    let fig = match fig_ret {
+        Ok(v) => v,
+        Err(e) => bail!("Unable to load fonts ({e})"),
     };
 
     let content = fig.convert(text.as_ref());
