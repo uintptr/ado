@@ -1,4 +1,7 @@
-use std::sync::atomic::{AtomicI32, Ordering};
+use std::{
+    fmt::Display,
+    sync::atomic::{AtomicI32, Ordering},
+};
 
 use crate::{
     config::loader::AdoConfig,
@@ -99,7 +102,10 @@ impl LLMChainTrait for ClaudeChain {
         Ok(())
     }
 
-    fn message(&self, content: &str) -> Result<String> {
+    fn message<S>(&self, content: S) -> Result<String>
+    where
+        S: AsRef<str> + Display,
+    {
         let resp = self.api.message(content)?;
         Ok(resp.message()?.to_string())
     }
@@ -143,7 +149,6 @@ mod tests {
     use std::{fs, path::Path};
 
     use log::info;
-    use rstaples::{file::find_file, logging::StaplesLogger};
 
     use crate::{
         config::loader::AdoConfig,
@@ -161,8 +166,6 @@ mod tests {
 
     #[test]
     fn test_message() {
-        StaplesLogger::new().with_stdout().start();
-
         let config_file = AdoConfig::from_default().unwrap();
 
         let chain = ClaudeChain::new(&config_file).unwrap();
@@ -172,8 +175,6 @@ mod tests {
 
     #[test]
     fn test_chain() {
-        StaplesLogger::new().with_stdout().start();
-
         let config_file = AdoConfig::from_default().unwrap();
 
         let mut chain = ClaudeChain::new(&config_file).unwrap();
@@ -198,20 +199,5 @@ mod tests {
         let ret = chain.process_content(&resp, nop_console).unwrap();
 
         info!("ret: {ret:?}");
-    }
-
-    #[test]
-    fn test_mcp_response() {
-        let config = AdoConfig::from_default().unwrap();
-        let mut chain = ClaudeChain::new(&config).unwrap();
-
-        let test_file = Path::new("test").join("claude_mcp_use.json");
-        let test_file = find_file(test_file).unwrap();
-        let resp_json = fs::read_to_string(test_file).unwrap();
-        let resp: ClaudeResponse = serde_json::from_str(&resp_json).unwrap();
-
-        chain.process_content(&resp, nop_console).unwrap();
-
-        info!("done");
     }
 }

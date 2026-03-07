@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use crate::{
     config::loader::AdoConfig,
     data::types::AdoData,
@@ -40,7 +42,10 @@ impl LLMChainTrait for OllamaChain {
         console(AdoData::String(resp_str))
     }
 
-    fn message(&self, content: &str) -> Result<String> {
+    fn message<S>(&self, content: S) -> Result<String>
+    where
+        S: AsRef<str> + Display,
+    {
         let resp = self.api.message(content)?;
         Ok(resp.message.content)
     }
@@ -74,7 +79,6 @@ impl LLMChainTrait for OllamaChain {
 
 #[cfg(test)]
 mod ollama_tests {
-    use rstaples::logging::StaplesLogger;
 
     use crate::{
         config::loader::AdoConfig,
@@ -89,8 +93,6 @@ mod ollama_tests {
 
     #[test]
     fn test_message() {
-        StaplesLogger::new().with_stdout().start();
-
         let config_file = AdoConfig::from_default().unwrap();
 
         let chain = OllamaChain::new(&config_file).unwrap();
@@ -100,8 +102,6 @@ mod ollama_tests {
 
     #[test]
     fn test_chain() {
-        StaplesLogger::new().with_stdout().start();
-
         let config_file = AdoConfig::from_default().unwrap();
 
         let mut chain = OllamaChain::new(&config_file).unwrap();

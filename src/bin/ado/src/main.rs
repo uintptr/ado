@@ -61,9 +61,9 @@ async fn main() -> Result<()> {
 
     init_logging(args.verbose);
 
-    let _config = load_config_local(&args.config_file)?;
+    let config = load_config_local(&args.config_file)?;
 
-    let commands = UserCommands::new();
+    let commands = UserCommands::new(&config)?;
 
     let console = TerminalConsole::new(&commands)?;
 

@@ -1,11 +1,14 @@
 use std::fmt::Display;
 
+use adolib::{config::loader::AdoConfig, llm::chain::LLMChain};
 use anyhow::Result;
 use log::info;
 
 use crate::console::TerminalConsole;
 
-pub struct UserCommands {}
+pub struct UserCommands {
+    chain: LLMChain,
+}
 
 pub struct UserCommandEntry {
     pub name: String,
@@ -13,8 +16,10 @@ pub struct UserCommandEntry {
 }
 
 impl UserCommands {
-    pub fn new() -> Self {
-        Self {}
+    pub fn new(config: &AdoConfig) -> Result<Self> {
+        let chain = LLMChain::new(config)?;
+
+        Ok(Self { chain })
     }
 
     pub fn handler<S>(&self, input: S, mut _console: &TerminalConsole) -> Result<()>
@@ -29,6 +34,7 @@ impl UserCommands {
             //
             // forward to
             //
+            self.chain.message(input)?;
         }
         Ok(())
     }

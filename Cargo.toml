@@ -20,8 +20,6 @@ figlet-rs = "0.1"
 glob = "0.3"
 home = "0.5"
 log = "0.4"
-reqwest = { version = "0.13", features = ["json", "query"] }
-rstaples = "0.4.1"
 rust-embed = { version = "8.11", features = ["debug-embed"] }
 rustyline = { version = "17.0", features = [
   "custom-bindings",
