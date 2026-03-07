@@ -1,4 +1,7 @@
-use std::fmt::Display;
+use std::{
+    fmt::Display,
+    io::{self, Write},
+};
 
 use adolib::{config::loader::AdoConfig, data::types::AdoData, llm::chain::LLMChain};
 use anyhow::{Context, Result};
@@ -28,6 +31,13 @@ fn init_chain(config: &AdoConfig) -> Result<LLMChain> {
     Ok(chain)
 }
 
+fn command_clear() -> Result<()> {
+    let mut stdout = io::stdout();
+    print!("{esc}c", esc = 27 as char);
+    stdout.flush()?;
+    Ok(())
+}
+
 impl UserCommands {
     pub fn new(config: &AdoConfig) -> Result<Self> {
         let chain = init_chain(config).context("Unable to initialize llm chain")?;
@@ -54,6 +64,7 @@ impl UserCommands {
         if let Some(command) = input.as_ref().strip_prefix("/") {
             match command {
                 "models" => self.command_models()?,
+                "clear" | "reset" => command_clear()?,
                 _ => println!("Command Not Found ({command})"),
             }
         } else {
