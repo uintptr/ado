@@ -9,7 +9,7 @@ use std::{
 pub const PKG_VERSION: &str = env!("CARGO_PKG_VERSION");
 pub const PKG_NAME: &str = env!("CARGO_PKG_NAME");
 
-use adolib::error::Error;
+use adolib::{data::types::AdoData, error::Error};
 use anyhow::Result;
 use colored;
 use colored::Colorize;
@@ -234,6 +234,14 @@ impl TerminalConsole {
 
             break Ok(line);
         }
+    }
+
+    pub fn display_data(&self, data: AdoData) -> Result<()> {
+        let s: String = data.try_into()?;
+
+        self.display_string(s)?;
+
+        Ok(())
     }
 
     /*

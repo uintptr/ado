@@ -1,10 +1,8 @@
 use std::fmt::Display;
 
-use adolib::{config::loader::AdoConfig, llm::chain::LLMChain};
+use adolib::{config::loader::AdoConfig, data::types::AdoData, llm::chain::LLMChain};
 use anyhow::Result;
 use log::info;
-
-use crate::console::TerminalConsole;
 
 pub struct UserCommands {
     chain: LLMChain,
@@ -22,8 +20,9 @@ impl UserCommands {
         Ok(Self { chain })
     }
 
-    pub fn handler<S>(&self, input: S, mut _console: &TerminalConsole) -> Result<()>
+    pub fn handler<C, S>(&mut self, input: S, console: C) -> Result<()>
     where
+        C: Fn(AdoData) -> std::result::Result<(), adolib::error::Error> + Send + Sync,
         S: AsRef<str> + Display,
     {
         info!("input: {input}");
@@ -34,7 +33,7 @@ impl UserCommands {
             //
             // forward to
             //
-            self.chain.message(input)?;
+            self.chain.link(input, console)?;
         }
         Ok(())
     }

@@ -71,9 +71,10 @@ impl ClaudeChain {
 }
 
 impl LLMChainTrait for ClaudeChain {
-    fn link<C>(&mut self, content: &str, console: C) -> Result<()>
+    fn link<C, S>(&mut self, content: S, console: C) -> Result<()>
     where
         C: Fn(AdoData) -> Result<()> + Send + Sync,
+        S: AsRef<str> + Display,
     {
         self.messages.add_message(ClaudeRole::User, content);
 

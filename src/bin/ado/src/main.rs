@@ -16,7 +16,7 @@ struct UserArgs {
     config_file: Option<String>,
 }
 
-fn main_loop(mut console: TerminalConsole, command: UserCommands) -> Result<()> {
+fn main_loop(mut console: TerminalConsole, mut command: UserCommands) -> Result<()> {
     loop {
         let input = match console.read_input() {
             Ok(v) => v,
@@ -34,7 +34,12 @@ fn main_loop(mut console: TerminalConsole, command: UserCommands) -> Result<()> 
         //
         // process the command
         //
-        if let Err(e) = command.handler(&input, &mut console) {
+        if let Err(e) = command.handler(&input, |data| {
+            if let Err(e) = console.display_data(data) {
+                error!("Unable to display data ({e})");
+            }
+            Ok(())
+        }) {
             error!("{e}");
         }
     }

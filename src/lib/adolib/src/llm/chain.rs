@@ -36,13 +36,18 @@ pub enum LLMToolState {
 }
 
 pub trait LLMChainTrait {
-    fn link<C>(&mut self, content: &str, console: C) -> Result<()>
+    fn link<C, S>(&mut self, content: S, console: C) -> Result<()>
     where
-        C: Fn(AdoData) -> Result<()> + Send + Sync;
-    fn message<S: AsRef<str> + Display>(&self, content: S) -> Result<String>;
+        C: Fn(AdoData) -> Result<()> + Send + Sync,
+        S: AsRef<str> + Display;
+    fn message<S>(&self, content: S) -> Result<String>
+    where
+        S: AsRef<str> + Display;
     fn reset(&mut self);
     fn model(&self) -> &str;
-    fn change_model<S: AsRef<str>>(&mut self, _model: S);
+    fn change_model<S>(&mut self, _model: S)
+    where
+        S: AsRef<str>;
     fn usage(&self) -> LLMUsage;
     fn dump_chain(&self) -> Result<AdoData>;
 }
@@ -82,9 +87,10 @@ impl LLMChain {
         }
     }
 
-    pub fn link<C>(&mut self, content: &str, console: C) -> Result<()>
+    pub fn link<C, S>(&mut self, content: S, console: C) -> Result<()>
     where
         C: Fn(AdoData) -> Result<()> + Send + Sync,
+        S: AsRef<str> + Display,
     {
         match self {
             LLMChain::Ollama(ollama) => ollama.link(content, console),
