@@ -16,10 +16,13 @@ pub struct UserCommandEntry {
 }
 
 fn init_chain(config: &AdoConfig) -> Result<LLMChain> {
-    let chain = LLMChain::new(config)?;
+    let mut chain = LLMChain::new(config)?;
 
     for p in IntrinsicPrompts::iter() {
-        print!("name: {}", p)
+        if let Some(data) = IntrinsicPrompts::get(&p) {
+            let prompt = String::from_utf8_lossy(&data.data);
+            chain.add_prompt(prompt);
+        }
     }
 
     Ok(chain)
