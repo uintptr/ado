@@ -1,6 +1,6 @@
 use std::fs;
 
-use ado::{commands::UserCommands, console::TerminalConsole, spinner::AdoSpinner};
+use ado::{commands::UserCommands, spinner::AdoSpinner, terminal::TerminalConsole};
 use adolib::config::loader::AdoConfig;
 use anyhow::{Context, Result, anyhow};
 use clap::Parser;
@@ -42,11 +42,7 @@ fn main_loop(mut console: TerminalConsole, mut command: UserCommands) -> Result<
         //
         if let Err(e) = command.handler(&input, |data| {
             spinner.stop();
-
-            if let Err(e) = console.display_data(data) {
-                error!("Unable to display data ({e})");
-            }
-            None
+            console.display_data(data)
         }) {
             error!("{e}");
         }

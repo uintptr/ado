@@ -13,7 +13,7 @@ use adolib::{
     data::types::{AdoData, AdoDataArtifact, AdoDataArtifactType, AdoDataStatus},
     error::Error,
 };
-use anyhow::Result;
+use anyhow::{Context, Result};
 use colored;
 use colored::Colorize;
 use log::{error, info, warn};
@@ -23,7 +23,7 @@ use rustyline::completion::{Completer, FilenameCompleter, Pair};
 use rustyline::error::ReadlineError;
 use rustyline::history::FileHistory;
 use rustyline::{Cmd, CompletionType, Config, Editor, KeyCode, KeyEvent, Modifiers, Movement};
-use rustyline::{Context, Helper, Hinter, Validator};
+use rustyline::{Helper, Hinter, Validator};
 use rustyline::{Highlighter, hint::HistoryHinter};
 
 use crate::{banner::display_banner, commands::UserCommands};
@@ -45,7 +45,7 @@ impl CommandCompleter {
 impl Completer for CommandCompleter {
     type Candidate = Pair;
 
-    fn complete(&self, line: &str, pos: usize, ctx: &Context<'_>) -> rustyline::Result<(usize, Vec<Pair>)> {
+    fn complete(&self, line: &str, pos: usize, ctx: &rustyline::Context<'_>) -> rustyline::Result<(usize, Vec<Pair>)> {
         // If we're still on the first word (no space before cursor), complete commands
         if !line[..pos].contains(' ') {
             let prefix = &line[..pos];
@@ -79,7 +79,7 @@ struct MyHelper {
 impl Completer for MyHelper {
     type Candidate = Pair;
 
-    fn complete(&self, line: &str, pos: usize, ctx: &Context<'_>) -> rustyline::Result<(usize, Vec<Pair>)> {
+    fn complete(&self, line: &str, pos: usize, ctx: &rustyline::Context<'_>) -> rustyline::Result<(usize, Vec<Pair>)> {
         self.completer.complete(line, pos, ctx)
     }
 }
@@ -131,6 +131,22 @@ fn init_readline(commands: &UserCommands) -> Result<(Editor<MyHelper, FileHistor
     rl.bind_sequence(KeyEvent(KeyCode::Esc, Modifiers::NONE), Cmd::Kill(Movement::WholeLine));
 
     Ok((rl, history_file))
+}
+
+fn handler_command<S>(cmd_line: S) -> Result<String>
+where
+    S: AsRef<str> + Display,
+{
+    let args = shell_words::split(cmd_line.as_ref()).with_context(|| format!("Unable to split {cmd_line}"))?;
+
+    let out = Command::new(&args[0])
+        .args(&args[1..])
+        .output()
+        .with_context(|| format!("Unable to execute {cmd_line}"))?;
+
+    let data = String::from_utf8(out.stdout).context("Unable to convert stdout to a string")?;
+
+    Ok(data)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -246,7 +262,7 @@ impl TerminalConsole {
         }
     }
 
-    fn display_data_response(&self, data: AdoData) -> Result<()> {
+    fn display_data_response(&self, data: AdoData) -> Option<String> {
         println!("{}", data.response.message);
 
         if let Some(artifacts) = data.response.artifacts {
@@ -257,16 +273,16 @@ impl TerminalConsole {
             }
         }
 
-        Ok(())
+        None
     }
 
-    fn display_data_error(&self, data: AdoData) -> Result<()> {
+    fn display_data_error(&self, data: AdoData) -> Option<String> {
         let err_str = format!("Error: {}", data.response.message);
         println!("{}", err_str.red());
-        Ok(())
+        None
     }
 
-    fn process_partial_artifact(&self, artifact: &AdoDataArtifact) -> Result<String> {
+    fn process_partial_artifact(&self, artifact: &AdoDataArtifact) -> Option<String> {
         let response = match artifact.artifact_type {
             AdoDataArtifactType::File => {
                 if let Some(path) = &artifact.path {
@@ -278,28 +294,45 @@ impl TerminalConsole {
                     "File path is missing".into()
                 }
             }
-            _ => todo!(),
+            AdoDataArtifactType::Command => {
+                let ret = match handler_command(&artifact.content) {
+                    Ok(v) => v,
+                    Err(e) => format!("Unable to execute {}. Error: {e}", artifact.content),
+                };
+
+                ret
+            }
+            _ => {
+                error!("unhandled type: {}", artifact.artifact_type);
+                todo!()
+            }
         };
 
-        Ok(response)
+        Some(response)
     }
 
-    fn process_data_partial(&self, data: AdoData) -> Result<()> {
+    fn process_data_partial(&self, data: AdoData) -> Option<String> {
         println!("Intent: {}", data.meta.intent);
         println!("{}", data.response.message);
 
+        let mut response_entries = vec![];
+
         if let Some(artifact) = &data.response.artifacts {
             for arti in artifact.iter() {
-                if let Ok(response) = self.process_partial_artifact(arti) {
-                    println!("{response}");
+                if let Some(response) = self.process_partial_artifact(arti) {
+                    response_entries.push(response)
                 }
             }
         }
 
-        Ok(())
+        if response_entries.is_empty() {
+            None
+        } else {
+            Some(response_entries.join(" "))
+        }
     }
 
-    pub fn display_data(&self, data: AdoData) -> Result<()> {
+    pub fn display_data(&self, data: AdoData) -> Option<String> {
         match data.meta.status {
             AdoDataStatus::Ok => self.display_data_response(data),
             AdoDataStatus::Error => self.display_data_error(data),

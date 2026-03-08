@@ -83,3 +83,17 @@ impl Display for AdoData {
         write!(f, "{s}")
     }
 }
+
+impl Display for AdoDataArtifactType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let s = match self {
+            AdoDataArtifactType::Code => "code",
+            AdoDataArtifactType::Command => "command",
+            AdoDataArtifactType::Diff => "diff",
+            AdoDataArtifactType::File => "file",
+            AdoDataArtifactType::Note => "note",
+        };
+
+        write!(f, "{s}")
+    }
+}

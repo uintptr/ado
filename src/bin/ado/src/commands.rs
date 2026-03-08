@@ -1,5 +1,5 @@
 use std::{
-    env,
+    env::{self, consts::OS},
     fmt::Display,
     fs,
     io::{self, Write},
@@ -48,6 +48,18 @@ fn load_ado_md(chain: &mut LLMChain) -> Result<()> {
     Ok(())
 }
 
+fn load_useful(chain: &mut LLMChain) -> Result<()> {
+    if let Ok(cwd) = env::current_dir() {
+        let cwd_prompt = format!("The current working directory is {}", cwd.display());
+        chain.add_content(LLMRole::User, cwd_prompt)
+    }
+
+    let current_os = format!("The current operating system is {}", OS);
+    chain.add_content(LLMRole::User, current_os);
+
+    Ok(())
+}
+
 fn init_chain(config: &AdoConfig) -> Result<LLMChain> {
     let mut chain = LLMChain::new(config)?;
 
@@ -55,6 +67,10 @@ fn init_chain(config: &AdoConfig) -> Result<LLMChain> {
 
     if let Err(e) = load_ado_md(&mut chain) {
         error!("Unable to load ADO.md files ({e})");
+    }
+
+    if let Err(e) = load_useful(&mut chain) {
+        error!("Unable to load useful ({e})");
     }
 
     Ok(chain)
