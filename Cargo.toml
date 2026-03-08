@@ -49,3 +49,6 @@ globwalk = "0.9"
 [profile.release]
 opt-level = "s"
 lto = true
+
+[profile.dev]
+debug = 2

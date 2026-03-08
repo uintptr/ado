@@ -5,7 +5,11 @@ use std::{
     io::{self, Write},
 };
 
-use adolib::{config::loader::AdoConfig, data::types::AdoData, llm::chain::LLMChain};
+use adolib::{
+    config::loader::AdoConfig,
+    data::types::AdoData,
+    llm::chain::{LLMChain, LLMRole},
+};
 use anyhow::{Context, Result};
 use log::{error, info};
 
@@ -25,7 +29,7 @@ fn load_intrinsics(chain: &mut LLMChain) {
         if let Some(data) = IntrinsicPrompts::get(&p) {
             info!("loading embeded prompt={p}");
             let prompt = String::from_utf8_lossy(&data.data);
-            chain.add_prompt(prompt);
+            chain.add_content(LLMRole::System, prompt);
         }
     }
 }
@@ -38,7 +42,7 @@ fn load_ado_md(chain: &mut LLMChain) -> Result<()> {
     if ado_md.exists() {
         info!("reading {}", ado_md.display());
         let data = fs::read_to_string(&ado_md).with_context(|| format!("Unable to read {}", ado_md.display()))?;
-        chain.add_prompt(data);
+        chain.add_content(LLMRole::System, data);
     }
 
     Ok(())
@@ -96,7 +100,7 @@ impl UserCommands {
             //
             // forward to
             //
-            self.chain.link(input, console)?;
+            self.chain.link(input.as_ref(), console)?;
         }
         Ok(())
     }

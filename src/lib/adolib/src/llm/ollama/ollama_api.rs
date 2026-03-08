@@ -3,7 +3,10 @@ use std::vec;
 use log::{error, info};
 use serde::{Deserialize, Serialize};
 
-use crate::{error::Result, llm::ollama::ollama_config::ConfigOllama};
+use crate::{
+    error::Result,
+    llm::{chain::LLMRole, ollama::ollama_config::ConfigOllama},
+};
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct OllamaMessage {
@@ -14,12 +17,12 @@ pub struct OllamaMessage {
 impl OllamaMessage {
     pub fn new<R, C>(role: R, content: C) -> Self
     where
-        R: AsRef<str>,
-        C: AsRef<str>,
+        R: Into<String>,
+        C: Into<String>,
     {
         Self {
-            role: role.as_ref().to_string(),
-            content: content.as_ref().to_string(),
+            role: role.into(),
+            content: content.into(),
         }
     }
 }
@@ -58,17 +61,14 @@ impl OllamaChat {
         }
     }
 
-    pub fn add_content<R, C>(&mut self, role: R, content: C)
+    pub fn add_content<C>(&mut self, role: LLMRole, content: C)
     where
-        R: AsRef<str>,
-        C: AsRef<str>,
+        C: Into<String>,
     {
-        let message = OllamaMessage::new(role, content);
-        self.messages.push(message);
-    }
+        let ollama_role: String = role.into();
 
-    pub fn add_message(&mut self, message: OllamaMessage) {
-        self.messages.push(message)
+        let message = OllamaMessage::new(ollama_role, content);
+        self.messages.push(message);
     }
 
     pub fn reset(&mut self) {
@@ -114,11 +114,11 @@ impl OllamaApi {
 
     pub fn message<S>(&self, content: S) -> Result<OllamaChatResponse>
     where
-        S: AsRef<str>,
+        S: Into<String>,
     {
         let mut chat = OllamaChat::new(&self.config.model);
 
-        chat.add_content("user", content.as_ref());
+        chat.add_content(LLMRole::User, content);
 
         self.chat(&chat)
     }

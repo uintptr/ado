@@ -147,11 +147,11 @@ pub struct ClaudeMessages {
 impl ClaudeMessage {
     pub fn with_message<S>(role: ClaudeRole, message: S) -> Self
     where
-        S: AsRef<str>,
+        S: Into<String>,
     {
         Self {
             role,
-            content: Value::String(message.as_ref().to_string()),
+            content: Value::String(message.into()),
         }
     }
 }
@@ -195,7 +195,7 @@ impl ClaudeMessages {
 
     pub fn add_message<C>(&mut self, role: ClaudeRole, message: C)
     where
-        C: AsRef<str>,
+        C: Into<String>,
     {
         let message = ClaudeMessage::with_message(role, message);
         self.messages.push(message);
@@ -287,7 +287,7 @@ impl ClaudeApi {
 
     pub fn message<S>(&self, content: S) -> Result<ClaudeResponse>
     where
-        S: AsRef<str>,
+        S: Into<String>,
     {
         let mut chat = ClaudeMessages::new(&self.config.model, 4096);
 

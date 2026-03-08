@@ -1,11 +1,9 @@
-use std::fmt::Display;
-
 use crate::{
     config::loader::AdoConfig,
     data::types::AdoData,
     error::Result,
     llm::{
-        chain::{LLMChainTrait, LLMUsage},
+        chain::{LLMChainTrait, LLMRole, LLMUsage},
         ollama::ollama_api::{OllamaApi, OllamaChat},
     },
 };
@@ -32,36 +30,16 @@ impl LLMChainTrait for OllamaChain {
         models
     }
 
-    fn add_prompt<P>(&mut self, prompt: P)
+    fn add_content<S>(&mut self, role: LLMRole, content: S)
     where
-        P: AsRef<str> + Display,
+        S: Into<String>,
     {
-        self.chat.add_content("system", prompt)
-    }
-
-    fn link<C, S>(&mut self, content: S, console: C) -> Result<()>
-    where
-        C: Fn(AdoData) -> Result<()> + Send + Sync,
-        S: AsRef<str> + Display,
-    {
-        self.chat.add_content("user", content);
-
-        let resp = self.api.chat(&self.chat)?;
-
-        let resp_str = resp.message.content.to_string();
-
-        if let Ok(data) = resp_str.parse::<AdoData>() {
-            console(data)?;
-        }
-
-        self.chat.add_message(resp.message);
-
-        Ok(())
+        self.chat.add_content(role, content)
     }
 
     fn message<S>(&self, content: S) -> Result<String>
     where
-        S: AsRef<str> + Display,
+        S: Into<String>,
     {
         let resp = self.api.message(content)?;
         Ok(resp.message.content)
@@ -77,9 +55,9 @@ impl LLMChainTrait for OllamaChain {
 
     fn change_model<S>(&mut self, model: S)
     where
-        S: AsRef<str>,
+        S: Into<String>,
     {
-        self.api.config.model = model.as_ref().into()
+        self.api.config.model = model.into()
     }
 
     fn usage(&self) -> LLMUsage {
@@ -99,32 +77,14 @@ mod ollama_tests {
 
     use crate::{
         config::loader::AdoConfig,
-        data::types::AdoData,
-        error::Result,
         llm::{chain::LLMChainTrait, ollama::ollama_chain::OllamaChain},
     };
-
-    pub fn nop_console(_data: AdoData) -> Result<()> {
-        Ok(())
-    }
 
     #[test]
     fn test_message() {
         let config_file = AdoConfig::from_default().unwrap();
 
         let chain = OllamaChain::new(&config_file).unwrap();
-
-        chain.message("hello world").unwrap();
-    }
-
-    #[test]
-    fn test_chain() {
-        let config_file = AdoConfig::from_default().unwrap();
-
-        let mut chain = OllamaChain::new(&config_file).unwrap();
-
-        chain.link("Hello World", nop_console).unwrap();
-        chain.link("Can you tell a joke", nop_console).unwrap();
 
         chain.message("hello world").unwrap();
     }

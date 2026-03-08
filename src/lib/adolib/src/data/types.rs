@@ -1,6 +1,6 @@
 use std::{path::PathBuf, str::FromStr};
 
-use log::error;
+use log::{error, info};
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
@@ -62,6 +62,8 @@ impl FromStr for AdoData {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let s = s.strip_prefix("```json\n").unwrap_or(s);
         let s = s.strip_suffix("\n```").unwrap_or(s);
+
+        info!("{s}");
 
         let data: AdoData = match serde_json::from_str(s) {
             Ok(v) => v,

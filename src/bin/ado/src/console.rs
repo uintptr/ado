@@ -10,7 +10,7 @@ pub const PKG_VERSION: &str = env!("CARGO_PKG_VERSION");
 pub const PKG_NAME: &str = env!("CARGO_PKG_NAME");
 
 use adolib::{
-    data::types::{AdoData, AdoDataStatus},
+    data::types::{AdoData, AdoDataArtifact, AdoDataArtifactType, AdoDataStatus},
     error::Error,
 };
 use anyhow::Result;
@@ -231,8 +231,31 @@ impl TerminalConsole {
         }
     }
 
+    fn display_data_code(&self, artifact: &AdoDataArtifact) -> Result<()> {
+        let lang = artifact.language.as_deref().unwrap_or_default();
+
+        let data = format!("```{}\n{}\n```", lang, artifact.content);
+
+        self.display_string(data)
+    }
+
+    fn display_data_artifact(&self, artifact: &AdoDataArtifact) -> Result<()> {
+        match artifact.artifact_type {
+            AdoDataArtifactType::Code => self.display_data_code(artifact),
+            _ => todo!(),
+        }
+    }
+
     fn display_data_response(&self, data: AdoData) -> Result<()> {
         println!("{}", data.response.message);
+
+        if let Some(artifacts) = data.response.artifacts {
+            for arti in artifacts {
+                if let Err(e) = self.display_data_artifact(&arti) {
+                    error!("error displaying data. ({e})");
+                }
+            }
+        }
 
         Ok(())
     }
@@ -243,9 +266,36 @@ impl TerminalConsole {
         Ok(())
     }
 
-    fn display_data_partial(&self, data: AdoData) -> Result<()> {
-        let err_str = format!("Error: {}", data.response.message);
-        println!("{}", err_str.yellow());
+    fn process_partial_artifact(&self, artifact: &AdoDataArtifact) -> Result<String> {
+        let response = match artifact.artifact_type {
+            AdoDataArtifactType::File => {
+                if let Some(path) = &artifact.path {
+                    match fs::write(path, artifact.content.as_bytes()) {
+                        Ok(_) => format!("{} was successfully written to disk", path.display()),
+                        Err(e) => format!("Unable to write {} to disk. Error: {e}", path.display()),
+                    }
+                } else {
+                    "File path is missing".into()
+                }
+            }
+            _ => todo!(),
+        };
+
+        Ok(response)
+    }
+
+    fn process_data_partial(&self, data: AdoData) -> Result<()> {
+        println!("Intent: {}", data.meta.intent);
+        println!("{}", data.response.message);
+
+        if let Some(artifact) = &data.response.artifacts {
+            for arti in artifact.iter() {
+                if let Ok(response) = self.process_partial_artifact(arti) {
+                    println!("{response}");
+                }
+            }
+        }
+
         Ok(())
     }
 
@@ -253,7 +303,7 @@ impl TerminalConsole {
         match data.meta.status {
             AdoDataStatus::Ok => self.display_data_response(data),
             AdoDataStatus::Error => self.display_data_error(data),
-            AdoDataStatus::Partial => self.display_data_partial(data),
+            AdoDataStatus::Partial => self.process_data_partial(data),
         }
     }
 }
