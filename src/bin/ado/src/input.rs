@@ -1,7 +1,6 @@
 use std::{
-    env, fs,
+    env,
     io::{self, stdout},
-    path::Path,
     time::Duration,
 };
 
@@ -23,7 +22,6 @@ use tui_input::backend::crossterm::EventHandler;
 use tui_input::{Input, InputRequest};
 
 const MAX_SUGGESTIONS: usize = 7;
-const MAX_FILE_DEPTH: usize = 3;
 
 pub enum InputResult {
     Line(String),
@@ -79,90 +77,44 @@ fn find_at_context(line: &str, cursor: usize) -> Option<(usize, String)> {
 }
 
 fn find_matching_files(partial: &str) -> Vec<String> {
+    if partial.is_empty() {
+        return Vec::new();
+    }
+
     let cwd = match env::current_dir() {
         Ok(v) => v,
         Err(_) => return Vec::new(),
     };
 
-    // Split into directory prefix and name prefix
-    let (search_dir, name_prefix) = if let Some(slash_pos) = partial.rfind('/') {
-        let dir_part = &partial[..=slash_pos];
-        let name_part = &partial[slash_pos + 1..];
-        (cwd.join(dir_part), name_part.to_string())
-    } else {
-        (cwd.clone(), partial.to_string())
-    };
-
-    let dir_prefix = if let Some(slash_pos) = partial.rfind('/') {
-        &partial[..=slash_pos]
-    } else {
-        ""
-    };
-
+    // Treat input as a filename pattern: search **/*{partial}*
+    let pattern = format!("{}/**/*{}*", cwd.display(), partial.to_lowercase());
     let mut results = Vec::new();
-    collect_files(&search_dir, dir_prefix, &name_prefix, 0, &mut results);
-    results.truncate(MAX_SUGGESTIONS);
-    results
-}
 
-fn collect_files(dir: &Path, prefix: &str, name_filter: &str, depth: usize, results: &mut Vec<String>) {
-    if depth > MAX_FILE_DEPTH || results.len() >= MAX_SUGGESTIONS {
-        return;
-    }
-
-    let entries = match fs::read_dir(dir) {
+    let entries = match glob::glob(&pattern) {
         Ok(v) => v,
-        Err(_) => return,
+        Err(_) => return Vec::new(),
     };
 
     for entry in entries.flatten() {
-        if results.len() >= MAX_SUGGESTIONS {
-            return;
-        }
+        // Skip hidden paths (any component starting with .)
+        let rel = match entry.strip_prefix(&cwd) {
+            Ok(v) => v,
+            Err(_) => continue,
+        };
 
-        let name = entry.file_name();
-        let name_str = name.to_string_lossy();
-
-        // Skip hidden files/dirs
-        if name_str.starts_with('.') {
+        if rel.components().any(|c| c.as_os_str().to_string_lossy().starts_with('.')) {
             continue;
         }
 
-        let path = entry.path();
-        let is_dir = path.is_dir();
+        let display = rel.to_string_lossy().to_string();
+        results.push(display);
 
-        if depth == 0 {
-            // At search level, filter by prefix
-            let name_lower = name_str.to_lowercase();
-            let filter_lower = name_filter.to_lowercase();
-
-            if name_lower.starts_with(&filter_lower) {
-                let display = if is_dir {
-                    format!("{}{}/", prefix, name_str)
-                } else {
-                    format!("{}{}", prefix, name_str)
-                };
-                results.push(display);
-            }
-
-            // Recurse into dirs that match prefix
-            if is_dir && name_lower.starts_with(&filter_lower) {
-                collect_files(&path, &format!("{}{}/", prefix, name_str), "", depth + 1, results);
-            }
-        } else {
-            // Deeper levels: show everything
-            let display = if is_dir {
-                format!("{}{}/", prefix, name_str)
-            } else {
-                format!("{}{}", prefix, name_str)
-            };
-            results.push(display);
-
-            if is_dir {
-                collect_files(&path, &format!("{}{}/", prefix, name_str), "", depth + 1, results);
-            }
+        if results.len() >= MAX_SUGGESTIONS {
+            break;
         }
     }
+
+    results
 }
 
 fn find_matching_commands(partial: &str, commands: &[String]) -> Vec<String> {

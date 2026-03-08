@@ -18,6 +18,7 @@ tui-input.workspace = true
 which.workspace = true
 anyhow.workspace = true
 shell-words.workspace = true
+glob.workspace = true
 
 [dev-dependencies]
 tempfile.workspace = true
