@@ -85,7 +85,7 @@ impl UserCommands {
 
     pub fn handler<C, S>(&mut self, input: S, console: C) -> Result<()>
     where
-        C: Fn(AdoData) -> std::result::Result<(), adolib::error::Error> + Send + Sync,
+        C: Fn(AdoData) -> Option<String> + Send + Sync,
         S: AsRef<str> + Display,
     {
         info!("input: {input}");

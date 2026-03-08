@@ -25,6 +25,16 @@ impl OllamaChain {
 }
 
 impl LLMChainTrait for OllamaChain {
+    fn call(&mut self) -> Result<AdoData> {
+        let resp = self.api.chat(&self.chat)?;
+
+        self.chat.add_content(LLMRole::Assistant, &resp.message.content);
+
+        let data: AdoData = resp.message.content.parse()?;
+
+        Ok(data)
+    }
+
     fn models(&self) -> Vec<String> {
         let models = Vec::new();
         models

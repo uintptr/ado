@@ -7,7 +7,7 @@ use crate::{
     llm::{claude::claude_chain::ClaudeChain, ollama::ollama_chain::OllamaChain},
 };
 
-use log::error;
+use log::{error, info};
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct LLMUsage {
@@ -37,9 +37,10 @@ impl Into<String> for LLMRole {
 }
 
 pub trait LLMChainTrait {
-    fn add_content<S>(&mut self, _role: LLMRole, _content: S)
+    fn add_content<S>(&mut self, role: LLMRole, content: S)
     where
         S: Into<String>;
+    fn call(&mut self) -> Result<AdoData>;
     fn message<S>(&self, content: S) -> Result<String>
     where
         S: Into<String>;
@@ -78,6 +79,13 @@ impl LLMChain {
         Ok(chain)
     }
 
+    fn call(&mut self) -> Result<AdoData> {
+        match self {
+            LLMChain::Claude(claude) => claude.call(),
+            LLMChain::Ollama(ollama) => ollama.call(),
+        }
+    }
+
     pub fn models(&self) -> Vec<String> {
         match self {
             LLMChain::Claude(claude) => claude.models(),
@@ -105,15 +113,26 @@ impl LLMChain {
         }
     }
 
-    pub fn link<C, S>(&mut self, content: S, _console: C) -> Result<()>
+    pub fn link<C, S>(&mut self, content: S, console: C) -> Result<()>
     where
-        C: Fn(AdoData) -> Result<()> + Send + Sync,
+        C: Fn(AdoData) -> Option<String> + Send + Sync,
         S: Into<String>,
     {
         self.add_content(LLMRole::User, content);
 
         loop {
-            break;
+            let data = self.call()?;
+
+            match console(data) {
+                Some(r) => {
+                    //
+                    // we're continuing...
+                    //
+                    self.add_content(LLMRole::User, &r);
+                    info!("console returned {r}");
+                }
+                None => break,
+            }
         }
 
         Ok(())

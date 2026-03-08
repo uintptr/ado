@@ -46,6 +46,21 @@ impl ClaudeChain {
 }
 
 impl LLMChainTrait for ClaudeChain {
+    fn call(&mut self) -> Result<AdoData> {
+        let resp = self.api.chat(&self.messages)?;
+
+        self.tokens.input_tokens += resp.usage.input_tokens;
+        self.tokens.output_tokens += resp.usage.output_tokens;
+
+        let text = resp.message()?;
+
+        self.messages.add_message(ClaudeRole::Assistant, text);
+
+        let data: AdoData = text.parse()?;
+
+        Ok(data)
+    }
+
     fn models(&self) -> Vec<String> {
         let mut models = Vec::new();
 

@@ -46,7 +46,7 @@ fn main_loop(mut console: TerminalConsole, mut command: UserCommands) -> Result<
             if let Err(e) = console.display_data(data) {
                 error!("Unable to display data ({e})");
             }
-            Ok(())
+            None
         }) {
             error!("{e}");
         }
