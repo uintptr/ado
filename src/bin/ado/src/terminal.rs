@@ -14,123 +14,36 @@ use adolib::{
     error::Error,
 };
 use anyhow::{Context, Result};
-use colored;
 use colored::Colorize;
+use crossterm::{ExecutableCommand, terminal};
 use log::{error, info, warn};
 use which::which;
 
-use rustyline::completion::{Completer, FilenameCompleter, Pair};
-use rustyline::error::ReadlineError;
-use rustyline::history::FileHistory;
-use rustyline::{Cmd, CompletionType, Config, Editor, KeyCode, KeyEvent, Modifiers, Movement};
-use rustyline::{Helper, Hinter, Validator};
-use rustyline::{Highlighter, hint::HistoryHinter};
-
-use crate::{banner::display_banner, commands::UserCommands};
-
-struct CommandCompleter {
-    commands: Vec<String>,
-    file_completer: FilenameCompleter,
-}
-
-impl CommandCompleter {
-    fn new(commands: Vec<String>) -> Self {
-        Self {
-            commands,
-            file_completer: FilenameCompleter::new(),
-        }
-    }
-}
-
-impl Completer for CommandCompleter {
-    type Candidate = Pair;
-
-    fn complete(&self, line: &str, pos: usize, ctx: &rustyline::Context<'_>) -> rustyline::Result<(usize, Vec<Pair>)> {
-        // If we're still on the first word (no space before cursor), complete commands
-        if !line[..pos].contains(' ') {
-            let prefix = &line[..pos];
-            let matches: Vec<Pair> = self
-                .commands
-                .iter()
-                .filter(|cmd| cmd.starts_with(prefix))
-                .map(|cmd| Pair {
-                    display: cmd.clone(),
-                    replacement: cmd.clone(),
-                })
-                .collect();
-
-            if !matches.is_empty() {
-                return Ok((0, matches));
-            }
-        }
-
-        // Fall back to filename completion
-        self.file_completer.complete(line, pos, ctx)
-    }
-}
-
-#[derive(Helper, Highlighter, Hinter, Validator)]
-struct MyHelper {
-    completer: CommandCompleter,
-    #[rustyline(Hinter)]
-    hinter: HistoryHinter,
-}
-
-impl Completer for MyHelper {
-    type Candidate = Pair;
-
-    fn complete(&self, line: &str, pos: usize, ctx: &rustyline::Context<'_>) -> rustyline::Result<(usize, Vec<Pair>)> {
-        self.completer.complete(line, pos, ctx)
-    }
-}
+use crate::{banner::display_banner, commands::UserCommands, input};
 
 pub struct TerminalConsole {
     glow: Option<PathBuf>,
-    rl: Editor<MyHelper, FileHistory>,
+    history: Vec<String>,
     history_file: PathBuf,
+    commands: Vec<String>,
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 // FUNC
 ///////////////////////////////////////////////////////////////////////////////
 
-fn init_readline(commands: &UserCommands) -> Result<(Editor<MyHelper, FileHistory>, PathBuf)> {
-    let config = Config::builder()
-        .completion_type(CompletionType::List)
-        .keyseq_timeout(Some(50))
-        .build();
+fn load_history(path: &PathBuf) -> Vec<String> {
+    fs::read_to_string(path)
+        .unwrap_or_default()
+        .lines()
+        .map(String::from)
+        .collect()
+}
 
-    let config_dir = dirs::config_dir().ok_or(Error::ConfigNotFound)?;
-
-    let mut rl = Editor::with_config(config)?;
-
-    let history_file = config_dir.join("history.txt");
-
-    if !config_dir.exists() {
-        fs::create_dir_all(&config_dir)?;
-    }
-
-    if let Err(e) = rl.load_history(&history_file) {
-        info!("loading history error={e}");
-    }
-
-    let mut command_names = Vec::new();
-    for c in commands.list_commands() {
-        command_names.push(c.name);
-        for a in c.aliases {
-            command_names.push(a);
-        }
-    }
-
-    let h = MyHelper {
-        completer: CommandCompleter::new(command_names),
-        hinter: HistoryHinter::new(),
-    };
-
-    rl.set_helper(Some(h));
-    rl.bind_sequence(KeyEvent(KeyCode::Esc, Modifiers::NONE), Cmd::Kill(Movement::WholeLine));
-
-    Ok((rl, history_file))
+fn save_history(path: &PathBuf, history: &[String]) {
+    let start = history.len().saturating_sub(1000);
+    let content = history[start..].join("\n");
+    let _ = fs::write(path, content);
 }
 
 fn handler_command<S>(cmd_line: S) -> Result<String>
@@ -165,15 +78,36 @@ impl TerminalConsole {
             }
         };
 
-        // pretty start
+        let config_dir = dirs::config_dir().ok_or(Error::ConfigNotFound)?;
+        let history_file = config_dir.join("history.txt");
 
-        let (mut rl, history_file) = init_readline(commands)?;
+        if !config_dir.exists() {
+            fs::create_dir_all(&config_dir)?;
+        }
 
-        rl.clear_screen()?;
+        let history = load_history(&history_file);
+
+        let mut command_names = Vec::new();
+        for c in commands.list_commands() {
+            command_names.push(c.name);
+            for a in c.aliases {
+                command_names.push(a);
+            }
+        }
+
+        // Clear screen and show banner
+        let mut stdout = std::io::stdout();
+        stdout.execute(terminal::Clear(terminal::ClearType::All))?;
+        stdout.execute(crossterm::cursor::MoveTo(0, 0))?;
 
         let _ = display_banner(format!("{PKG_NAME} {PKG_VERSION}"), "pagga");
 
-        Ok(Self { glow, rl, history_file })
+        Ok(Self {
+            glow,
+            history,
+            history_file,
+            commands: command_names,
+        })
     }
 
     fn display_glow<S>(&self, text: S) -> Result<()>
@@ -213,37 +147,21 @@ impl TerminalConsole {
         }
     }
 
-    fn readline(&mut self) -> Result<String> {
-        match self.rl.readline("> ") {
-            Ok(line) => {
-                if !line.trim().is_empty() {
-                    let _ = self.rl.add_history_entry(&line);
-                }
-                Ok(line)
-            }
-            // CTRL+D
-            Err(ReadlineError::Eof) => Err(Error::EOF.into()),
-            // CTRL+C
-            Err(ReadlineError::Interrupted) => Err(Error::EOF.into()),
-            Err(e) => {
-                error!("{e}");
-                Err(e.into())
-            }
-        }
-    }
-
     pub fn read_input(&mut self) -> Result<String> {
         loop {
-            let line = self.readline()?;
-
-            // remove leading / trailing white spaces
-            let line = line.trim().to_string();
-
-            if line.is_empty() {
-                continue;
+            match input::read_line("> ", &mut self.history, &self.commands)? {
+                input::InputResult::Line(line) => {
+                    let line = line.trim().to_string();
+                    if line.is_empty() {
+                        continue;
+                    }
+                    self.history.push(line.clone());
+                    return Ok(line);
+                }
+                input::InputResult::Eof => {
+                    return Err(Error::EOF.into());
+                }
             }
-
-            break Ok(line);
         }
     }
 
@@ -343,8 +261,6 @@ impl TerminalConsole {
 
 impl Drop for TerminalConsole {
     fn drop(&mut self) {
-        if let Err(e) = self.rl.save_history(&self.history_file) {
-            error!("saving history error={e}");
-        }
+        save_history(&self.history_file, &self.history);
     }
 }

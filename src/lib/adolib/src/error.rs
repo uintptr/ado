@@ -115,8 +115,6 @@ pub enum Error {
     #[error(transparent)]
     Glob(#[from] glob::PatternError),
     #[error(transparent)]
-    Readline(#[from] rustyline::error::ReadlineError),
-    #[error(transparent)]
     WalkDir(#[from] walkdir::Error),
     #[error(transparent)]
     Http(#[from] ureq::Error),

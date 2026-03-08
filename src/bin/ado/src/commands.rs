@@ -21,7 +21,30 @@ pub struct UserCommands {
 
 pub struct UserCommandEntry {
     pub name: String,
+    pub documentation: String,
     pub aliases: Vec<String>,
+}
+
+impl UserCommandEntry {
+    pub fn new<D, S>(name: S, documentation: D) -> Self
+    where
+        S: Into<String>,
+        D: Into<String>,
+    {
+        Self {
+            name: name.into(),
+            documentation: documentation.into(),
+            aliases: vec![],
+        }
+    }
+
+    pub fn with_alias<S>(mut self, alias: S) -> Self
+    where
+        S: Into<String>,
+    {
+        self.aliases.push(alias.into());
+        self
+    }
 }
 
 fn load_intrinsics(chain: &mut LLMChain) {
@@ -122,6 +145,8 @@ impl UserCommands {
     }
 
     pub fn list_commands(&self) -> Vec<UserCommandEntry> {
-        vec![]
+        let help = UserCommandEntry::new("/help", "Display available commands");
+
+        vec![help]
     }
 }
