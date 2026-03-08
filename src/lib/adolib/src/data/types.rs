@@ -14,8 +14,16 @@ pub enum AdoDataArtifactType {
 }
 
 #[derive(Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum AdoDataStatus {
+    Ok,
+    Error,
+    Partial,
+}
+
+#[derive(Serialize, Deserialize)]
 pub struct AdoDataMeta {
-    pub status: String,
+    pub status: AdoDataStatus,
     pub intent: String,
     pub confidence: f32,
 }
@@ -32,7 +40,7 @@ pub struct AdoDataArtifact {
 #[derive(Serialize, Deserialize)]
 pub struct AdoDataResponse {
     pub message: String,
-    pub artifacts: Vec<AdoDataArtifact>,
+    pub artifacts: Option<Vec<AdoDataArtifact>>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -52,6 +60,9 @@ impl FromStr for AdoData {
     type Err = crate::error::Error;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let s = s.strip_prefix("```json\n").unwrap_or(s);
+        let s = s.strip_suffix("\n```").unwrap_or(s);
+
         let data: AdoData = match serde_json::from_str(s) {
             Ok(v) => v,
             Err(e) => {

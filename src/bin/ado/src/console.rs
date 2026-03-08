@@ -9,7 +9,10 @@ use std::{
 pub const PKG_VERSION: &str = env!("CARGO_PKG_VERSION");
 pub const PKG_NAME: &str = env!("CARGO_PKG_NAME");
 
-use adolib::{data::types::AdoData, error::Error};
+use adolib::{
+    data::types::{AdoData, AdoDataStatus},
+    error::Error,
+};
 use anyhow::Result;
 use colored;
 use colored::Colorize;
@@ -228,26 +231,30 @@ impl TerminalConsole {
         }
     }
 
-    pub fn display_data(&self, data: AdoData) -> Result<()> {
-        let s: String = data.to_string();
-
-        let data = format!("```json\n{s}\n```\n");
-
-        self.display_string(data)?;
+    fn display_data_response(&self, data: AdoData) -> Result<()> {
+        println!("{}", data.response.message);
 
         Ok(())
     }
 
-    pub fn display_error(&mut self, err: Error) -> Result<()> {
-        match err {
-            Error::LlmError { message } => self.display_string(message)?,
-            _ => {
-                let err_str = format!("Error: {err}");
-                println!("{}", err_str.red());
-            }
-        }
-
+    fn display_data_error(&self, data: AdoData) -> Result<()> {
+        let err_str = format!("Error: {}", data.response.message);
+        println!("{}", err_str.red());
         Ok(())
+    }
+
+    fn display_data_partial(&self, data: AdoData) -> Result<()> {
+        let err_str = format!("Error: {}", data.response.message);
+        println!("{}", err_str.yellow());
+        Ok(())
+    }
+
+    pub fn display_data(&self, data: AdoData) -> Result<()> {
+        match data.meta.status {
+            AdoDataStatus::Ok => self.display_data_response(data),
+            AdoDataStatus::Error => self.display_data_error(data),
+            AdoDataStatus::Partial => self.display_data_partial(data),
+        }
     }
 }
 
