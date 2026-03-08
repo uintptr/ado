@@ -1,7 +1,7 @@
 use std::{
     io::{self, Write},
     sync::mpsc::{self, Receiver, Sender, TryRecvError},
-    thread::{self, JoinHandle},
+    thread::{self, JoinHandle, sleep},
     time::Duration,
 };
 
@@ -40,11 +40,11 @@ fn spinner(rx: Receiver<SpinMessage>) {
 
             stdout.flush().unwrap();
 
-            thread::sleep(Duration::from_millis(100));
+            thread::sleep(Duration::from_millis(50));
 
             match rx.try_recv() {
                 Ok(SpinMessage::Stop) => {
-                    print!("\r            ");
+                    print!("            \r");
                     stdout.flush().unwrap();
                     break;
                 }
@@ -80,6 +80,7 @@ impl AdoSpinner {
         if let Err(e) = self.tx.send(SpinMessage::Stop) {
             error!("unable to message spinner ({e})");
         }
+        sleep(Duration::from_millis(100));
     }
 
     pub fn quit(&mut self) -> Result<()> {

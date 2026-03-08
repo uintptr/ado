@@ -44,10 +44,9 @@ fn main_loop(mut console: TerminalConsole, mut command: UserCommands) -> Result<
             spinner.stop();
             console.display_data(data)
         }) {
+            spinner.stop();
             error!("{e}");
         }
-
-        spinner.stop();
     }
 
     spinner.quit()?;
