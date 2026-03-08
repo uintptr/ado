@@ -35,7 +35,7 @@ fn spinner(rx: Receiver<SpinMessage>) {
         }
 
         // Keep spinning until Stop arrives
-        for (_, frame) in FRAMES.iter().cycle().enumerate() {
+        for frame in FRAMES.iter().cycle() {
             print!("\r{}", frame.green());
 
             stdout.flush().unwrap();
@@ -53,6 +53,12 @@ fn spinner(rx: Receiver<SpinMessage>) {
                 Err(TryRecvError::Disconnected) => return,
             }
         }
+    }
+}
+
+impl Default for AdoSpinner {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

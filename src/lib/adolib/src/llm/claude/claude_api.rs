@@ -233,7 +233,7 @@ impl ClaudeApi {
 
         let resp_json = &res.body_mut().read_to_string()?;
 
-        let resp: ClaudeModelResponse = serde_json::from_str(&resp_json)?;
+        let resp: ClaudeModelResponse = serde_json::from_str(resp_json)?;
 
         Ok(resp.data)
     }

@@ -26,9 +26,9 @@ pub enum LLMRole {
     User,
 }
 
-impl Into<String> for LLMRole {
-    fn into(self) -> String {
-        match self {
+impl From<LLMRole> for String {
+    fn from(val: LLMRole) -> Self {
+        match val {
             LLMRole::Assistant => "assistant".to_string(),
             LLMRole::System => "system".to_string(),
             LLMRole::User => "user".to_string(),

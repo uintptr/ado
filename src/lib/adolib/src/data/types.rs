@@ -1,4 +1,4 @@
-use std::{path::PathBuf, str::FromStr};
+use std::{fmt::Display, path::PathBuf, str::FromStr};
 
 use log::{error, info};
 use serde::{Deserialize, Serialize};
@@ -77,9 +77,9 @@ impl FromStr for AdoData {
     }
 }
 
-impl ToString for AdoData {
-    fn to_string(&self) -> String {
-        let str = serde_json::to_string_pretty(self).unwrap_or_default();
-        str
+impl Display for AdoData {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let s = serde_json::to_string_pretty(self).unwrap_or_default();
+        write!(f, "{s}")
     }
 }

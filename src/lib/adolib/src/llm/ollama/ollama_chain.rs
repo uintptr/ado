@@ -36,8 +36,7 @@ impl LLMChainTrait for OllamaChain {
     }
 
     fn models(&self) -> Vec<String> {
-        let models = Vec::new();
-        models
+        Vec::new()
     }
 
     fn add_content<S>(&mut self, role: LLMRole, content: S)

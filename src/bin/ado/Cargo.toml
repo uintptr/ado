@@ -15,7 +15,6 @@ rust-embed.workspace = true
 rustyline.workspace = true
 which.workspace = true
 anyhow.workspace = true
-globwalk.workspace = true
 
 [dev-dependencies]
 tempfile.workspace = true

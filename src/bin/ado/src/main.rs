@@ -31,7 +31,7 @@ fn main_loop(mut console: TerminalConsole, mut command: UserCommands) -> Result<
                 ) {
                     break;
                 }
-                return Err(e.into());
+                return Err(e);
             }
         };
 
@@ -82,7 +82,6 @@ fn init_logging(verbose: bool) -> Result<()> {
 
     let log_fd = fs::OpenOptions::new()
         .append(true)
-        .write(true)
         .create(true)
         .open(&log_file)
         .with_context(|| format!("Unable to open {} for writing", log_file.display()))?;
