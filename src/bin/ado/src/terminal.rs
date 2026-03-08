@@ -10,12 +10,11 @@ pub const PKG_VERSION: &str = env!("CARGO_PKG_VERSION");
 pub const PKG_NAME: &str = env!("CARGO_PKG_NAME");
 
 use adolib::{
-    data::types::{AdoData, AdoDataArtifact, AdoDataArtifactType, AdoDataStatus},
+    data::types::{AdoData, AdoDataArtifact, AdoDataArtifactType, AdoDataMeta, AdoDataStatus},
     error::Error,
 };
 use anyhow::{Context, Result};
-use colored::Colorize;
-use crossterm::{ExecutableCommand, terminal};
+use crossterm::style::Stylize;
 use log::{error, info, warn};
 use which::which;
 
@@ -33,11 +32,7 @@ pub struct TerminalConsole {
 ///////////////////////////////////////////////////////////////////////////////
 
 fn load_history(path: &PathBuf) -> Vec<String> {
-    fs::read_to_string(path)
-        .unwrap_or_default()
-        .lines()
-        .map(String::from)
-        .collect()
+    fs::read_to_string(path).unwrap_or_default().lines().map(String::from).collect()
 }
 
 fn save_history(path: &PathBuf, history: &[String]) {
@@ -95,11 +90,7 @@ impl TerminalConsole {
             }
         }
 
-        // Clear screen and show banner
-        let mut stdout = std::io::stdout();
-        stdout.execute(terminal::Clear(terminal::ClearType::All))?;
-        stdout.execute(crossterm::cursor::MoveTo(0, 0))?;
-
+        // Show banner (no full screen clear, preserves scrollback)
         let _ = display_banner(format!("{PKG_NAME} {PKG_VERSION}"), "pagga");
 
         Ok(Self {
@@ -163,6 +154,18 @@ impl TerminalConsole {
                 }
             }
         }
+    }
+
+    fn display_meta(&self, meta: &AdoDataMeta) {
+        let status_str = match meta.status {
+            AdoDataStatus::Error => "Error".red(),
+            AdoDataStatus::Partial => "Partial".green(),
+            AdoDataStatus::Ok => "Ok".green(),
+        };
+
+        let intent = meta.intent.to_string();
+
+        println!("{} {}", status_str, intent.yellow());
     }
 
     fn display_data_code(&self, artifact: &AdoDataArtifact) -> Result<()> {
@@ -230,8 +233,9 @@ impl TerminalConsole {
     }
 
     fn process_data_partial(&self, data: AdoData) -> Option<String> {
-        println!("Intent: {}", data.meta.intent);
-        println!("{}", data.response.message);
+        if let Err(e) = self.display_string(data.response.message) {
+            error!("display failure. ({e})");
+        }
 
         let mut response_entries = vec![];
 
@@ -251,6 +255,8 @@ impl TerminalConsole {
     }
 
     pub fn display_data(&self, data: AdoData) -> Option<String> {
+        self.display_meta(&data.meta);
+
         match data.meta.status {
             AdoDataStatus::Ok => self.display_data_response(data),
             AdoDataStatus::Error => self.display_data_error(data),

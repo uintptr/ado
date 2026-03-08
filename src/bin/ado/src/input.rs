@@ -17,7 +17,7 @@ use ratatui::{
     layout::{Constraint, Layout},
     style::{Color, Modifier, Style},
     text::{Line, Span},
-    widgets::{Block, Borders, Clear, List, ListItem, Paragraph},
+    widgets::{Block, Borders, Clear, List, ListItem, Paragraph, Widget},
 };
 use tui_input::backend::crossterm::EventHandler;
 use tui_input::{Input, InputRequest};
@@ -300,13 +300,21 @@ pub fn read_line(prompt: &str, history: &mut Vec<String>, commands: &[String]) -
     let mut state = InputState::new();
     let result = run_event_loop(&mut terminal, &mut state, prompt, history, commands);
 
+    // Push the completed prompt+input into scrollback before closing
+    if let Ok(InputResult::Line(ref line)) = result {
+        let prompt_line = Line::from(vec![
+            Span::styled(prompt, Style::default().fg(Color::Green)),
+            Span::raw(line.as_str()),
+        ]);
+        terminal.insert_before(1, |buf| {
+            Paragraph::new(prompt_line).render(buf.area, buf);
+        })?;
+    }
+
     // Restore terminal
     terminal::disable_raw_mode()?;
     let mut stdout = io::stdout();
     stdout.execute(cursor::Show)?;
-
-    // Move past the inline viewport
-    println!();
 
     result
 }

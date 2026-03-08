@@ -21,6 +21,18 @@ pub enum AdoDataStatus {
     Partial,
 }
 
+impl Display for AdoDataStatus {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let s = match self {
+            AdoDataStatus::Ok => "Ok",
+            AdoDataStatus::Error => "Error",
+            AdoDataStatus::Partial => "Partial",
+        };
+
+        write!(f, "{s}")
+    }
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct AdoDataMeta {
     pub status: AdoDataStatus,

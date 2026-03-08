@@ -42,7 +42,14 @@ fn main_loop(mut console: TerminalConsole, mut command: UserCommands) -> Result<
         //
         if let Err(e) = command.handler(&input, |data| {
             spinner.stop();
-            console.display_data(data)
+
+            let ret = console.display_data(data);
+
+            if ret.is_some() {
+                spinner.start();
+            }
+
+            ret
         }) {
             spinner.stop();
             error!("{e}");
