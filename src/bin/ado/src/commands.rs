@@ -1,11 +1,13 @@
 use std::{
+    env,
     fmt::Display,
+    fs,
     io::{self, Write},
 };
 
 use adolib::{config::loader::AdoConfig, data::types::AdoData, llm::chain::LLMChain};
 use anyhow::{Context, Result};
-use log::info;
+use log::{error, info};
 
 use crate::intrinsics::IntrinsicPrompts;
 
@@ -18,14 +20,37 @@ pub struct UserCommandEntry {
     pub aliases: Vec<String>,
 }
 
-fn init_chain(config: &AdoConfig) -> Result<LLMChain> {
-    let mut chain = LLMChain::new(config)?;
-
+fn load_intrinsics(chain: &mut LLMChain) {
     for p in IntrinsicPrompts::iter() {
         if let Some(data) = IntrinsicPrompts::get(&p) {
+            info!("loading embeded prompt={p}");
             let prompt = String::from_utf8_lossy(&data.data);
             chain.add_prompt(prompt);
         }
+    }
+}
+
+fn load_ado_md(chain: &mut LLMChain) -> Result<()> {
+    let cwd = env::current_dir().context("Unable to get current directory")?;
+
+    let ado_md = cwd.join("ADO.md");
+
+    if ado_md.exists() {
+        info!("reading {}", ado_md.display());
+        let data = fs::read_to_string(&ado_md).with_context(|| format!("Unable to read {}", ado_md.display()))?;
+        chain.add_prompt(data);
+    }
+
+    Ok(())
+}
+
+fn init_chain(config: &AdoConfig) -> Result<LLMChain> {
+    let mut chain = LLMChain::new(config)?;
+
+    load_intrinsics(&mut chain);
+
+    if let Err(e) = load_ado_md(&mut chain) {
+        error!("Unable to load ADO.md files ({e})");
     }
 
     Ok(chain)

@@ -91,14 +91,6 @@ pub struct TerminalConsole {
 // FUNC
 ///////////////////////////////////////////////////////////////////////////////
 
-/*
-fn clear_console() -> Result<()> {
-    print!("{esc}c", esc = 27 as char);
-    io::stdout().flush()?;
-    Ok(())
-}
-*/
-
 fn init_readline(commands: &UserCommands) -> Result<(Editor<MyHelper, FileHistory>, PathBuf)> {
     let config = Config::builder()
         .completion_type(CompletionType::List)
@@ -239,34 +231,12 @@ impl TerminalConsole {
     pub fn display_data(&self, data: AdoData) -> Result<()> {
         let s: String = data.to_string();
 
-        self.display_string(s)?;
+        let data = format!("```json\n{s}\n```\n");
+
+        self.display_string(data)?;
 
         Ok(())
     }
-
-    /*
-    fn display_usage<S>(&mut self, usage: S) -> Result<()>
-    where
-        S: AsRef<str> + Display,
-    {
-        self.display_string(usage)
-    }
-
-    fn display_md<M>(&mut self, data: M) -> Result<()>
-    where
-        M: AdoDataMarkdown,
-    {
-        let md = data.to_markdown()?;
-        self.display_string(md)
-    }
-
-    fn display_base64<S>(&self, _data: S) -> Result<()>
-    where
-        S: AsRef<str>,
-    {
-        unimplemented!()
-    }
-    */
 
     pub fn display_error(&mut self, err: Error) -> Result<()> {
         match err {
