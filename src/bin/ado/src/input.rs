@@ -62,6 +62,9 @@ impl InputState {
 
 // Find the @token context around the cursor
 fn find_at_context(line: &str, cursor: usize) -> Option<(usize, String)> {
+    let cursor = cursor.min(line.len());
+    // Walk back to a valid char boundary
+    let cursor = (0..=cursor).rev().find(|&i| line.is_char_boundary(i))?;
     let before = &line[..cursor];
 
     // Scan backwards for @
