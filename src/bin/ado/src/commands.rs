@@ -7,7 +7,7 @@ use std::{
 
 use adolib::{
     config::loader::AdoConfig,
-    data::types::AdoData,
+    console::ConsoleTrait,
     llm::chain::{LLMChain, LLMRole},
 };
 use anyhow::{Context, Result, bail};
@@ -123,9 +123,9 @@ impl UserCommands {
         Ok(())
     }
 
-    pub fn handler<C, S>(&mut self, input: S, console: C) -> Result<()>
+    pub fn handler<C, S>(&mut self, input: S, console: &C) -> Result<()>
     where
-        C: Fn(AdoData) -> Option<String> + Send + Sync,
+        C: ConsoleTrait + Send + Sync,
         S: AsRef<str> + Display,
     {
         info!("input: {input}");

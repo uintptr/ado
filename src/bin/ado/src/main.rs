@@ -1,6 +1,6 @@
 use std::fs;
 
-use ado::{commands::UserCommands, spinner::AdoSpinner, terminal::TerminalConsole};
+use ado::{commands::UserCommands, terminal::TerminalConsole};
 use adolib::config::loader::AdoConfig;
 use anyhow::{Context, Result, anyhow};
 use clap::Parser;
@@ -19,8 +19,6 @@ struct UserArgs {
 }
 
 fn main_loop(mut console: TerminalConsole, mut command: UserCommands) -> Result<()> {
-    let mut spinner = AdoSpinner::new();
-
     loop {
         let input = match console.read_input() {
             Ok(v) => v,
@@ -35,27 +33,13 @@ fn main_loop(mut console: TerminalConsole, mut command: UserCommands) -> Result<
             }
         };
 
-        spinner.start();
-
         //
         // process the command
         //
-        if let Err(e) = command.handler(&input, |data| {
-            spinner.stop();
-
-            let ret = console.display_data(data);
-
-            if ret.is_some() {
-                spinner.start();
-            }
-            ret
-        }) {
-            spinner.stop();
+        if let Err(e) = command.handler(&input, &console) {
             error!("{e}");
         }
     }
-
-    spinner.quit()?;
 
     Ok(())
 }

@@ -10,6 +10,7 @@ pub const PKG_VERSION: &str = env!("CARGO_PKG_VERSION");
 pub const PKG_NAME: &str = env!("CARGO_PKG_NAME");
 
 use adolib::{
+    console::ConsoleTrait,
     data::types::{AdoData, AdoDataArtifact, AdoDataArtifactType, AdoDataMeta, AdoDataStatus},
     error::Error,
 };
@@ -18,13 +19,14 @@ use crossterm::style::Stylize;
 use log::{error, info, warn};
 use which::which;
 
-use crate::{banner::display_banner, commands::UserCommands, input};
+use crate::{banner::display_banner, commands::UserCommands, input, spinner::AdoSpinner};
 
 pub struct TerminalConsole {
     glow: Option<PathBuf>,
     history: Vec<String>,
     history_file: PathBuf,
     commands: Vec<String>,
+    spinner: AdoSpinner,
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -93,11 +95,14 @@ impl TerminalConsole {
         // Show banner (no full screen clear, preserves scrollback)
         let _ = display_banner(format!("{PKG_NAME} {PKG_VERSION}"), "pagga");
 
+        let spinner = AdoSpinner::new();
+
         Ok(Self {
             glow,
             history,
             history_file,
             commands: command_names,
+            spinner,
         })
     }
 
@@ -253,8 +258,16 @@ impl TerminalConsole {
             Some(response_entries.join(" "))
         }
     }
+}
 
-    pub fn display_data(&self, data: AdoData) -> Option<String> {
+impl Drop for TerminalConsole {
+    fn drop(&mut self) {
+        save_history(&self.history_file, &self.history);
+    }
+}
+
+impl ConsoleTrait for TerminalConsole {
+    fn io(&self, data: AdoData) -> Option<String> {
         self.display_meta(&data.meta);
 
         match data.meta.status {
@@ -263,10 +276,15 @@ impl TerminalConsole {
             AdoDataStatus::Partial => self.process_data_partial(data),
         }
     }
-}
 
-impl Drop for TerminalConsole {
-    fn drop(&mut self) {
-        save_history(&self.history_file, &self.history);
+    fn enter_thinking<M>(&self, message: M)
+    where
+        M: AsRef<str> + Display,
+    {
+        info!("spinning {message}");
+        self.spinner.start();
+    }
+    fn leave_thinking(&self) {
+        self.spinner.stop();
     }
 }

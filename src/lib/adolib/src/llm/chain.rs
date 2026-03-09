@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     config::loader::AdoConfig,
+    console::ConsoleTrait,
     data::types::AdoData,
     error::{Error, Result},
     llm::{claude::claude_chain::ClaudeChain, ollama::ollama_chain::OllamaChain},
@@ -113,17 +114,21 @@ impl LLMChain {
         }
     }
 
-    pub fn link<C, S>(&mut self, content: S, console: C) -> Result<()>
+    pub fn link<C, S>(&mut self, content: S, console: &C) -> Result<()>
     where
-        C: Fn(AdoData) -> Option<String> + Send + Sync,
+        C: ConsoleTrait + Send + Sync,
         S: Into<String>,
     {
         self.add_content(LLMRole::User, content);
 
         loop {
-            let data = self.call()?;
+            console.enter_thinking("");
+            let ret = self.call();
+            console.leave_thinking();
 
-            match console(data) {
+            let data = ret?;
+
+            match console.io(data) {
                 Some(r) => {
                     //
                     // we're continuing...

@@ -2,9 +2,10 @@ use std::fmt::Display;
 
 use crate::data::types::AdoData;
 
-trait ConsoleTrait {
+pub trait ConsoleTrait {
     fn io(&self, data: AdoData) -> Option<String>;
-    fn toggle_spinner<M>(&self, message: M)
+    fn enter_thinking<M>(&self, message: M)
     where
         M: AsRef<str> + Display;
+    fn leave_thinking(&self);
 }
