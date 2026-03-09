@@ -86,8 +86,9 @@ fn find_matching_files(partial: &str) -> Vec<String> {
         Err(_) => return Vec::new(),
     };
 
-    // Treat input as a filename pattern: search **/*{partial}*
-    let pattern = format!("{}/**/*{}*", cwd.display(), partial.to_lowercase());
+    // Treat input as a filename pattern: search **/* then filter case-insensitively
+    let pattern = format!("{}/**/*", cwd.display());
+    let partial_lower = partial.to_lowercase();
     let mut results = Vec::new();
 
     let entries = match glob::glob(&pattern) {
@@ -107,6 +108,10 @@ fn find_matching_files(partial: &str) -> Vec<String> {
         }
 
         let display = rel.to_string_lossy().to_string();
+        if !display.to_lowercase().contains(&partial_lower) {
+            continue;
+        }
+
         results.push(display);
 
         if results.len() >= MAX_SUGGESTIONS {
