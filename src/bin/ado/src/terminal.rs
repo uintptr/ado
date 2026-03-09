@@ -86,10 +86,7 @@ impl TerminalConsole {
 
         let mut command_names = Vec::new();
         for c in commands.list_commands() {
-            command_names.push(c.name);
-            for a in c.aliases {
-                command_names.push(a);
-            }
+            command_names.push(c.to_string());
         }
 
         // Show banner (no full screen clear, preserves scrollback)
@@ -220,14 +217,10 @@ impl TerminalConsole {
                     "File path is missing".into()
                 }
             }
-            AdoDataArtifactType::Command => {
-                let ret = match handler_command(&artifact.content) {
-                    Ok(v) => v,
-                    Err(e) => format!("Unable to execute {}. Error: {e}", artifact.content),
-                };
-
-                ret
-            }
+            AdoDataArtifactType::Command => match handler_command(&artifact.content) {
+                Ok(v) => v,
+                Err(e) => format!("Unable to execute {}. Error: {e}", artifact.content),
+            },
             _ => {
                 error!("unhandled type: {}", artifact.artifact_type);
                 todo!()

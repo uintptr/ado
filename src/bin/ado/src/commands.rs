@@ -20,31 +20,20 @@ pub struct UserCommands {
     chain: LLMChain,
 }
 
-pub struct UserCommandEntry {
-    pub name: String,
-    pub documentation: String,
-    pub aliases: Vec<String>,
+pub enum UserCommand {
+    Help(String),
+    Model(String),
+    Models(String),
 }
 
-impl UserCommandEntry {
-    pub fn new<D, S>(name: S, documentation: D) -> Self
-    where
-        S: Into<String>,
-        D: Into<String>,
-    {
-        Self {
-            name: name.into(),
-            documentation: documentation.into(),
-            aliases: vec![],
-        }
-    }
-
-    pub fn with_alias<S>(mut self, alias: S) -> Self
-    where
-        S: Into<String>,
-    {
-        self.aliases.push(alias.into());
-        self
+impl Display for UserCommand {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let s = match self {
+            UserCommand::Help(_) => "help",
+            UserCommand::Model(_) => "model",
+            UserCommand::Models(_) => "models",
+        };
+        write!(f, "{s}")
     }
 }
 
@@ -135,7 +124,7 @@ impl UserCommands {
                 "models" => self.command_models()?,
                 "clear" | "reset" => command_clear()?,
                 _ => {
-                    let err_msg = format!("Command Not Found");
+                    let err_msg = "Command Not Found".to_string();
                     println!("{}", err_msg.red());
                     bail!("Command not found ({command})");
                 }
@@ -149,9 +138,11 @@ impl UserCommands {
         Ok(())
     }
 
-    pub fn list_commands(&self) -> Vec<UserCommandEntry> {
-        let help = UserCommandEntry::new("/help", "Display available commands");
-
-        vec![help]
+    pub fn list_commands(&self) -> Vec<UserCommand> {
+        vec![
+            UserCommand::Help("Display help".into()),
+            UserCommand::Model("Switch model".into()),
+            UserCommand::Models("List available models".into()),
+        ]
     }
 }

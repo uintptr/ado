@@ -219,7 +219,7 @@ fn history_prev(state: &mut InputState, history: &[String]) {
 
 fn history_next(state: &mut InputState, history: &[String]) {
     match state.history_index {
-        None => return,
+        None => (),
         Some(i) => {
             if i + 1 >= history.len() {
                 // Restore saved input
@@ -235,7 +235,7 @@ fn history_next(state: &mut InputState, history: &[String]) {
     }
 }
 
-pub fn read_line(prompt: &str, history: &mut Vec<String>, commands: &[String]) -> Result<InputResult> {
+pub fn read_line(prompt: &str, history: &mut [String], commands: &[String]) -> Result<InputResult> {
     terminal::enable_raw_mode()?;
 
     let mut stdout = stdout();
@@ -336,66 +336,66 @@ fn run_event_loop(
             frame.set_cursor_position((chunks[1].x + cursor_pos, chunks[1].y));
         })?;
 
-        if event::poll(Duration::from_millis(50))? {
-            if let Event::Key(key) = event::read()? {
-                // Skip release events on some terminals
-                if key.kind == event::KeyEventKind::Release {
-                    continue;
-                }
+        if event::poll(Duration::from_millis(50))?
+            && let Event::Key(key) = event::read()?
+        {
+            // Skip release events on some terminals
+            if key.kind == event::KeyEventKind::Release {
+                continue;
+            }
 
-                match key.code {
-                    KeyCode::Enter => {
-                        if state.show_popup && !state.suggestions.is_empty() {
-                            accept_suggestion(state);
-                            update_suggestions(state, commands);
-                        } else {
-                            let line = state.value().to_string();
-                            return Ok(InputResult::Line(line));
-                        }
+            match key.code {
+                KeyCode::Enter => {
+                    if state.show_popup && !state.suggestions.is_empty() {
+                        accept_suggestion(state);
+                        update_suggestions(state, commands);
+                    } else {
+                        let line = state.value().to_string();
+                        return Ok(InputResult::Line(line));
                     }
-                    KeyCode::Tab => {
-                        if state.show_popup {
-                            accept_suggestion(state);
-                            update_suggestions(state, commands);
-                        }
-                    }
-                    KeyCode::Up => {
-                        if state.show_popup {
-                            if state.suggestion_index > 0 {
-                                state.suggestion_index -= 1;
-                            }
-                        } else {
-                            history_prev(state, history);
-                        }
-                    }
-                    KeyCode::Down => {
-                        if state.show_popup {
-                            if state.suggestion_index + 1 < state.suggestions.len() {
-                                state.suggestion_index += 1;
-                            }
-                        } else {
-                            history_next(state, history);
-                        }
-                    }
-                    KeyCode::Esc => {
-                        if state.show_popup {
-                            state.show_popup = false;
-                            state.suggestions.clear();
-                        } else {
-                            // Clear the line
-                            state.input = Input::default();
-                        }
-                    }
-                    KeyCode::Char('d') if key.modifiers.contains(KeyModifiers::CONTROL) => {
-                        return Ok(InputResult::Eof);
-                    }
-                    KeyCode::Char('c') if key.modifiers.contains(KeyModifiers::CONTROL) => {
-                        return Ok(InputResult::Eof);
-                    }
-                    _ => {
-                        state.input.handle_event(&Event::Key(key));
+                }
+                KeyCode::Tab => {
+                    if state.show_popup {
+                        accept_suggestion(state);
                         update_suggestions(state, commands);
                     }
+                }
+                KeyCode::Up => {
+                    if state.show_popup {
+                        if state.suggestion_index > 0 {
+                            state.suggestion_index -= 1;
+                        }
+                    } else {
+                        history_prev(state, history);
+                    }
+                }
+                KeyCode::Down => {
+                    if state.show_popup {
+                        if state.suggestion_index + 1 < state.suggestions.len() {
+                            state.suggestion_index += 1;
+                        }
+                    } else {
+                        history_next(state, history);
+                    }
+                }
+                KeyCode::Esc => {
+                    if state.show_popup {
+                        state.show_popup = false;
+                        state.suggestions.clear();
+                    } else {
+                        // Clear the line
+                        state.input = Input::default();
+                    }
+                }
+                KeyCode::Char('d') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+                    return Ok(InputResult::Eof);
+                }
+                KeyCode::Char('c') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+                    return Ok(InputResult::Eof);
+                }
+                _ => {
+                    state.input.handle_event(&Event::Key(key));
+                    update_suggestions(state, commands);
                 }
             }
         }
