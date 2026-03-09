@@ -92,11 +92,13 @@ impl AdoConfig {
     pub fn from_default() -> Result<Self> {
         let config_dir = dirs::config_dir().ok_or(Error::ConfigNotFound)?;
 
-        if !config_dir.exists() {
-            fs::create_dir_all(&config_dir)?;
+        let ado_config_dir = config_dir.join("ado");
+
+        if !ado_config_dir.exists() {
+            fs::create_dir_all(&ado_config_dir)?;
         }
 
-        let config_file = config_dir.join(CONFIG_FILE_NAME);
+        let config_file = ado_config_dir.join(CONFIG_FILE_NAME);
 
         AdoConfig::from_path(config_file)
     }
