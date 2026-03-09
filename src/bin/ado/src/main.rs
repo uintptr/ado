@@ -48,7 +48,6 @@ fn main_loop(mut console: TerminalConsole, mut command: UserCommands) -> Result<
             if ret.is_some() {
                 spinner.start();
             }
-
             ret
         }) {
             spinner.stop();

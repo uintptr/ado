@@ -10,8 +10,9 @@ use adolib::{
     data::types::AdoData,
     llm::chain::{LLMChain, LLMRole},
 };
-use anyhow::{Context, Result};
+use anyhow::{Context, Result, bail};
 use log::{error, info};
+use ratatui::style::Stylize;
 
 use crate::intrinsics::IntrinsicPrompts;
 
@@ -133,7 +134,11 @@ impl UserCommands {
             match command {
                 "models" => self.command_models()?,
                 "clear" | "reset" => command_clear()?,
-                _ => println!("Command Not Found ({command})"),
+                _ => {
+                    let err_msg = format!("Command Not Found");
+                    println!("{}", err_msg.red());
+                    bail!("Command not found ({command})");
+                }
             }
         } else {
             //
