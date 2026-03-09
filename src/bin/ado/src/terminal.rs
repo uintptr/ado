@@ -156,7 +156,7 @@ impl TerminalConsole {
         }
     }
 
-    fn display_meta(&self, meta: &AdoDataMeta) {
+    fn display_meta(meta: &AdoDataMeta) {
         let status_str = match meta.status {
             AdoDataStatus::Error => "Error".red(),
             AdoDataStatus::Partial => "Partial".green(),
@@ -197,13 +197,13 @@ impl TerminalConsole {
         None
     }
 
-    fn display_data_error(&self, data: AdoData) -> Option<String> {
+    fn display_data_error(data: &AdoData) -> Option<String> {
         let err_str = format!("Error: {}", data.response.message);
         println!("{}", err_str.red());
         None
     }
 
-    fn process_partial_artifact(&self, artifact: &AdoDataArtifact) -> Option<String> {
+    fn process_partial_artifact(artifact: &AdoDataArtifact) -> Option<String> {
         let response = match artifact.artifact_type {
             AdoDataArtifactType::File => {
                 if let Some(path) = &artifact.path {
@@ -237,7 +237,7 @@ impl TerminalConsole {
 
         if let Some(artifact) = &data.response.artifacts {
             for arti in artifact {
-                if let Some(response) = self.process_partial_artifact(arti) {
+                if let Some(response) = TerminalConsole::process_partial_artifact(arti) {
                     response_entries.push(response);
                 }
             }
@@ -259,11 +259,11 @@ impl Drop for TerminalConsole {
 
 impl ConsoleTrait for TerminalConsole {
     fn io(&self, data: AdoData) -> Option<String> {
-        self.display_meta(&data.meta);
+        TerminalConsole::display_meta(&data.meta);
 
         match data.meta.status {
             AdoDataStatus::Ok => self.display_data_response(data),
-            AdoDataStatus::Error => self.display_data_error(data),
+            AdoDataStatus::Error => TerminalConsole::display_data_error(&data),
             AdoDataStatus::Partial => self.process_data_partial(data),
         }
     }

@@ -62,7 +62,7 @@ fn load_ado_md(chain: &mut LLMChain) -> Result<()> {
     Ok(())
 }
 
-fn load_useful(chain: &mut LLMChain) -> Result<()> {
+fn load_useful(chain: &mut LLMChain) {
     if let Ok(cwd) = env::current_dir() {
         let cwd_prompt = format!("The current working directory is {}", cwd.display());
         chain.add_content(LLMRole::User, cwd_prompt);
@@ -70,8 +70,6 @@ fn load_useful(chain: &mut LLMChain) -> Result<()> {
 
     let current_os = format!("The current operating system is {OS}");
     chain.add_content(LLMRole::User, current_os);
-
-    Ok(())
 }
 
 fn load_skills_from_path(chain: &mut LLMChain, path: &Path) -> Result<()> {
@@ -88,7 +86,7 @@ fn load_skills_from_path(chain: &mut LLMChain, path: &Path) -> Result<()> {
     Ok(())
 }
 
-fn load_skills(chain: &mut LLMChain) -> Result<()> {
+fn load_skills(chain: &mut LLMChain) {
     let mut skills_dirs = Vec::new();
 
     //
@@ -119,8 +117,6 @@ fn load_skills(chain: &mut LLMChain) -> Result<()> {
             error!("Unable to load skills in {} ({e})", dir.display());
         }
     }
-
-    Ok(())
 }
 
 fn init_chain(config: &AdoConfig) -> Result<LLMChain> {
@@ -132,13 +128,9 @@ fn init_chain(config: &AdoConfig) -> Result<LLMChain> {
         error!("Unable to load ADO.md files ({e})");
     }
 
-    if let Err(e) = load_useful(&mut chain) {
-        error!("Unable to load useful ({e})");
-    }
+    load_useful(&mut chain);
 
-    if let Err(e) = load_skills(&mut chain) {
-        error!("Unable to load skills ({e})");
-    }
+    load_skills(&mut chain);
 
     Ok(chain)
 }

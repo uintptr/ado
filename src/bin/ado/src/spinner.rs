@@ -22,7 +22,7 @@ pub struct AdoSpinner {
     thread_handle: Option<JoinHandle<()>>,
 }
 
-fn spinner(rx: Receiver<SpinMessage>) {
+fn spinner(rx: &Receiver<SpinMessage>) {
     let mut stdout = io::stdout();
 
     loop {
@@ -37,14 +37,18 @@ fn spinner(rx: Receiver<SpinMessage>) {
         for frame in FRAMES.iter().cycle() {
             print!("\r{}", frame.green());
 
-            stdout.flush().unwrap();
+            if let Err(e) = stdout.flush() {
+                error!("Unable to flush stdout ({e})");
+            }
 
             thread::sleep(Duration::from_millis(50));
 
             match rx.try_recv() {
                 Ok(SpinMessage::Stop) => {
                     print!("            \r");
-                    stdout.flush().unwrap();
+                    if let Err(e) = stdout.flush() {
+                        error!("Unable to flush stdout ({e})");
+                    }
                     break;
                 }
                 Ok(SpinMessage::Quit) | Err(TryRecvError::Disconnected) => return,
@@ -65,7 +69,7 @@ impl AdoSpinner {
     pub fn new() -> Self {
         let (tx, rx) = mpsc::channel();
 
-        let thread_handle = Some(thread::spawn(move || spinner(rx)));
+        let thread_handle = Some(thread::spawn(move || spinner(&rx)));
 
         Self { tx, thread_handle }
     }

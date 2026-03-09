@@ -6,6 +6,7 @@ use std::{
 
 const CONFIG_FILE_NAME: &str = "config.toml";
 
+#[allow(clippy::unwrap_used)]
 fn main() {
     let root = env::var("CARGO_MANIFEST_DIR").unwrap();
     let src_file = Path::new(&root).join("config").join(CONFIG_FILE_NAME);

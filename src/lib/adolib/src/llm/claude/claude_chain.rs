@@ -3,7 +3,7 @@ use std::sync::atomic::AtomicI32;
 use crate::{
     config::loader::AdoConfig,
     data::types::AdoData,
-    error::Result,
+    error::{Error, Result},
     llm::{
         chain::{LLMChainTrait, LLMRole, LLMUsage},
         claude::claude_api::{ClaudeApi, ClaudeMessages, ClaudeRole},
@@ -118,7 +118,7 @@ impl LLMChainTrait for ClaudeChain {
     }
 
     fn dump_chain(&self) -> Result<AdoData> {
-        todo!()
+        Err(Error::NotImplemented)
     }
 }
 
