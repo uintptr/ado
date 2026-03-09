@@ -44,7 +44,7 @@ fn main_loop(mut console: TerminalConsole, mut command: UserCommands) -> Result<
     Ok(())
 }
 
-fn load_config_local(local_config: &Option<String>) -> Result<AdoConfig> {
+fn load_config_local(local_config: Option<&String>) -> Result<AdoConfig> {
     match local_config {
         Some(v) => AdoConfig::from_path(v),
         None => AdoConfig::from_default(),
@@ -83,7 +83,7 @@ fn main() -> Result<()> {
 
     init_logging(args.verbose)?;
 
-    let config = load_config_local(&args.config_file)?;
+    let config = load_config_local(args.config_file.as_ref())?;
 
     let commands = UserCommands::new(&config)?;
 

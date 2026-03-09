@@ -65,10 +65,10 @@ fn load_ado_md(chain: &mut LLMChain) -> Result<()> {
 fn load_useful(chain: &mut LLMChain) -> Result<()> {
     if let Ok(cwd) = env::current_dir() {
         let cwd_prompt = format!("The current working directory is {}", cwd.display());
-        chain.add_content(LLMRole::User, cwd_prompt)
+        chain.add_content(LLMRole::User, cwd_prompt);
     }
 
-    let current_os = format!("The current operating system is {}", OS);
+    let current_os = format!("The current operating system is {OS}");
     chain.add_content(LLMRole::User, current_os);
 
     Ok(())
@@ -77,13 +77,11 @@ fn load_useful(chain: &mut LLMChain) -> Result<()> {
 fn load_skills_from_path(chain: &mut LLMChain, path: &Path) -> Result<()> {
     info!("Loading skills from {}", path.display());
 
-    let patt = format!("{}/*.md", path.display());
+    let glob_pattern = format!("{}/*.md", path.display());
 
-    for f in glob::glob(&patt)? {
-        if let Ok(md_file) = f {
-            if let Ok(data) = fs::read_to_string(md_file) {
-                chain.add_content(LLMRole::System, data)
-            }
+    for md_file in glob::glob(&glob_pattern)?.flatten() {
+        if let Ok(data) = fs::read_to_string(md_file) {
+            chain.add_content(LLMRole::System, data);
         }
     }
 
@@ -162,7 +160,7 @@ impl UserCommands {
     pub fn command_models(&self) -> Result<()> {
         println!("Models:");
         for m in self.chain.models() {
-            println!("* {m}")
+            println!("* {m}");
         }
 
         Ok(())
@@ -194,6 +192,7 @@ impl UserCommands {
         Ok(())
     }
 
+    #[must_use]
     pub fn list_commands(&self) -> Vec<UserCommand> {
         vec![
             UserCommand::Help("Display help".into()),

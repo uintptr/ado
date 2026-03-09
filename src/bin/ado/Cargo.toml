@@ -20,6 +20,9 @@ anyhow.workspace = true
 shell-words.workspace = true
 glob.workspace = true
 
+[lints]
+workspace = true
+
 [dev-dependencies]
 tempfile.workspace = true
 

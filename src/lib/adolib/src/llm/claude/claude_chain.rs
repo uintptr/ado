@@ -37,7 +37,7 @@ impl ClaudeChain {
         }
 
         Ok(Self {
-            api: ClaudeApi::new(claude)?,
+            api: ClaudeApi::new(claude),
             msg_id: AtomicI32::new(0),
             messages,
             tokens: LLMUsage::default(),
@@ -49,8 +49,8 @@ impl LLMChainTrait for ClaudeChain {
     fn call(&mut self) -> Result<AdoData> {
         let resp = self.api.chat(&self.messages)?;
 
-        self.tokens.input_tokens += resp.usage.input_tokens;
-        self.tokens.output_tokens += resp.usage.output_tokens;
+        self.tokens.input_tokens = self.tokens.input_tokens.saturating_add(resp.usage.input_tokens);
+        self.tokens.output_tokens = self.tokens.output_tokens.saturating_add(resp.usage.output_tokens);
 
         let text = resp.message()?;
 
@@ -66,7 +66,7 @@ impl LLMChainTrait for ClaudeChain {
 
         if let Ok(ret_models) = self.api.models() {
             for model in ret_models {
-                models.push(model.id)
+                models.push(model.id);
             }
         }
 
@@ -82,7 +82,7 @@ impl LLMChainTrait for ClaudeChain {
             LLMRole::User => ClaudeRole::User,
         };
 
-        self.messages.add_message(claude_role, content)
+        self.messages.add_message(claude_role, content);
     }
 
     fn message<S>(&self, content: S) -> Result<String>
@@ -96,7 +96,7 @@ impl LLMChainTrait for ClaudeChain {
     fn reset(&mut self) {
         self.msg_id = AtomicI32::new(0);
         self.tokens = LLMUsage::default();
-        self.messages.reset()
+        self.messages.reset();
     }
 
     fn model(&self) -> &str {
@@ -107,7 +107,7 @@ impl LLMChainTrait for ClaudeChain {
     where
         S: Into<String>,
     {
-        self.api.config.model = model.into()
+        self.api.config.model = model.into();
     }
 
     fn usage(&self) -> LLMUsage {

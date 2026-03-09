@@ -28,10 +28,9 @@ fn spinner(rx: Receiver<SpinMessage>) {
     loop {
         // Block until we get a message
         match rx.recv() {
-            Err(_) => return, // sender dropped
             Ok(SpinMessage::Stop) => continue,
             Ok(SpinMessage::Start) => {}
-            Ok(SpinMessage::Quit) => return,
+            Err(_) | Ok(SpinMessage::Quit) => return,
         }
 
         // Keep spinning until Stop arrives
@@ -48,9 +47,8 @@ fn spinner(rx: Receiver<SpinMessage>) {
                     stdout.flush().unwrap();
                     break;
                 }
-                Ok(SpinMessage::Quit) => return,
+                Ok(SpinMessage::Quit) | Err(TryRecvError::Disconnected) => return,
                 Ok(SpinMessage::Start) | Err(TryRecvError::Empty) => {}
-                Err(TryRecvError::Disconnected) => return,
             }
         }
     }
@@ -63,6 +61,7 @@ impl Default for AdoSpinner {
 }
 
 impl AdoSpinner {
+    #[must_use]
     pub fn new() -> Self {
         let (tx, rx) = mpsc::channel();
 
@@ -89,7 +88,7 @@ impl AdoSpinner {
         if let Some(handle) = self.thread_handle.take() {
             self.tx.send(SpinMessage::Quit)?;
             match handle.join() {
-                Ok(_) => Ok(()),
+                Ok(()) => Ok(()),
                 Err(_) => bail!("Unable to join spinner thread"),
             }
         } else {

@@ -39,7 +39,7 @@ fn load_history(path: &PathBuf) -> Vec<String> {
 
 fn save_history(path: &PathBuf, history: &[String]) {
     let start = history.len().saturating_sub(1000);
-    let content = history[start..].join("\n");
+    let content = history.get(start..).unwrap_or_default().join("\n");
     let _ = fs::write(path, content);
 }
 
@@ -49,8 +49,9 @@ where
 {
     let args = shell_words::split(cmd_line.as_ref()).with_context(|| format!("Unable to split {cmd_line}"))?;
 
-    let out = Command::new(&args[0])
-        .args(&args[1..])
+    let cmd = args.first().with_context(|| format!("Empty command: {cmd_line}"))?;
+    let out = Command::new(cmd)
+        .args(args.get(1..).unwrap_or_default())
         .output()
         .with_context(|| format!("Unable to execute {cmd_line}"))?;
 
@@ -64,15 +65,12 @@ where
 ///////////////////////////////////////////////////////////////////////////////
 impl TerminalConsole {
     pub fn new(commands: &UserCommands) -> Result<Self> {
-        let glow = match which("glow") {
-            Ok(v) => {
-                info!("glow is @ {}", v.display());
-                Some(v)
-            }
-            Err(_) => {
-                warn!("glow is not installed");
-                None
-            }
+        let glow = if let Ok(v) = which("glow") {
+            info!("glow is @ {}", v.display());
+            Some(v)
+        } else {
+            warn!("glow is not installed");
+            None
         };
 
         let config_dir = dirs::config_dir().ok_or(Error::ConfigNotFound)?;
@@ -165,7 +163,7 @@ impl TerminalConsole {
             AdoDataStatus::Ok => "Ok".green(),
         };
 
-        let intent = meta.intent.to_string();
+        let intent = meta.intent.clone();
 
         println!("{} {}", status_str, intent.yellow());
     }
@@ -210,7 +208,7 @@ impl TerminalConsole {
             AdoDataArtifactType::File => {
                 if let Some(path) = &artifact.path {
                     match fs::write(path, artifact.content.as_bytes()) {
-                        Ok(_) => format!("{} was successfully written to disk", path.display()),
+                        Ok(()) => format!("{} was successfully written to disk", path.display()),
                         Err(e) => format!("Unable to write {} to disk. Error: {e}", path.display()),
                     }
                 } else {
@@ -238,9 +236,9 @@ impl TerminalConsole {
         let mut response_entries = vec![];
 
         if let Some(artifact) = &data.response.artifacts {
-            for arti in artifact.iter() {
+            for arti in artifact {
                 if let Some(response) = self.process_partial_artifact(arti) {
-                    response_entries.push(response)
+                    response_entries.push(response);
                 }
             }
         }

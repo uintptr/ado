@@ -52,9 +52,9 @@ impl AdoConfig {
         match &self.source {
             AdoConfigSource::File { path } => {
                 info!("syncing {}", path.display());
-                fs::write(path, toml_file.as_bytes())?
+                fs::write(path, toml_file.as_bytes())?;
             }
-            _ => return Err(Error::NotImplemented),
+            AdoConfigSource::String => return Err(Error::NotImplemented),
         }
 
         Ok(())
@@ -113,6 +113,7 @@ impl AdoConfig {
         Ok(AdoConfig::new(AdoConfigSource::String, config_file))
     }
 
+    #[must_use]
     pub fn llm_provider(&self) -> &str {
         &self.config_file.llm.provider
     }

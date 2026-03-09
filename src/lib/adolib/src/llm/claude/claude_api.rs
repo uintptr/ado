@@ -93,7 +93,15 @@ pub enum ClaudeStopReason {
 
 impl core::fmt::Display for ClaudeStopReason {
     fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
-        write!(f, "{self:?}")
+        let s = match self {
+            Self::EndTurn => "EndTurn",
+            Self::MaxToken => "MaxToken",
+            Self::StopSequence => "StopSequence",
+            Self::ToolUse => "ToolUse",
+            Self::PauseTurn => "PauseTurn",
+            Self::Resusal => "Resusal",
+        };
+        write!(f, "{s}")
     }
 }
 
@@ -202,13 +210,14 @@ impl ClaudeMessages {
     }
 
     pub fn reset(&mut self) {
-        self.messages = vec![]
+        self.messages = vec![];
     }
 }
 
 impl ClaudeApi {
-    pub fn new(config: &ClaudeConfig) -> Result<Self> {
-        Ok(Self { config: config.clone() })
+    #[must_use]
+    pub fn new(config: &ClaudeConfig) -> Self {
+        Self { config: config.clone() }
     }
 
     pub fn models(&self) -> Result<Vec<ClaudeModel>> {
@@ -226,9 +235,10 @@ impl ClaudeApi {
             res.status().as_str()
         );
 
-        match res.status().is_success() {
-            true => info!("{log_msg}"),
-            false => error!("{log_msg}"),
+        if res.status().is_success() {
+            info!("{log_msg}");
+        } else {
+            error!("{log_msg}");
         }
 
         let resp_json = &res.body_mut().read_to_string()?;
@@ -256,9 +266,10 @@ impl ClaudeApi {
             res.status().as_str()
         );
 
-        match res.status().is_success() {
-            true => info!("{log_msg}"),
-            false => error!("{log_msg}"),
+        if res.status().is_success() {
+            info!("{log_msg}");
+        } else {
+            error!("{log_msg}");
         }
 
         let success = res.status().is_success();
@@ -266,22 +277,21 @@ impl ClaudeApi {
         let resp_json = &res.body_mut().read_to_string()?;
 
         if !success {
-            error!("{resp_json}")
+            error!("{resp_json}");
         }
 
         // convert a our struct
-        match serde_json::from_str::<ClaudeResponse>(resp_json) {
-            Ok(v) => Ok(v),
-            Err(_) => {
-                //
-                // Try to print it nicely, best effort
-                //
-                fs::write("/tmp/claude_serde_error.json", resp_json.as_bytes())?;
-                let claude_error: ClaudeError = serde_json::from_str(resp_json)?;
-                let pretty_error = serde_json::to_string_pretty(&claude_error)?;
-                let pretty_error = format!("# Claude Error\n\n```json\n{pretty_error}\n```");
-                Err(Error::LlmError { message: pretty_error })
-            }
+        if let Ok(v) = serde_json::from_str::<ClaudeResponse>(resp_json) {
+            Ok(v)
+        } else {
+            //
+            // Try to print it nicely, best effort
+            //
+            fs::write("/tmp/claude_serde_error.json", resp_json.as_bytes())?;
+            let claude_error: ClaudeError = serde_json::from_str(resp_json)?;
+            let pretty_error = serde_json::to_string_pretty(&claude_error)?;
+            let pretty_error = format!("# Claude Error\n\n```json\n{pretty_error}\n```");
+            Err(Error::LlmError { message: pretty_error })
         }
     }
 

@@ -87,6 +87,7 @@ impl LLMChain {
         }
     }
 
+    #[must_use]
     pub fn models(&self) -> Vec<String> {
         match self {
             LLMChain::Claude(claude) => claude.models(),
@@ -150,6 +151,7 @@ impl LLMChain {
         }
     }
 
+    #[must_use]
     pub fn model(&self) -> &str {
         match self {
             LLMChain::Ollama(ollama) => ollama.model(),
@@ -167,6 +169,7 @@ impl LLMChain {
         }
     }
 
+    #[must_use]
     pub fn usage(&self) -> LLMUsage {
         match self {
             LLMChain::Ollama(ollama) => ollama.usage(),

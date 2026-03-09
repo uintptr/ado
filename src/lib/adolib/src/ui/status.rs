@@ -16,6 +16,7 @@ pub struct StatusInfo {
 }
 
 impl StatusInfo {
+    #[must_use]
     pub fn new(config_file: &AdoConfig, chain: &LLMChain) -> Self {
         let model = chain.model();
 

@@ -72,7 +72,7 @@ impl OllamaChat {
     }
 
     pub fn reset(&mut self) {
-        self.messages = vec![]
+        self.messages = vec![];
     }
 }
 
@@ -82,8 +82,9 @@ pub struct OllamaApi {
 }
 
 impl OllamaApi {
-    pub fn new(config: &ConfigOllama) -> Result<Self> {
-        Ok(Self { config: config.clone() })
+    #[must_use]
+    pub fn new(config: &ConfigOllama) -> Self {
+        Self { config: config.clone() }
     }
 
     pub fn chat(&self, chat: &OllamaChat) -> Result<OllamaChatResponse> {
@@ -100,9 +101,10 @@ impl OllamaApi {
             res.status().as_str()
         );
 
-        match res.status().is_success() {
-            true => info!("{log_msg}"),
-            false => error!("{log_msg}"),
+        if res.status().is_success() {
+            info!("{log_msg}");
+        } else {
+            error!("{log_msg}");
         }
 
         let resp_json = res.body_mut().read_to_string()?;

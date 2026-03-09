@@ -18,7 +18,7 @@ impl OllamaChain {
         let ollama = config.ollama()?;
 
         Ok(Self {
-            api: OllamaApi::new(ollama)?,
+            api: OllamaApi::new(ollama),
             chat: OllamaChat::new(&ollama.model),
         })
     }
@@ -43,7 +43,7 @@ impl LLMChainTrait for OllamaChain {
     where
         S: Into<String>,
     {
-        self.chat.add_content(role, content)
+        self.chat.add_content(role, content);
     }
 
     fn message<S>(&self, content: S) -> Result<String>
@@ -55,7 +55,7 @@ impl LLMChainTrait for OllamaChain {
     }
 
     fn reset(&mut self) {
-        self.chat.reset()
+        self.chat.reset();
     }
 
     fn model(&self) -> &str {
@@ -66,7 +66,7 @@ impl LLMChainTrait for OllamaChain {
     where
         S: Into<String>,
     {
-        self.api.config.model = model.into()
+        self.api.config.model = model.into();
     }
 
     fn usage(&self) -> LLMUsage {

@@ -84,27 +84,20 @@ fn find_matching_files(partial: &str) -> Vec<String> {
         return Vec::new();
     }
 
-    let cwd = match env::current_dir() {
-        Ok(v) => v,
-        Err(_) => return Vec::new(),
-    };
+    let Ok(cwd) = env::current_dir() else { return Vec::new() };
 
     // Treat input as a filename pattern: search **/* then filter case-insensitively
     let pattern = format!("{}/**/*", cwd.display());
     let partial_lower = partial.to_lowercase();
     let mut results = Vec::new();
 
-    let entries = match glob::glob(&pattern) {
-        Ok(v) => v,
-        Err(_) => return Vec::new(),
+    let Ok(entries) = glob::glob(&pattern) else {
+        return Vec::new();
     };
 
     for entry in entries.flatten() {
         // Skip hidden paths (any component starting with .)
-        let rel = match entry.strip_prefix(&cwd) {
-            Ok(v) => v,
-            Err(_) => continue,
-        };
+        let Ok(rel) = entry.strip_prefix(&cwd) else { continue };
 
         if rel.components().any(|c| c.as_os_str().to_string_lossy().starts_with('.')) {
             continue;
@@ -177,7 +170,7 @@ fn accept_suggestion(state: &mut InputState) {
         let cursor = state.cursor();
         let before_at = &line[..at_pos];
         let after_cursor = &line[cursor..];
-        let new_line = format!("{}@{}{}", before_at, suggestion, after_cursor);
+        let new_line = format!("{before_at}@{suggestion}{after_cursor}");
         let new_cursor = at_pos + 1 + suggestion.len();
 
         state.input = Input::new(new_line);
@@ -194,7 +187,7 @@ fn accept_suggestion(state: &mut InputState) {
         }
     } else {
         // Command completion: replace entire input
-        let new_line = format!("/{}", suggestion);
+        let new_line = format!("/{suggestion}");
         state.input = Input::new(new_line);
     }
 
@@ -395,10 +388,7 @@ fn run_event_loop(
                         state.input = Input::default();
                     }
                 }
-                KeyCode::Char('d') if key.modifiers.contains(KeyModifiers::CONTROL) => {
-                    return Ok(InputResult::Eof);
-                }
-                KeyCode::Char('c') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+                KeyCode::Char('d' | 'c') if key.modifiers.contains(KeyModifiers::CONTROL) => {
                     return Ok(InputResult::Eof);
                 }
                 _ => {
