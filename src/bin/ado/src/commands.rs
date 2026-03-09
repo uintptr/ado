@@ -3,6 +3,7 @@ use std::{
     fmt::Display,
     fs,
     io::{self, Write},
+    path::Path,
 };
 
 use adolib::{
@@ -73,6 +74,57 @@ fn load_useful(chain: &mut LLMChain) -> Result<()> {
     Ok(())
 }
 
+fn load_skills_from_path(chain: &mut LLMChain, path: &Path) -> Result<()> {
+    info!("Loading skills from {}", path.display());
+
+    let patt = format!("{}/*.md", path.display());
+
+    for f in glob::glob(&patt)? {
+        if let Ok(md_file) = f {
+            if let Ok(data) = fs::read_to_string(md_file) {
+                chain.add_content(LLMRole::System, data)
+            }
+        }
+    }
+
+    Ok(())
+}
+
+fn load_skills(chain: &mut LLMChain) -> Result<()> {
+    let mut skills_dirs = Vec::new();
+
+    //
+    // Load skills in the user directory
+    //
+    if let Some(config_dir) = dirs::config_dir() {
+        let config_dir = config_dir.join("ado");
+        let skills_dir = config_dir.join("skills");
+
+        skills_dirs.push(skills_dir);
+    }
+
+    //
+    // Load skill in the current directory
+    //
+    if let Ok(cwd) = env::current_dir() {
+        let skills_dir = cwd.join("skills");
+        skills_dirs.push(skills_dir);
+    }
+
+    for dir in skills_dirs {
+        if !dir.exists() {
+            info!("{} doesn't exist", dir.display());
+            continue;
+        }
+
+        if let Err(e) = load_skills_from_path(chain, &dir) {
+            error!("Unable to load skills in {} ({e})", dir.display());
+        }
+    }
+
+    Ok(())
+}
+
 fn init_chain(config: &AdoConfig) -> Result<LLMChain> {
     let mut chain = LLMChain::new(config)?;
 
@@ -84,6 +136,10 @@ fn init_chain(config: &AdoConfig) -> Result<LLMChain> {
 
     if let Err(e) = load_useful(&mut chain) {
         error!("Unable to load useful ({e})");
+    }
+
+    if let Err(e) = load_skills(&mut chain) {
+        error!("Unable to load skills ({e})");
     }
 
     Ok(chain)
