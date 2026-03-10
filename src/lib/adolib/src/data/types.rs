@@ -79,7 +79,7 @@ impl FromStr for AdoData {
         if let Ok(v) = serde_json::from_str::<Value>(s)
             && let Ok(pretty_s) = serde_json::to_string_pretty(&v)
         {
-            info!("\n{pretty_s}\n");
+            info!("\n{pretty_s}");
         }
 
         let data: AdoData = match serde_json::from_str(s) {
