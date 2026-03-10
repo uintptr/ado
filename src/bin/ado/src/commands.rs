@@ -67,10 +67,10 @@ impl UserCommansTrait for CommandModels {
         output.push("Models:".to_string());
 
         for m in chain.models() {
-            if m != cur_model {
-                output.push(format!("* {m}"));
-            } else {
+            if m == cur_model {
                 output.push(format!("* **{m}**"));
+            } else {
+                output.push(format!("* {m}"));
             }
         }
 
@@ -196,10 +196,10 @@ impl UserCommands {
         output.push("Models:".to_string());
 
         for m in self.chain.models() {
-            if m != cur_model {
-                output.push(format!("* {m}"));
-            } else {
+            if m == cur_model {
                 output.push(format!("* **{m}**"));
+            } else {
+                output.push(format!("* {m}"));
             }
         }
 
@@ -216,7 +216,7 @@ impl UserCommands {
         info!("input: {input}");
 
         if let Some(command) = input.as_ref().strip_prefix("/") {
-            for c in self.commands.iter() {
+            for c in &self.commands {
                 if c.name() == command {
                     c.callback(&self.chain, console);
                     return Ok(());
@@ -226,12 +226,11 @@ impl UserCommands {
             let err_msg = "Command Not Found".to_string();
             println!("{}", err_msg.red());
             bail!("Command not found ({command})");
-        } else {
-            //
-            // forward to
-            //
-            self.chain.link(input.as_ref(), console)?;
         }
+        //
+        // forward to
+        //
+        self.chain.link(input.as_ref(), console)?;
         Ok(())
     }
 

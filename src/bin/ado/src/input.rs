@@ -71,7 +71,8 @@ fn find_at_context(line: &str, cursor: usize) -> Option<(usize, String)> {
     let at_pos = before.rfind('@')?;
 
     // No whitespace between @ and cursor
-    let between = &before[at_pos + 1..];
+    let start = at_pos.saturating_add(1);
+    let between = &before[start..];
     if between.contains(' ') {
         return None;
     }
@@ -162,7 +163,9 @@ fn accept_suggestion(state: &mut InputState) {
         return;
     }
 
-    let suggestion = state.suggestions[state.suggestion_index].clone();
+    let Some(suggestion) = state.suggestions.get(state.suggestion_index).cloned() else {
+        return;
+    };
 
     if let Some(at_pos) = state.at_start {
         // @file completion: replace @partial with @suggestion
@@ -171,17 +174,17 @@ fn accept_suggestion(state: &mut InputState) {
         let before_at = &line[..at_pos];
         let after_cursor = &line[cursor..];
         let new_line = format!("{before_at}@{suggestion}{after_cursor}");
-        let new_cursor = at_pos + 1 + suggestion.len();
+        let new_cursor = at_pos.saturating_add(1).saturating_add(suggestion.len());
 
         state.input = Input::new(new_line);
         // Move cursor to correct position
         let current = state.input.cursor();
         if new_cursor < current {
-            for _ in 0..(current - new_cursor) {
+            for _ in 0..current.saturating_sub(new_cursor) {
                 state.input.handle(InputRequest::GoToPrevChar);
             }
         } else {
-            for _ in 0..(new_cursor - current) {
+            for _ in 0..new_cursor.saturating_sub(current) {
                 state.input.handle(InputRequest::GoToNextChar);
             }
         }
@@ -204,17 +207,18 @@ fn history_prev(state: &mut InputState, history: &[String]) {
     match state.history_index {
         None => {
             state.saved_input = state.value().to_string();
-            state.history_index = Some(history.len() - 1);
+            state.history_index = Some(history.len().saturating_sub(1));
         }
         Some(0) => return,
         Some(i) => {
-            state.history_index = Some(i - 1);
+            state.history_index = Some(i.saturating_sub(1));
         }
     }
 
-    if let Some(idx) = state.history_index {
-        let entry = history[idx].clone();
-        state.input = Input::new(entry);
+    if let Some(idx) = state.history_index
+        && let Some(entry) = history.get(idx)
+    {
+        state.input = Input::new(entry.clone());
     }
 }
 
@@ -222,15 +226,17 @@ fn history_next(state: &mut InputState, history: &[String]) {
     match state.history_index {
         None => (),
         Some(i) => {
-            if i + 1 >= history.len() {
+            let next = i.saturating_add(1);
+            if next >= history.len() {
                 // Restore saved input
                 state.history_index = None;
                 let saved = state.saved_input.clone();
                 state.input = Input::new(saved);
             } else {
-                state.history_index = Some(i + 1);
-                let entry = history[i + 1].clone();
-                state.input = Input::new(entry);
+                state.history_index = Some(next);
+                if let Some(entry) = history.get(next) {
+                    state.input = Input::new(entry.clone());
+                }
             }
         }
     }
@@ -246,7 +252,7 @@ pub fn read_line(prompt: &str, history: &mut [String], commands: &[String]) -> R
     let mut terminal = Terminal::with_options(
         backend,
         ratatui::TerminalOptions {
-            viewport: ratatui::Viewport::Inline(MAX_SUGGESTIONS as u16 + 2),
+            viewport: ratatui::Viewport::Inline(u16::try_from(MAX_SUGGESTIONS).unwrap_or(u16::MAX).saturating_add(2)),
         },
     )?;
 
@@ -272,6 +278,124 @@ pub fn read_line(prompt: &str, history: &mut [String], commands: &[String]) -> R
     result
 }
 
+fn to_u16(val: usize) -> u16 {
+    u16::try_from(val).unwrap_or(u16::MAX)
+}
+
+fn draw_frame(
+    frame: &mut ratatui::Frame,
+    state: &InputState,
+    prompt: &str,
+    popup_height: u16,
+) {
+    let area = frame.area();
+
+    let chunks = Layout::vertical([
+        Constraint::Length(popup_height),
+        Constraint::Length(1),
+        Constraint::Min(0),
+    ])
+    .split(area);
+
+    let Some(popup_area) = chunks.first().copied() else { return };
+    let Some(input_area) = chunks.get(1).copied() else { return };
+
+    if state.show_popup && !state.suggestions.is_empty() {
+        let items: Vec<ListItem> = state
+            .suggestions
+            .iter()
+            .enumerate()
+            .map(|(i, s)| {
+                let style = if i == state.suggestion_index {
+                    Style::default()
+                        .bg(Color::DarkGray)
+                        .fg(Color::White)
+                        .add_modifier(Modifier::BOLD)
+                } else {
+                    Style::default().fg(Color::Gray)
+                };
+                ListItem::new(Line::from(Span::styled(s.clone(), style)))
+            })
+            .collect();
+
+        let list = List::new(items).block(
+            Block::default()
+                .borders(Borders::ALL)
+                .border_style(Style::default().fg(Color::DarkGray)),
+        );
+
+        frame.render_widget(Clear, popup_area);
+        frame.render_widget(list, popup_area);
+    }
+
+    let cursor_pos = to_u16(state.cursor()).saturating_add(to_u16(prompt.len()));
+    let input_line = Line::from(vec![
+        Span::styled(prompt, Style::default().fg(Color::Green)),
+        Span::raw(state.value()),
+    ]);
+
+    frame.render_widget(Paragraph::new(input_line), input_area);
+    frame.set_cursor_position((input_area.x.saturating_add(cursor_pos), input_area.y));
+}
+
+fn handle_key(state: &mut InputState, key: event::KeyEvent, history: &[String], commands: &[String]) -> Option<InputResult> {
+    if key.kind == event::KeyEventKind::Release {
+        return None;
+    }
+
+    match key.code {
+        KeyCode::Enter => {
+            if state.show_popup && !state.suggestions.is_empty() {
+                accept_suggestion(state);
+                update_suggestions(state, commands);
+            } else {
+                let line = state.value().to_string();
+                return Some(InputResult::Line(line));
+            }
+        }
+        KeyCode::Tab => {
+            if state.show_popup {
+                accept_suggestion(state);
+                update_suggestions(state, commands);
+            }
+        }
+        KeyCode::Up => {
+            if state.show_popup {
+                if state.suggestion_index > 0 {
+                    state.suggestion_index = state.suggestion_index.saturating_sub(1);
+                }
+            } else {
+                history_prev(state, history);
+            }
+        }
+        KeyCode::Down => {
+            if state.show_popup {
+                if state.suggestion_index.saturating_add(1) < state.suggestions.len() {
+                    state.suggestion_index = state.suggestion_index.saturating_add(1);
+                }
+            } else {
+                history_next(state, history);
+            }
+        }
+        KeyCode::Esc => {
+            if state.show_popup {
+                state.show_popup = false;
+                state.suggestions.clear();
+            } else {
+                state.input = Input::default();
+            }
+        }
+        KeyCode::Char('d' | 'c') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+            return Some(InputResult::Eof);
+        }
+        _ => {
+            state.input.handle_event(&Event::Key(key));
+            update_suggestions(state, commands);
+        }
+    }
+    None
+}
+
 fn run_event_loop(
     terminal: &mut Terminal<CrosstermBackend<io::Stdout>>,
     state: &mut InputState,
@@ -281,121 +405,20 @@ fn run_event_loop(
 ) -> Result<InputResult> {
     loop {
         let popup_height = if state.show_popup {
-            state.suggestions.len().min(MAX_SUGGESTIONS) as u16 + 2 // +2 for borders
+            to_u16(state.suggestions.len().min(MAX_SUGGESTIONS)).saturating_add(2)
         } else {
             0
         };
 
         terminal.draw(|frame| {
-            let area = frame.area();
-
-            // Layout: popup on top, input on bottom
-            let chunks = Layout::vertical([
-                Constraint::Length(popup_height),
-                Constraint::Length(1),
-                Constraint::Min(0), // absorb remaining space
-            ])
-            .split(area);
-
-            // Render popup if visible
-            if state.show_popup && !state.suggestions.is_empty() {
-                let items: Vec<ListItem> = state
-                    .suggestions
-                    .iter()
-                    .enumerate()
-                    .map(|(i, s)| {
-                        let style = if i == state.suggestion_index {
-                            Style::default()
-                                .bg(Color::DarkGray)
-                                .fg(Color::White)
-                                .add_modifier(Modifier::BOLD)
-                        } else {
-                            Style::default().fg(Color::Gray)
-                        };
-                        ListItem::new(Line::from(Span::styled(s.clone(), style)))
-                    })
-                    .collect();
-
-                let list = List::new(items).block(
-                    Block::default()
-                        .borders(Borders::ALL)
-                        .border_style(Style::default().fg(Color::DarkGray)),
-                );
-
-                frame.render_widget(Clear, chunks[0]);
-                frame.render_widget(list, chunks[0]);
-            }
-
-            // Render input line
-            let cursor_pos = state.cursor() as u16 + prompt.len() as u16;
-            let input_line = Line::from(vec![
-                Span::styled(prompt, Style::default().fg(Color::Green)),
-                Span::raw(state.value()),
-            ]);
-
-            frame.render_widget(Paragraph::new(input_line), chunks[1]);
-            frame.set_cursor_position((chunks[1].x + cursor_pos, chunks[1].y));
+            draw_frame(frame, state, prompt, popup_height);
         })?;
 
         if event::poll(Duration::from_millis(50))?
             && let Event::Key(key) = event::read()?
+            && let Some(result) = handle_key(state, key, history, commands)
         {
-            // Skip release events on some terminals
-            if key.kind == event::KeyEventKind::Release {
-                continue;
-            }
-
-            match key.code {
-                KeyCode::Enter => {
-                    if state.show_popup && !state.suggestions.is_empty() {
-                        accept_suggestion(state);
-                        update_suggestions(state, commands);
-                    } else {
-                        let line = state.value().to_string();
-                        return Ok(InputResult::Line(line));
-                    }
-                }
-                KeyCode::Tab => {
-                    if state.show_popup {
-                        accept_suggestion(state);
-                        update_suggestions(state, commands);
-                    }
-                }
-                KeyCode::Up => {
-                    if state.show_popup {
-                        if state.suggestion_index > 0 {
-                            state.suggestion_index -= 1;
-                        }
-                    } else {
-                        history_prev(state, history);
-                    }
-                }
-                KeyCode::Down => {
-                    if state.show_popup {
-                        if state.suggestion_index + 1 < state.suggestions.len() {
-                            state.suggestion_index += 1;
-                        }
-                    } else {
-                        history_next(state, history);
-                    }
-                }
-                KeyCode::Esc => {
-                    if state.show_popup {
-                        state.show_popup = false;
-                        state.suggestions.clear();
-                    } else {
-                        // Clear the line
-                        state.input = Input::default();
-                    }
-                }
-                KeyCode::Char('d' | 'c') if key.modifiers.contains(KeyModifiers::CONTROL) => {
-                    return Ok(InputResult::Eof);
-                }
-                _ => {
-                    state.input.handle_event(&Event::Key(key));
-                    update_suggestions(state, commands);
-                }
-            }
+            return Ok(result);
         }
     }
 }

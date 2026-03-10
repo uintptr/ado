@@ -81,7 +81,7 @@ fn init_logging(verbose: bool) -> Result<()> {
 fn main() -> Result<()> {
     let args = UserArgs::parse();
 
-    init_logging(args.verbose)?;
+    init_logging(true)?;
 
     let config = load_config_local(args.config_file.as_ref())?;
 

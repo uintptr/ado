@@ -181,6 +181,7 @@ impl TerminalConsole {
         self.display_string(data)
     }
 
+    #[allow(clippy::todo)]
     fn display_data_artifact(&self, artifact: &AdoDataArtifact) -> Result<()> {
         match artifact.artifact_type {
             AdoDataArtifactType::Code => self.display_data_code(artifact),
@@ -209,28 +210,26 @@ impl TerminalConsole {
     }
 
     fn process_partial_artifact(artifact: &AdoDataArtifact) -> Option<String> {
-        let response = match artifact.artifact_type {
+        match artifact.artifact_type {
             AdoDataArtifactType::File => {
                 if let Some(path) = &artifact.path {
                     match fs::write(path, artifact.content.as_bytes()) {
-                        Ok(()) => format!("{} was successfully written to disk", path.display()),
-                        Err(e) => format!("Unable to write {} to disk. Error: {e}", path.display()),
+                        Ok(()) => Some(format!("{} was successfully written to disk", path.display())),
+                        Err(e) => Some(format!("Unable to write {} to disk. Error: {e}", path.display())),
                     }
                 } else {
-                    "File path is missing".into()
+                    Some("File path is missing".into())
                 }
             }
             AdoDataArtifactType::Command => match handler_command(&artifact.content) {
-                Ok(v) => v,
-                Err(e) => format!("Unable to execute {}. Error: {e}", artifact.content),
+                Ok(v) => Some(v),
+                Err(e) => Some(format!("Unable to execute {}. Error: {e}", artifact.content)),
             },
             _ => {
                 error!("unhandled type: {}", artifact.artifact_type);
-                todo!()
+                None
             }
-        };
-
-        Some(response)
+        }
     }
 
     fn process_data_partial(&self, data: AdoData) -> Option<String> {

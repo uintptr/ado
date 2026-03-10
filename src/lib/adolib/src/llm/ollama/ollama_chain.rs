@@ -1,7 +1,7 @@
 use crate::{
     config::loader::AdoConfig,
     data::types::AdoData,
-    error::Result,
+    error::{Error, Result},
     llm::{
         chain::{LLMChainTrait, LLMRole, LLMUsage},
         ollama::ollama_api::{OllamaApi, OllamaChat},
@@ -77,7 +77,7 @@ impl LLMChainTrait for OllamaChain {
     }
 
     fn dump_chain(&self) -> Result<AdoData> {
-        unimplemented!()
+        Err(Error::NotImplemented)
     }
 }
 
