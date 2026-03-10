@@ -185,7 +185,11 @@ impl TerminalConsole {
     fn display_data_artifact(&self, artifact: &AdoDataArtifact) -> Result<()> {
         match artifact.artifact_type {
             AdoDataArtifactType::Code => self.display_data_code(artifact),
-            _ => todo!(),
+            AdoDataArtifactType::Note => self.display_string(&artifact.content),
+            _ => {
+                error!("artifact {} was not supported", artifact.artifact_type);
+                todo!()
+            }
         }
     }
 
@@ -209,7 +213,7 @@ impl TerminalConsole {
         None
     }
 
-    fn process_partial_artifact(artifact: &AdoDataArtifact) -> Option<String> {
+    fn process_partial_artifact(&self, artifact: &AdoDataArtifact) -> Option<String> {
         match artifact.artifact_type {
             AdoDataArtifactType::File => {
                 if let Some(path) = &artifact.path {
@@ -241,7 +245,7 @@ impl TerminalConsole {
 
         if let Some(artifact) = &data.response.artifacts {
             for arti in artifact {
-                if let Some(response) = TerminalConsole::process_partial_artifact(arti) {
+                if let Some(response) = self.process_partial_artifact(arti) {
                     response_entries.push(response);
                 }
             }
@@ -263,22 +267,22 @@ impl Drop for TerminalConsole {
 
 impl ConsoleTrait for TerminalConsole {
     fn io(&self, data: AdoData) -> Option<String> {
-        separator();
-
         TerminalConsole::display_meta(&data.meta);
 
-        match data.meta.status {
+        let ret = match data.meta.status {
             AdoDataStatus::Ok => self.display_data_response(data),
             AdoDataStatus::Error => TerminalConsole::display_data_error(&data),
             AdoDataStatus::Partial => self.process_data_partial(data),
-        }
+        };
+        separator();
+        ret
     }
 
     fn print_markdown(&self, s: &str) {
-        separator();
         if let Err(e) = self.display_string(s) {
             error!("{e}");
         }
+        separator();
     }
 
     fn enter_thinking(&self, message: &str) {
