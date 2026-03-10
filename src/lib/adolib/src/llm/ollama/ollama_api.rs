@@ -27,6 +27,16 @@ impl OllamaMessage {
     }
 }
 
+#[derive(Deserialize)]
+pub struct OllamaModel {
+    pub name: String,
+}
+
+#[derive(Deserialize)]
+pub struct OllamaModelResponse {
+    pub models: Vec<OllamaModel>,
+}
+
 #[derive(Debug, Deserialize)]
 pub struct OllamaChatResponse {
     //model: String,
@@ -112,6 +122,31 @@ impl OllamaApi {
         let resp: OllamaChatResponse = serde_json::from_str(&resp_json)?;
 
         Ok(resp)
+    }
+
+    pub fn models(&self) -> Result<Vec<OllamaModel>> {
+        let url = format!("{}/api/tags", self.config.endpoint);
+
+        let mut res = ureq::get(&url).call()?;
+
+        let log_msg = format!(
+            "get {} -> code={} reason={}",
+            url,
+            res.status().as_u16(),
+            res.status().as_str()
+        );
+
+        if res.status().is_success() {
+            info!("{log_msg}");
+        } else {
+            error!("{log_msg}");
+        }
+
+        let resp_json = &res.body_mut().read_to_string()?;
+
+        let resp: OllamaModelResponse = serde_json::from_str(resp_json)?;
+
+        Ok(resp.models)
     }
 
     pub fn message<S>(&self, content: S) -> Result<OllamaChatResponse>
