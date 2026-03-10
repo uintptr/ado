@@ -19,22 +19,62 @@ use crate::intrinsics::IntrinsicPrompts;
 
 pub struct UserCommands {
     chain: LLMChain,
+    commands: Vec<Box<dyn UserCommansTrait + 'static>>,
 }
 
-pub enum UserCommand {
-    Help(String),
-    Model(String),
-    Models(String),
+pub trait UserCommansTrait {
+    fn name(&self) -> &'static str;
+    fn callback(&self, chain: &LLMChain, console: &dyn ConsoleTrait);
 }
 
-impl Display for UserCommand {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let s = match self {
-            UserCommand::Help(_) => "help",
-            UserCommand::Model(_) => "model",
-            UserCommand::Models(_) => "models",
-        };
-        write!(f, "{s}")
+struct CommandHelp;
+struct CommandModels;
+struct CommandReset;
+
+impl UserCommansTrait for CommandReset {
+    fn name(&self) -> &'static str {
+        "reset"
+    }
+
+    fn callback(&self, _chain: &LLMChain, _console: &dyn ConsoleTrait) {
+        let mut stdout = io::stdout();
+        print!("{esc}c", esc = 27 as char);
+
+        if let Err(e) = stdout.flush() {
+            error!("{e}");
+        }
+    }
+}
+
+impl UserCommansTrait for CommandHelp {
+    fn name(&self) -> &'static str {
+        "help"
+    }
+
+    fn callback(&self, _chain: &LLMChain, _console: &dyn ConsoleTrait) {}
+}
+
+impl UserCommansTrait for CommandModels {
+    fn name(&self) -> &'static str {
+        "models"
+    }
+
+    fn callback(&self, chain: &LLMChain, console: &dyn ConsoleTrait) {
+        let mut output = Vec::new();
+
+        let cur_model = chain.model();
+
+        output.push("Models:".to_string());
+
+        for m in chain.models() {
+            if m != cur_model {
+                output.push(format!("* {m}"));
+            } else {
+                output.push(format!("* **{m}**"));
+            }
+        }
+
+        console.print_markdown(&output.join("\n"));
     }
 }
 
@@ -135,25 +175,35 @@ fn init_chain(config: &AdoConfig) -> Result<LLMChain> {
     Ok(chain)
 }
 
-fn command_clear() -> Result<()> {
-    let mut stdout = io::stdout();
-    print!("{esc}c", esc = 27 as char);
-    stdout.flush()?;
-    Ok(())
-}
-
 impl UserCommands {
     pub fn new(config: &AdoConfig) -> Result<Self> {
         let chain = init_chain(config).context("Unable to initialize llm chain")?;
 
-        Ok(Self { chain })
+        let commands: Vec<Box<dyn UserCommansTrait>> =
+            vec![Box::new(CommandHelp {}), Box::new(CommandModels {}), Box::new(CommandReset {})];
+
+        Ok(Self { chain, commands })
     }
 
-    pub fn command_models(&self) -> Result<()> {
-        println!("Models:");
+    pub fn command_models<C>(&self, console: &C) -> Result<()>
+    where
+        C: ConsoleTrait + Send + Sync,
+    {
+        let mut output = Vec::new();
+
+        let cur_model = self.chain.model();
+
+        output.push("Models:".to_string());
+
         for m in self.chain.models() {
-            println!("* {m}");
+            if m != cur_model {
+                output.push(format!("* {m}"));
+            } else {
+                output.push(format!("* **{m}**"));
+            }
         }
+
+        console.print_markdown(&output.join("\n"));
 
         Ok(())
     }
@@ -166,15 +216,16 @@ impl UserCommands {
         info!("input: {input}");
 
         if let Some(command) = input.as_ref().strip_prefix("/") {
-            match command {
-                "models" => self.command_models()?,
-                "clear" | "reset" => command_clear()?,
-                _ => {
-                    let err_msg = "Command Not Found".to_string();
-                    println!("{}", err_msg.red());
-                    bail!("Command not found ({command})");
+            for c in self.commands.iter() {
+                if c.name() == command {
+                    c.callback(&self.chain, console);
+                    return Ok(());
                 }
             }
+
+            let err_msg = "Command Not Found".to_string();
+            println!("{}", err_msg.red());
+            bail!("Command not found ({command})");
         } else {
             //
             // forward to
@@ -185,11 +236,7 @@ impl UserCommands {
     }
 
     #[must_use]
-    pub fn list_commands(&self) -> Vec<UserCommand> {
-        vec![
-            UserCommand::Help("Display help".into()),
-            UserCommand::Model("Switch model".into()),
-            UserCommand::Models("List available models".into()),
-        ]
+    pub fn list_commands(&self) -> &[Box<dyn UserCommansTrait>] {
+        &self.commands
     }
 }

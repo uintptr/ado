@@ -2,6 +2,7 @@ use std::{fmt::Display, path::PathBuf, str::FromStr};
 
 use log::{error, info};
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -75,7 +76,11 @@ impl FromStr for AdoData {
         let s = s.strip_prefix("```json\n").unwrap_or(s);
         let s = s.strip_suffix("\n```").unwrap_or(s);
 
-        info!("{s}");
+        if let Ok(v) = serde_json::from_str::<Value>(s)
+            && let Ok(pretty_s) = serde_json::to_string_pretty(&v)
+        {
+            info!("\n{pretty_s}\n");
+        }
 
         let data: AdoData = match serde_json::from_str(s) {
             Ok(v) => v,

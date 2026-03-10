@@ -15,7 +15,7 @@ use adolib::{
     error::Error,
 };
 use anyhow::{Context, Result};
-use crossterm::style::Stylize;
+use colored::Colorize;
 use log::{error, info, warn};
 use which::which;
 
@@ -32,6 +32,11 @@ pub struct TerminalConsole {
 ///////////////////////////////////////////////////////////////////////////////
 // FUNC
 ///////////////////////////////////////////////////////////////////////////////
+
+pub fn separator() {
+    let width = crossterm::terminal::size().map(|(w, _)| w as usize).unwrap_or(80);
+    println!("{}", "─".repeat(width).green());
+}
 
 fn load_history(path: &PathBuf) -> Vec<String> {
     fs::read_to_string(path).unwrap_or_default().lines().map(String::from).collect()
@@ -84,7 +89,7 @@ impl TerminalConsole {
 
         let mut command_names = Vec::new();
         for c in commands.list_commands() {
-            command_names.push(c.to_string());
+            command_names.push(c.name().to_string());
         }
 
         // Show banner (no full screen clear, preserves scrollback)
@@ -259,6 +264,8 @@ impl Drop for TerminalConsole {
 
 impl ConsoleTrait for TerminalConsole {
     fn io(&self, data: AdoData) -> Option<String> {
+        separator();
+
         TerminalConsole::display_meta(&data.meta);
 
         match data.meta.status {
@@ -268,10 +275,14 @@ impl ConsoleTrait for TerminalConsole {
         }
     }
 
-    fn enter_thinking<M>(&self, message: M)
-    where
-        M: AsRef<str> + Display,
-    {
+    fn print_markdown(&self, s: &str) {
+        separator();
+        if let Err(e) = self.display_string(s) {
+            error!("{e}");
+        }
+    }
+
+    fn enter_thinking(&self, message: &str) {
         info!("spinning {message}");
         self.spinner.start();
     }
