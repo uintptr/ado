@@ -217,6 +217,12 @@ impl TerminalConsole {
         match artifact.artifact_type {
             AdoDataArtifactType::File => {
                 if let Some(path) = &artifact.path {
+                    let s = format!("Writing {} bytes to {}", artifact.content.len(), path.display());
+
+                    if let Err(e) = self.display_string(s) {
+                        error!("{e}");
+                    }
+
                     match fs::write(path, artifact.content.as_bytes()) {
                         Ok(()) => Some(format!("{} was successfully written to disk", path.display())),
                         Err(e) => Some(format!("Unable to write {} to disk. Error: {e}", path.display())),
@@ -225,10 +231,18 @@ impl TerminalConsole {
                     Some("File path is missing".into())
                 }
             }
-            AdoDataArtifactType::Command => match handler_command(&artifact.content) {
-                Ok(v) => Some(v),
-                Err(e) => Some(format!("Unable to execute {}. Error: {e}", artifact.content)),
-            },
+            AdoDataArtifactType::Command => {
+                let s = format!("execting \"{}\"", artifact.content);
+
+                if let Err(e) = self.display_string(s) {
+                    error!("{e}");
+                }
+
+                match handler_command(&artifact.content) {
+                    Ok(v) => Some(v),
+                    Err(e) => Some(format!("Unable to execute {}. Error: {e}", artifact.content)),
+                }
+            }
             _ => {
                 error!("unhandled type: {}", artifact.artifact_type);
                 None
