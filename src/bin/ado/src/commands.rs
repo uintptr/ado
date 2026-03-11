@@ -13,7 +13,6 @@ use adolib::{
 };
 use anyhow::{Context, Result, bail};
 use log::{error, info};
-use ratatui::style::Stylize;
 
 use crate::intrinsics::IntrinsicPrompts;
 
@@ -22,7 +21,7 @@ pub struct UserCommands {
     commands: Vec<Box<dyn UserCommansTrait + 'static>>,
 }
 
-pub trait UserCommansTrait {
+pub trait UserCommansTrait: Send {
     fn name(&self) -> &'static str;
     fn callback(&self, chain: &LLMChain, console: &dyn ConsoleTrait);
 }
@@ -223,8 +222,7 @@ impl UserCommands {
                 }
             }
 
-            let err_msg = "Command Not Found".to_string();
-            println!("{}", err_msg.red());
+            console.print_markdown("**Command Not Found**");
             bail!("Command not found ({command})");
         }
         //

@@ -40,7 +40,7 @@ impl LLMChainTrait for OllamaChain {
 
         if let Ok(ollama_models) = self.api.models() {
             for model in ollama_models {
-                names.push(model.name)
+                names.push(model.name);
             }
         }
         names

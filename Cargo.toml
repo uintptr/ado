@@ -8,6 +8,7 @@ edition = "2024"
 
 [workspace.dependencies]
 adolib = { path = "src/lib/adolib" }
+ansi-to-tui = "8"
 async-trait = "0.1"
 base64 = "0.22"
 chrono = "0.4"

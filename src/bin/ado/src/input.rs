@@ -21,25 +21,25 @@ use ratatui::{
 use tui_input::backend::crossterm::EventHandler;
 use tui_input::{Input, InputRequest};
 
-const MAX_SUGGESTIONS: usize = 7;
+pub(crate) const MAX_SUGGESTIONS: usize = 7;
 
 pub enum InputResult {
     Line(String),
     Eof,
 }
 
-struct InputState {
-    input: Input,
-    history_index: Option<usize>,
-    saved_input: String,
-    suggestions: Vec<String>,
-    suggestion_index: usize,
-    show_popup: bool,
-    at_start: Option<usize>,
+pub(crate) struct InputState {
+    pub(crate) input: Input,
+    pub(crate) history_index: Option<usize>,
+    pub(crate) saved_input: String,
+    pub(crate) suggestions: Vec<String>,
+    pub(crate) suggestion_index: usize,
+    pub(crate) show_popup: bool,
+    pub(crate) at_start: Option<usize>,
 }
 
 impl InputState {
-    fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self {
             input: Input::default(),
             history_index: None,
@@ -51,17 +51,17 @@ impl InputState {
         }
     }
 
-    fn value(&self) -> &str {
+    pub(crate) fn value(&self) -> &str {
         self.input.value()
     }
 
-    fn cursor(&self) -> usize {
+    pub(crate) fn cursor(&self) -> usize {
         self.input.cursor()
     }
 }
 
 // Find the @token context around the cursor
-fn find_at_context(line: &str, cursor: usize) -> Option<(usize, String)> {
+pub(crate) fn find_at_context(line: &str, cursor: usize) -> Option<(usize, String)> {
     let cursor = cursor.min(line.len());
     // Walk back to a valid char boundary
     let cursor = (0..=cursor).rev().find(|&i| line.is_char_boundary(i))?;
@@ -80,7 +80,7 @@ fn find_at_context(line: &str, cursor: usize) -> Option<(usize, String)> {
     Some((at_pos, between.to_string()))
 }
 
-fn find_matching_files(partial: &str) -> Vec<String> {
+pub(crate) fn find_matching_files(partial: &str) -> Vec<String> {
     if partial.is_empty() {
         return Vec::new();
     }
@@ -119,11 +119,11 @@ fn find_matching_files(partial: &str) -> Vec<String> {
     results
 }
 
-fn find_matching_commands(partial: &str, commands: &[String]) -> Vec<String> {
+pub(crate) fn find_matching_commands(partial: &str, commands: &[String]) -> Vec<String> {
     commands.iter().filter(|cmd| cmd.starts_with(partial)).cloned().collect()
 }
 
-fn update_suggestions(state: &mut InputState, commands: &[String]) {
+pub(crate) fn update_suggestions(state: &mut InputState, commands: &[String]) {
     let line = state.value().to_string();
     let cursor = state.cursor();
 
@@ -158,7 +158,7 @@ fn update_suggestions(state: &mut InputState, commands: &[String]) {
     state.at_start = None;
 }
 
-fn accept_suggestion(state: &mut InputState) {
+pub(crate) fn accept_suggestion(state: &mut InputState) {
     if !state.show_popup || state.suggestions.is_empty() {
         return;
     }
@@ -199,7 +199,7 @@ fn accept_suggestion(state: &mut InputState) {
     state.at_start = None;
 }
 
-fn history_prev(state: &mut InputState, history: &[String]) {
+pub(crate) fn history_prev(state: &mut InputState, history: &[String]) {
     if history.is_empty() {
         return;
     }
@@ -222,7 +222,7 @@ fn history_prev(state: &mut InputState, history: &[String]) {
     }
 }
 
-fn history_next(state: &mut InputState, history: &[String]) {
+pub(crate) fn history_next(state: &mut InputState, history: &[String]) {
     match state.history_index {
         None => (),
         Some(i) => {

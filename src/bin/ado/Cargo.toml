@@ -5,6 +5,7 @@ edition.workspace = true
 
 [dependencies]
 adolib.workspace = true
+ansi-to-tui.workspace = true
 clap.workspace = true
 colored.workspace = true
 dirs.workspace = true

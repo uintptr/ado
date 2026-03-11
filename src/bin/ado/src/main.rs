@@ -1,7 +1,7 @@
 use std::fs;
 
-use ado::{commands::UserCommands, terminal::TerminalConsole};
-use adolib::config::loader::AdoConfig;
+use ado::commands::UserCommands;
+use adolib::{config::loader::AdoConfig, error::Error};
 use anyhow::{Context, Result, anyhow};
 use clap::Parser;
 use log::{LevelFilter, error};
@@ -16,32 +16,6 @@ struct UserArgs {
     /// config file path
     #[arg(short, long)]
     config_file: Option<String>,
-}
-
-fn main_loop(mut console: TerminalConsole, mut command: UserCommands) -> Result<()> {
-    loop {
-        let input = match console.read_input() {
-            Ok(v) => v,
-            Err(e) => {
-                if matches!(
-                    e.downcast_ref::<adolib::error::Error>(),
-                    Some(adolib::error::Error::EOF)
-                ) {
-                    break;
-                }
-                return Err(e);
-            }
-        };
-
-        //
-        // process the command
-        //
-        if let Err(e) = command.handler(&input, &console) {
-            error!("{e}");
-        }
-    }
-
-    Ok(())
 }
 
 fn load_config_local(local_config: Option<&String>) -> Result<AdoConfig> {
@@ -60,7 +34,8 @@ fn init_logging(verbose: bool) -> Result<()> {
     let log_dir = data_dir.join(pkg_name);
 
     if !log_dir.exists() {
-        fs::create_dir_all(&log_dir).with_context(|| format!("Unable to create {}", log_dir.display()))?;
+        fs::create_dir_all(&log_dir)
+            .with_context(|| format!("Unable to create {}", log_dir.display()))?;
     }
 
     let log_file = log_dir.join(format!("{pkg_name}.log"));
@@ -87,7 +62,22 @@ fn main() -> Result<()> {
 
     let commands = UserCommands::new(&config)?;
 
-    let console = TerminalConsole::new(&commands)?;
+    // Build the list of command names and history path before moving commands
+    let command_names: Vec<String> =
+        commands.list_commands().iter().map(|c| c.name().to_string()).collect();
 
-    main_loop(console, commands)
+    let config_dir = dirs::config_dir().ok_or(Error::ConfigNotFound)?;
+    let history_file = config_dir.join("history.txt");
+
+    if !config_dir.exists() {
+        fs::create_dir_all(&config_dir)?;
+    }
+
+    let history = ado::tui_app::load_history(&history_file);
+
+    if let Err(e) = ado::tui_app::run(commands, history, &history_file, command_names) {
+        error!("{e}");
+    }
+
+    Ok(())
 }
