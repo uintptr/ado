@@ -124,21 +124,58 @@ impl TuiApp {
         }
     }
 
+    /// Number of visual rows a single output line occupies when wrapped to `width` columns.
+    fn line_visual_rows(line: &Line, width: usize) -> usize {
+        if width == 0 {
+            return 1;
+        }
+        let w = line.width();
+        if w == 0 { 1 } else { (w + width - 1) / width }
+    }
+
+    /// Maximum number of lines to skip so the remaining lines still fill the viewport.
+    /// Returns the line index of the first visible line when auto-scrolled to the bottom.
+    fn max_scroll_lines(&self, output_width: usize, viewport_height: usize) -> usize {
+        // Walk backwards accumulating visual rows until we've filled the viewport.
+        let mut rows = 0usize;
+        for (i, line) in self.output.iter().enumerate().rev() {
+            rows = rows.saturating_add(Self::line_visual_rows(line, output_width));
+            if rows >= viewport_height {
+                return i;
+            }
+        }
+        0
+    }
+
+    /// Total visual rows across all output lines (for scrollbar sizing).
+    fn total_visual_rows(&self, output_width: usize) -> usize {
+        self.output.iter().map(|l| Self::line_visual_rows(l, output_width)).sum()
+    }
+
+    /// Visual row offset corresponding to `scroll_offset` lines skipped.
+    fn visual_scroll_offset(&self, output_width: usize) -> usize {
+        self.output
+            .iter()
+            .take(self.scroll_offset)
+            .map(|l| Self::line_visual_rows(l, output_width))
+            .sum()
+    }
+
     fn scroll_up(&mut self, amount: usize) {
         self.scroll_offset = self.scroll_offset.saturating_sub(amount);
         self.auto_scroll = false;
     }
 
-    fn scroll_down(&mut self, amount: usize, viewport_height: usize) {
-        let max_scroll = self.output.len().saturating_sub(viewport_height);
+    fn scroll_down(&mut self, amount: usize, output_width: usize, viewport_height: usize) {
+        let max_scroll = self.max_scroll_lines(output_width, viewport_height);
         self.scroll_offset = self.scroll_offset.saturating_add(amount).min(max_scroll);
         if self.scroll_offset >= max_scroll {
             self.auto_scroll = true;
         }
     }
 
-    fn clamp_scroll(&mut self, viewport_height: usize) {
-        let max_scroll = self.output.len().saturating_sub(viewport_height);
+    fn clamp_scroll(&mut self, output_width: usize, viewport_height: usize) {
+        let max_scroll = self.max_scroll_lines(output_width, viewport_height);
         if self.auto_scroll {
             self.scroll_offset = max_scroll;
         } else {
@@ -176,11 +213,14 @@ fn render_output_pane(frame: &mut ratatui::Frame, app: &TuiApp, output_area: Rec
     frame.render_widget(Paragraph::new(visible_lines).wrap(Wrap { trim: false }), output_area);
 
     let output_height = output_area.height as usize;
-    if app.output.len() > output_height {
+    let output_width = output_area.width as usize;
+    let total_visual = app.total_visual_rows(output_width);
+    if total_visual > output_height {
         let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
             .begin_symbol(None)
             .end_symbol(None);
-        let mut state = ScrollbarState::new(app.output.len().saturating_sub(output_height)).position(app.scroll_offset);
+        let visual_pos = app.visual_scroll_offset(output_width);
+        let mut state = ScrollbarState::new(total_visual.saturating_sub(output_height)).position(visual_pos);
         frame.render_stateful_widget(scrollbar, output_area, &mut state);
     }
 }
@@ -246,15 +286,24 @@ fn render_input_bar(frame: &mut ratatui::Frame, app: &TuiApp, input_area: Rect) 
     let input_block = Block::default()
         .borders(Borders::ALL)
         .border_style(Style::default().fg(Color::DarkGray));
-    frame.render_widget(Paragraph::new(input_line).block(input_block), input_area);
+    frame.render_widget(
+        Paragraph::new(input_line).block(input_block).wrap(Wrap { trim: false }),
+        input_area,
+    );
 
     if app.mode == AppMode::Input {
-        let cursor_x = input_area
-            .x
-            .saturating_add(1)
-            .saturating_add(u16::try_from(prompt_str.len()).unwrap_or(u16::MAX))
-            .saturating_add(u16::try_from(app.input.cursor()).unwrap_or(u16::MAX));
-        frame.set_cursor_position((cursor_x, input_area.y.saturating_add(1)));
+        // inner width = area width minus 2 border chars
+        let inner_width = input_area.width.saturating_sub(2) as usize;
+        let prompt_len = prompt_str.len();
+        let cursor_offset = prompt_len + app.input.cursor();
+        let (cursor_row, cursor_col) = if inner_width > 0 {
+            (cursor_offset / inner_width, cursor_offset % inner_width)
+        } else {
+            (0, cursor_offset)
+        };
+        let cursor_x = input_area.x.saturating_add(1).saturating_add(u16::try_from(cursor_col).unwrap_or(u16::MAX));
+        let cursor_y = input_area.y.saturating_add(1).saturating_add(u16::try_from(cursor_row).unwrap_or(u16::MAX));
+        frame.set_cursor_position((cursor_x, cursor_y));
     }
 }
 
@@ -267,7 +316,24 @@ fn render(frame: &mut ratatui::Frame, app: &TuiApp) {
         0
     };
 
-    let chunks = Layout::vertical([Constraint::Min(1), Constraint::Length(3)]).split(frame.area());
+    // Calculate how many lines the input needs when wrapped.
+    // inner_width = frame width - 2 borders; prompt is "> " (2 chars)
+    let frame_width = frame.area().width;
+    let inner_width = frame_width.saturating_sub(2) as usize;
+    let input_text_len = if app.mode == AppMode::Input {
+        app.input.value().len() + 2 // 2 for "> "
+    } else {
+        2
+    };
+    let input_lines = if inner_width > 0 {
+        u16::try_from((input_text_len + inner_width - 1) / inner_width).unwrap_or(1).max(1)
+    } else {
+        1
+    };
+    // +2 for top/bottom border
+    let input_height = input_lines.saturating_add(2);
+
+    let chunks = Layout::vertical([Constraint::Min(1), Constraint::Length(input_height)]).split(frame.area());
     let Some(output_area) = chunks.first().copied() else {
         return;
     };
@@ -338,7 +404,7 @@ fn run_event_loop(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>, app: &m
         let output_width = size.width as usize;
 
         app.drain_events(output_width);
-        app.clamp_scroll(output_height);
+        app.clamp_scroll(output_width, output_height);
 
         if app.mode == AppMode::Thinking {
             app.spinner_frame = app.spinner_frame.wrapping_add(1);
@@ -364,7 +430,7 @@ fn run_event_loop(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>, app: &m
                 }
                 KeyCode::PageDown => {
                     let half = output_height / 2;
-                    app.scroll_down(half.max(1), output_height);
+                    app.scroll_down(half.max(1), output_width, output_height);
                 }
                 _ if app.mode == AppMode::Input => {
                     handle_input_key(app, key);
