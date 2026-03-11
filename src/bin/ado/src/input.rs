@@ -282,23 +282,18 @@ fn to_u16(val: usize) -> u16 {
     u16::try_from(val).unwrap_or(u16::MAX)
 }
 
-fn draw_frame(
-    frame: &mut ratatui::Frame,
-    state: &InputState,
-    prompt: &str,
-    popup_height: u16,
-) {
+fn draw_frame(frame: &mut ratatui::Frame, state: &InputState, prompt: &str, popup_height: u16) {
     let area = frame.area();
 
-    let chunks = Layout::vertical([
-        Constraint::Length(popup_height),
-        Constraint::Length(1),
-        Constraint::Min(0),
-    ])
-    .split(area);
+    let chunks =
+        Layout::vertical([Constraint::Length(popup_height), Constraint::Length(1), Constraint::Min(0)]).split(area);
 
-    let Some(popup_area) = chunks.first().copied() else { return };
-    let Some(input_area) = chunks.get(1).copied() else { return };
+    let Some(popup_area) = chunks.first().copied() else {
+        return;
+    };
+    let Some(input_area) = chunks.get(1).copied() else {
+        return;
+    };
 
     if state.show_popup && !state.suggestions.is_empty() {
         let items: Vec<ListItem> = state
@@ -338,7 +333,12 @@ fn draw_frame(
     frame.set_cursor_position((input_area.x.saturating_add(cursor_pos), input_area.y));
 }
 
-fn handle_key(state: &mut InputState, key: event::KeyEvent, history: &[String], commands: &[String]) -> Option<InputResult> {
+fn handle_key(
+    state: &mut InputState,
+    key: event::KeyEvent,
+    history: &[String],
+    commands: &[String],
+) -> Option<InputResult> {
     if key.kind == event::KeyEventKind::Release {
         return None;
     }

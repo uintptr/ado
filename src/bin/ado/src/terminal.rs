@@ -414,7 +414,11 @@ impl TuiConsole {
         match artifact.artifact_type {
             AdoDataArtifactType::File => {
                 if let Some(path) = &artifact.path {
-                    self.send_lines(&format!("Writing {} bytes to {}", artifact.content.len(), path.display()));
+                    self.send_lines(&format!(
+                        "Writing {} bytes to {}",
+                        artifact.content.len(),
+                        path.display()
+                    ));
                     match fs::write(path, artifact.content.as_bytes()) {
                         Ok(()) => Some(format!("{} was successfully written to disk", path.display())),
                         Err(e) => Some(format!("Unable to write {} to disk. Error: {e}", path.display())),
@@ -471,7 +475,11 @@ impl ConsoleTrait for TuiConsole {
                         }
                     }
                 }
-                if results.is_empty() { None } else { Some(results.join(" ")) }
+                if results.is_empty() {
+                    None
+                } else {
+                    Some(results.join(" "))
+                }
             }
         };
 

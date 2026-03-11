@@ -34,8 +34,7 @@ fn init_logging(verbose: bool) -> Result<()> {
     let log_dir = data_dir.join(pkg_name);
 
     if !log_dir.exists() {
-        fs::create_dir_all(&log_dir)
-            .with_context(|| format!("Unable to create {}", log_dir.display()))?;
+        fs::create_dir_all(&log_dir).with_context(|| format!("Unable to create {}", log_dir.display()))?;
     }
 
     let log_file = log_dir.join(format!("{pkg_name}.log"));
@@ -63,8 +62,7 @@ fn main() -> Result<()> {
     let commands = UserCommands::new(&config)?;
 
     // Build the list of command names and history path before moving commands
-    let command_names: Vec<String> =
-        commands.list_commands().iter().map(|c| c.name().to_string()).collect();
+    let command_names: Vec<String> = commands.list_commands().iter().map(|c| c.name().to_string()).collect();
 
     let config_dir = dirs::config_dir().ok_or(Error::ConfigNotFound)?;
     let history_file = config_dir.join("history.txt");
