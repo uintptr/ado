@@ -301,8 +301,14 @@ fn render_input_bar(frame: &mut ratatui::Frame, app: &TuiApp, input_area: Rect) 
         } else {
             (0, cursor_offset)
         };
-        let cursor_x = input_area.x.saturating_add(1).saturating_add(u16::try_from(cursor_col).unwrap_or(u16::MAX));
-        let cursor_y = input_area.y.saturating_add(1).saturating_add(u16::try_from(cursor_row).unwrap_or(u16::MAX));
+        let cursor_x = input_area
+            .x
+            .saturating_add(1)
+            .saturating_add(u16::try_from(cursor_col).unwrap_or(u16::MAX));
+        let cursor_y = input_area
+            .y
+            .saturating_add(1)
+            .saturating_add(u16::try_from(cursor_row).unwrap_or(u16::MAX));
         frame.set_cursor_position((cursor_x, cursor_y));
     }
 }
@@ -326,7 +332,9 @@ fn render(frame: &mut ratatui::Frame, app: &TuiApp) {
         2
     };
     let input_lines = if inner_width > 0 {
-        u16::try_from((input_text_len + inner_width - 1) / inner_width).unwrap_or(1).max(1)
+        u16::try_from((input_text_len + inner_width - 1) / inner_width)
+            .unwrap_or(1)
+            .max(1)
     } else {
         1
     };
