@@ -1,5 +1,6 @@
 use std::{
     fs,
+    io::Write,
     path::{Path, PathBuf},
 };
 
@@ -52,7 +53,11 @@ impl AdoConfig {
         match &self.source {
             AdoConfigSource::File { path } => {
                 info!("syncing {}", path.display());
-                fs::write(path, toml_file.as_bytes())?;
+
+                let mut fd = fs::OpenOptions::new().write(true).truncate(true).create(true).open(path)?;
+
+                fd.lock()?;
+                fd.write_all(toml_file.as_bytes())?;
             }
             AdoConfigSource::String => return Err(Error::NotImplemented),
         }
@@ -118,7 +123,7 @@ impl AdoConfig {
         &self.config_file.llm.provider
     }
 
-    pub fn update_llm<S>(&mut self, llm: S)
+    pub fn llm_provider_update<S>(&mut self, llm: S)
     where
         S: AsRef<str>,
     {

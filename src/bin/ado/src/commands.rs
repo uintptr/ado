@@ -23,19 +23,68 @@ pub struct UserCommands {
 
 pub trait UserCommansTrait: Send {
     fn name(&self) -> &'static str;
-    fn callback(&self, chain: &LLMChain, console: &dyn ConsoleTrait);
+    fn callback(&mut self, input: &str, chain: &mut LLMChain, console: &dyn ConsoleTrait);
 }
 
 struct CommandHelp;
 struct CommandModels;
 struct CommandReset;
+struct CommandModel {
+    config: AdoConfig,
+}
+
+impl CommandModel {
+    pub fn new(config: &AdoConfig) -> Self {
+        Self { config: config.clone() }
+    }
+}
+
+impl UserCommansTrait for CommandModel {
+    fn name(&self) -> &'static str {
+        "model"
+    }
+
+    fn callback(&mut self, input: &str, chain: &mut LLMChain, console: &dyn ConsoleTrait) {
+        let input = input.trim_ascii_start().trim_ascii_end();
+
+        if !input.is_empty() {
+            //
+            // Check that the model actually exists
+            //
+            let models = chain.models();
+
+            for m in models.iter() {
+                info!("model: {m} != {input}");
+            }
+
+            let exists = models.contains(&input.to_string());
+
+            if !exists {
+                let err_msg = format!("{input} does not exist. See /models");
+                console.error_message(&err_msg);
+                return;
+            }
+
+            self.config.llm_provider_update(input);
+
+            if let Err(e) = self.config.sync() {
+                error!("{e}");
+            }
+
+            chain.change_model(input);
+        }
+
+        let s = format!("# Model: {}", self.config.llm_provider());
+        console.print_markdown(&s);
+    }
+}
 
 impl UserCommansTrait for CommandReset {
     fn name(&self) -> &'static str {
         "reset"
     }
 
-    fn callback(&self, _chain: &LLMChain, _console: &dyn ConsoleTrait) {
+    fn callback(&mut self, _input: &str, _chain: &mut LLMChain, _console: &dyn ConsoleTrait) {
         let mut stdout = io::stdout();
         print!("{esc}c", esc = 27 as char);
 
@@ -50,7 +99,7 @@ impl UserCommansTrait for CommandHelp {
         "help"
     }
 
-    fn callback(&self, _chain: &LLMChain, _console: &dyn ConsoleTrait) {}
+    fn callback(&mut self, _input: &str, _chain: &mut LLMChain, _console: &dyn ConsoleTrait) {}
 }
 
 impl UserCommansTrait for CommandModels {
@@ -58,7 +107,7 @@ impl UserCommansTrait for CommandModels {
         "models"
     }
 
-    fn callback(&self, chain: &LLMChain, console: &dyn ConsoleTrait) {
+    fn callback(&mut self, _input: &str, chain: &mut LLMChain, console: &dyn ConsoleTrait) {
         let mut output = Vec::new();
 
         let cur_model = chain.model();
@@ -178,8 +227,14 @@ impl UserCommands {
     pub fn new(config: &AdoConfig) -> Result<Self> {
         let chain = init_chain(config).context("Unable to initialize llm chain")?;
 
-        let commands: Vec<Box<dyn UserCommansTrait>> =
-            vec![Box::new(CommandHelp {}), Box::new(CommandModels {}), Box::new(CommandReset {})];
+        let command_model = CommandModel::new(config);
+
+        let commands: Vec<Box<dyn UserCommansTrait>> = vec![
+            Box::new(CommandHelp {}),
+            Box::new(CommandModels {}),
+            Box::new(CommandReset {}),
+            Box::new(command_model),
+        ];
 
         Ok(Self { chain, commands })
     }
@@ -215,9 +270,9 @@ impl UserCommands {
         info!("input: {input}");
 
         if let Some(command) = input.as_ref().strip_prefix("/") {
-            for c in &self.commands {
-                if c.name() == command {
-                    c.callback(&self.chain, console);
+            for c in &mut self.commands {
+                if let Some(args) = command.strip_prefix(c.name()) {
+                    c.callback(args, &mut self.chain, console);
                     return Ok(());
                 }
             }

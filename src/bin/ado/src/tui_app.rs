@@ -130,7 +130,7 @@ impl TuiApp {
             return 1;
         }
         let w = line.width();
-        if w == 0 { 1 } else { (w + width - 1) / width }
+        if w == 0 { 1 } else { w.div_ceil(width) }
     }
 
     /// Maximum number of lines to skip so the remaining lines still fill the viewport.
@@ -295,9 +295,11 @@ fn render_input_bar(frame: &mut ratatui::Frame, app: &TuiApp, input_area: Rect) 
         // inner width = area width minus 2 border chars
         let inner_width = input_area.width.saturating_sub(2) as usize;
         let prompt_len = prompt_str.len();
-        let cursor_offset = prompt_len + app.input.cursor();
+        let cursor_offset = prompt_len.saturating_add(app.input.cursor());
         let (cursor_row, cursor_col) = if inner_width > 0 {
-            (cursor_offset / inner_width, cursor_offset % inner_width)
+            let row = cursor_offset.checked_div(inner_width).unwrap_or(0);
+            let col = cursor_offset.checked_rem(inner_width).unwrap_or(0);
+            (row, col)
         } else {
             (0, cursor_offset)
         };
@@ -327,12 +329,12 @@ fn render(frame: &mut ratatui::Frame, app: &TuiApp) {
     let frame_width = frame.area().width;
     let inner_width = frame_width.saturating_sub(2) as usize;
     let input_text_len = if app.mode == AppMode::Input {
-        app.input.value().len() + 2 // 2 for "> "
+        app.input.value().len().saturating_add(2) // 2 for "> "
     } else {
         2
     };
     let input_lines = if inner_width > 0 {
-        u16::try_from((input_text_len + inner_width - 1) / inner_width)
+        u16::try_from(input_text_len.div_ceil(inner_width))
             .unwrap_or(1)
             .max(1)
     } else {
