@@ -8,13 +8,10 @@ edition = "2024"
 
 [workspace.dependencies]
 adolib = { path = "src/lib/adolib" }
-ansi-to-tui = "8"
 anyhow = "1.0"
-async-trait = "0.1"
 base64 = "0.22"
 chrono = "0.4"
 clap = { version = "4.5", features = ["derive", "suggestions"] }
-colored = "3.1"
 crossterm = "0.29"
 dirs = "6.0"
 env_logger = "0.11"
@@ -22,7 +19,6 @@ figlet-rs = "0.1"
 glob = "0.3"
 home = "0.5"
 log = "0.4"
-ratatui = { version = "0.30", features = ["crossterm"] }
 rust-embed = { version = "8.11", features = ["debug-embed"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
@@ -30,7 +26,6 @@ shell-words = "1.1"
 tempfile = "3.27"
 thiserror = "2"
 toml = "1.0"
-tui-input = "0.15"
 ureq = { version = "3.2", features = ["json"] }
 uuid = { version = "1.22", features = ["v4"] }
 vergen-git2 = { version = "9.1", features = ["build"] }

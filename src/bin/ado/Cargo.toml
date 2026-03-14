@@ -12,11 +12,11 @@ figlet-rs.workspace = true
 log.workspace = true
 rust-embed.workspace = true
 crossterm.workspace = true
-tui-input.workspace = true
 which.workspace = true
 anyhow.workspace = true
 shell-words.workspace = true
 glob.workspace = true
+reedline = "0.46"
 
 [lints]
 workspace = true

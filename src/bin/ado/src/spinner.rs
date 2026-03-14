@@ -27,17 +27,23 @@ pub struct AdoSpinner {
 fn draw_box(stdout: &mut io::Stdout, frame: &str) {
     let w = ui::terminal_width();
     let inner = w.saturating_sub(2);
+    let dashes = "─".repeat(inner);
 
-    let title = format!("{frame} Thinking...");
-    let top = ui::format_top_border(&title, w);
-    let bottom = ui::format_bottom_border(w);
+    // Top border with spinner title embedded
+    let title = format!(" {frame} Thinking... ");
+    let title_len = title.len();
+    let fill = inner.saturating_sub(title_len).saturating_sub(1); // -1 for leading ─
+    let top = format!("┌─{title}{}┐", "─".repeat(fill));
+
+    let content = format!("│{}│", " ".repeat(inner));
+    let bottom = format!("└{dashes}┘");
 
     let _ = execute!(
         stdout,
         cursor::MoveToColumn(0),
         terminal::Clear(terminal::ClearType::FromCursorDown),
         style::SetForegroundColor(style::Color::DarkGrey),
-        style::Print(format!("{top}\n│{}│\n{bottom}", " ".repeat(inner))),
+        style::Print(format!("{top}\n{content}\n{bottom}")),
         style::ResetColor,
         // Move back to top of box for next frame redraw
         cursor::MoveUp(2),

@@ -65,15 +65,13 @@ fn main() -> Result<()> {
     let command_names: Vec<String> = commands.list_commands().iter().map(|c| c.name().to_string()).collect();
 
     let config_dir = dirs::config_dir().ok_or(Error::ConfigNotFound)?;
-    let history_file = config_dir.join("history.txt");
+    let history_file = config_dir.join("ado").join("history.txt");
 
     if !config_dir.exists() {
         fs::create_dir_all(&config_dir)?;
     }
 
-    let history = ado::tui_app::load_history(&history_file);
-
-    if let Err(e) = ado::tui_app::run(commands, history, &history_file, &command_names) {
+    if let Err(e) = ado::tui_app::run(commands, &history_file, command_names) {
         error!("{e}");
     }
 
