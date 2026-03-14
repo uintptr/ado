@@ -1,12 +1,12 @@
 use std::{fmt::Display, vec};
 
-use log::{error, info};
+use log::error;
 use serde::{Deserialize, Serialize};
-use ureq::AsSendBody;
 
 use crate::{
-    error::{Error, Result},
+    error::Result,
     llm::{chain::LLMRole, ollama::ollama_config::ConfigOllama},
+    rest::{rest_delete, rest_get, rest_post},
 };
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -36,6 +36,12 @@ pub struct OllamaModel {
 #[derive(Deserialize)]
 pub struct OllamaModelResponse {
     pub models: Vec<OllamaModel>,
+}
+
+#[derive(Serialize)]
+struct OllamaGenerate<'a> {
+    model: &'a str,
+    keep_alive: i32,
 }
 
 #[derive(Debug, Deserialize)]
@@ -99,87 +105,26 @@ impl OllamaApi {
         Self { config: config.clone() }
     }
 
-    fn _ollama_delete(&self, url: &str) -> Result<()> {
-        let res = ureq::delete(url).call()?;
-
-        let log_msg = format!(
-            "get {} -> code={} reason={}",
-            url,
-            res.status().as_u16(),
-            res.status().as_str()
-        );
-
-        if res.status().is_success() {
-            info!("{log_msg}");
-            Ok(())
-        } else {
-            error!("{log_msg}");
-            Err(Error::HttpDeleteFailure)
-        }
-    }
-
-    fn ollama_post(&self, url: &str, data: impl AsSendBody) -> Result<String> {
-        let mut res = ureq::post(url).header("Content-Type", "application/json").send(data)?;
-
-        let log_msg = format!(
-            "post {} -> code={} reason={}",
-            url,
-            res.status().as_u16(),
-            res.status().as_str()
-        );
-
-        if res.status().is_success() {
-            info!("{log_msg}");
-        } else {
-            error!("{log_msg}");
-        }
-
-        let resp_json = res.body_mut().read_to_string()?;
-
-        Ok(resp_json)
-    }
-
-    fn ollama_get(&self, url: &str) -> Result<String> {
-        let mut res = ureq::get(url).call()?;
-
-        let log_msg = format!(
-            "get {} -> code={} reason={}",
-            url,
-            res.status().as_u16(),
-            res.status().as_str()
-        );
-
-        if res.status().is_success() {
-            info!("{log_msg}");
-        } else {
-            error!("{log_msg}");
-        }
-
-        let resp_json = res.body_mut().read_to_string()?;
-
-        Ok(resp_json)
-    }
-
-    fn _list_running_models(&self) -> Result<Vec<OllamaModel>> {
+    fn list_running_models(&self) -> Result<Vec<OllamaModel>> {
         let url = format!("{}/api/ps", self.config.endpoint);
 
-        let resp_json = self.ollama_get(&url)?;
+        let resp_json = rest_get(&url)?;
 
         let models: OllamaModelResponse = serde_json::from_str(&resp_json)?;
 
         Ok(models.models)
     }
 
-    fn _stop_model(&self, model: &str) -> Result<()> {
+    fn stop_model(&self, model: &str) -> Result<()> {
         let url = format!("{}/api/models/{model}", self.config.endpoint);
-        self._ollama_delete(&url)
+        rest_delete(&url)
     }
 
-    fn _stop_all(&self) -> Result<()> {
-        let running_models = self._list_running_models()?;
+    fn stop_all(&self) -> Result<()> {
+        let running_models = self.list_running_models()?;
 
         for m in running_models {
-            if let Err(e) = self._stop_model(&m.name) {
+            if let Err(e) = self.stop_model(&m.name) {
                 error!("Unable to stop {}. Error: {e}", m.name);
             }
         }
@@ -187,12 +132,25 @@ impl OllamaApi {
         Ok(())
     }
 
-    pub fn chat(&self, chat: &OllamaChat) -> Result<OllamaChatResponse> {
-        let req_json = serde_json::to_string_pretty(&chat)?;
+    fn start_model<S>(&self, model: S) -> Result<()>
+    where
+        S: AsRef<str> + Display,
+    {
+        let url = format!("{}/api/generate", self.config.endpoint);
 
+        let request = OllamaGenerate {
+            model: model.as_ref(),
+            keep_alive: self.config.keep_alive,
+        };
+
+        rest_post(&url, &request)?;
+        Ok(())
+    }
+
+    pub fn chat(&self, chat: &OllamaChat) -> Result<OllamaChatResponse> {
         let url = format!("{}/api/chat", self.config.endpoint);
 
-        let resp_json = self.ollama_post(&url, &req_json)?;
+        let resp_json = rest_post(&url, &chat)?;
 
         let resp: OllamaChatResponse = serde_json::from_str(&resp_json)?;
 
@@ -202,7 +160,7 @@ impl OllamaApi {
     pub fn models(&self) -> Result<Vec<OllamaModel>> {
         let url = format!("{}/api/tags", self.config.endpoint);
 
-        let resp_json = self.ollama_get(&url)?;
+        let resp_json = rest_get(&url)?;
 
         let resp: OllamaModelResponse = serde_json::from_str(&resp_json)?;
 
@@ -220,11 +178,12 @@ impl OllamaApi {
         self.chat(&chat)
     }
 
-    pub fn _set_model<S>(&self, _model: S) -> Result<()>
+    pub fn set_model<S>(&self, model: S) -> Result<()>
     where
         S: AsRef<str> + Display,
     {
-        Ok(())
+        self.stop_all()?;
+        self.start_model(model)
     }
 }
 
@@ -241,6 +200,7 @@ mod tests {
             endpoint: host,
             model: "llama3".to_string(),
             thinking: false,
+            keep_alive: 30,
         })
     }
 
@@ -249,6 +209,10 @@ mod tests {
         let config = if let Ok(v) = make_config() { v } else { return };
         let api = OllamaApi::new(&config);
 
-        api._set_model("qwen3.5:4B").unwrap();
+        let models = api.models().unwrap();
+
+        for m in &models {
+            api.set_model(&m.name).unwrap();
+        }
     }
 }

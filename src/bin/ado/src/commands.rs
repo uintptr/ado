@@ -53,7 +53,7 @@ impl UserCommansTrait for CommandModel {
             //
             let models = chain.models();
 
-            for m in models.iter() {
+            for m in &models {
                 info!("model: {m} != {input}");
             }
 

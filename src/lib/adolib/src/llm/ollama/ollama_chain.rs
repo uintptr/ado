@@ -75,9 +75,7 @@ impl LLMChainTrait for OllamaChain {
     where
         S: AsRef<str> + Display,
     {
-        //self.api.set_model(&model)?;
-        self.api.config.model = model.as_ref().to_string();
-
+        self.api.set_model(&model)?;
         Ok(())
     }
 
