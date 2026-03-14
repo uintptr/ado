@@ -14,6 +14,8 @@ use crossterm::{
 use tui_input::backend::crossterm::EventHandler;
 use tui_input::{Input, InputRequest};
 
+use crate::ui;
+
 pub(crate) const MAX_SUGGESTIONS: usize = 7;
 
 pub enum InputResult {
@@ -224,40 +226,69 @@ pub(crate) fn history_next(state: &mut InputState, history: &[String]) {
     }
 }
 
-/// Render the prompt, input value, and any suggestions below.
-/// Returns the number of suggestion lines rendered below the input.
-fn render(stdout: &mut io::Stdout, state: &InputState, prompt: &str, prev_popup_lines: usize) -> io::Result<usize> {
-    // Move back up to clear previous popup lines
-    if prev_popup_lines > 0 {
-        // We're currently at the end of the last popup line (or input line if popup was cleared).
-        // Move up past all popup lines to get back to the input line.
-        queue!(stdout, cursor::MoveUp(u16::try_from(prev_popup_lines).unwrap_or(u16::MAX)))?;
+/// Render the input box with optional suggestions below.
+/// After rendering, the cursor is positioned on the content line inside the box.
+/// `redraw` indicates whether a previous box is on screen (cursor on content line).
+fn render(stdout: &mut io::Stdout, state: &InputState, prompt: &str, redraw: bool) -> io::Result<()> {
+    let w = ui::terminal_width();
+    let inner_w = w.saturating_sub(2);
+
+    if redraw {
+        // Cursor is on the content line from last render. Move up 1 to top border.
+        queue!(stdout, cursor::MoveUp(1))?;
     }
 
-    // Clear from input line down (clears old popup too)
+    // Clear from top border down (removes old box + suggestions)
+    queue!(stdout, cursor::MoveToColumn(0), terminal::Clear(ClearType::FromCursorDown))?;
+
+    // Build all three lines from the same inner_w to guarantee alignment
+    let dashes = "─".repeat(inner_w);
+
+    // ── Top border ──
     queue!(
         stdout,
-        cursor::MoveToColumn(0),
-        terminal::Clear(ClearType::FromCursorDown),
+        style::SetForegroundColor(style::Color::DarkGrey),
+        style::Print(format!("┌{dashes}┐\n")),
+        style::ResetColor,
     )?;
 
-    // Print prompt + input value
+    // ── Content line: │ > input_value ...padding... │ ──
+    // Build the interior as a fixed-width string
+    let content = format!(" {prompt}{}", state.value());
+    let content_cols = content.len(); // ASCII — bytes == columns
+    let padding = inner_w.saturating_sub(content_cols);
     queue!(
         stdout,
+        style::SetForegroundColor(style::Color::DarkGrey),
+        style::Print("│"),
+        style::ResetColor,
+        style::Print(" "),
         style::SetForegroundColor(style::Color::Green),
         style::Print(prompt),
         style::ResetColor,
         style::Print(state.value()),
+        style::Print(" ".repeat(padding)),
+        style::SetForegroundColor(style::Color::DarkGrey),
+        style::Print("│\n"),
+        style::ResetColor,
     )?;
 
-    // Render suggestions below
+    // ── Bottom border ──
+    queue!(
+        stdout,
+        style::SetForegroundColor(style::Color::DarkGrey),
+        style::Print(format!("└{dashes}┘")),
+        style::ResetColor,
+    )?;
+
+    // ── Suggestions below the box ──
     let popup_lines = if state.show_popup && !state.suggestions.is_empty() {
         let count = state.suggestions.len().min(MAX_SUGGESTIONS);
         for (i, s) in state.suggestions.iter().take(count).enumerate() {
+            queue!(stdout, style::Print("\n"))?;
             if i == state.suggestion_index {
                 queue!(
                     stdout,
-                    style::Print("\n"),
                     style::SetBackgroundColor(style::Color::DarkGrey),
                     style::SetForegroundColor(style::Color::White),
                     style::SetAttribute(Attribute::Bold),
@@ -268,7 +299,6 @@ fn render(stdout: &mut io::Stdout, state: &InputState, prompt: &str, prev_popup_
             } else {
                 queue!(
                     stdout,
-                    style::Print("\n"),
                     style::SetForegroundColor(style::Color::Grey),
                     style::Print(format!("  {s}")),
                     style::ResetColor,
@@ -280,15 +310,17 @@ fn render(stdout: &mut io::Stdout, state: &InputState, prompt: &str, prev_popup_
         0
     };
 
-    // Move cursor back to the input line at the correct column
-    if popup_lines > 0 {
-        queue!(stdout, cursor::MoveUp(u16::try_from(popup_lines).unwrap_or(u16::MAX)))?;
-    }
-    let cursor_col = prompt.len().saturating_add(state.cursor());
-    queue!(stdout, cursor::MoveToColumn(u16::try_from(cursor_col).unwrap_or(u16::MAX)))?;
+    // ── Position cursor on the content line ──
+    // From current position (end of bottom border or last suggestion),
+    // move up to the content line (row 1 of the box).
+    let lines_below_content = 1_usize.saturating_add(popup_lines); // bottom border + suggestions
+    queue!(stdout, cursor::MoveUp(ui::to_u16(lines_below_content)))?;
 
-    stdout.flush()?;
-    Ok(popup_lines)
+    // Column: │(0) + space(1) + prompt + cursor_pos
+    let cursor_col = 2_usize.saturating_add(prompt.len()).saturating_add(state.cursor());
+    queue!(stdout, cursor::MoveToColumn(ui::to_u16(cursor_col)))?;
+
+    stdout.flush()
 }
 
 fn handle_key(
@@ -360,9 +392,9 @@ pub fn read_line(prompt: &str, history: &mut [String], commands: &[String]) -> R
     execute!(stdout, cursor::Show)?;
 
     let mut state = InputState::new();
-    let mut prev_popup_lines = 0;
 
-    prev_popup_lines = render(&mut stdout, &state, prompt, prev_popup_lines)?;
+    // First draw (no previous box to clear)
+    render(&mut stdout, &state, prompt, false)?;
 
     let result = loop {
         if !event::poll(Duration::from_millis(50))? {
@@ -372,21 +404,18 @@ pub fn read_line(prompt: &str, history: &mut [String], commands: &[String]) -> R
             if let Some(result) = handle_key(&mut state, key, history, commands) {
                 break result;
             }
-            prev_popup_lines = render(&mut stdout, &state, prompt, prev_popup_lines)?;
+            render(&mut stdout, &state, prompt, true)?;
         }
     };
 
-    // Clean up: clear popup lines, move to a fresh line
-    if prev_popup_lines > 0 {
-        // Already on input line; clear popup below
-        queue!(
-            stdout,
-            cursor::MoveToColumn(0),
-            terminal::Clear(ClearType::FromCursorDown),
-        )?;
-    }
-    // Move to start of next line
-    execute!(stdout, style::Print("\r\n"))?;
+    // Clean up: cursor is on content line. Move up 1 to top border, clear everything.
+    queue!(
+        stdout,
+        cursor::MoveUp(1),
+        cursor::MoveToColumn(0),
+        terminal::Clear(ClearType::FromCursorDown),
+    )?;
+    stdout.flush()?;
 
     terminal::disable_raw_mode()?;
 

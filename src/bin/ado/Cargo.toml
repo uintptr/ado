@@ -6,7 +6,6 @@ edition.workspace = true
 [dependencies]
 adolib.workspace = true
 clap.workspace = true
-colored.workspace = true
 dirs.workspace = true
 env_logger.workspace = true
 figlet-rs.workspace = true

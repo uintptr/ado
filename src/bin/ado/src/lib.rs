@@ -5,3 +5,4 @@ pub mod intrinsics;
 pub mod spinner;
 pub mod terminal;
 pub mod tui_app;
+pub(crate) mod ui;

@@ -72,7 +72,7 @@ impl UserCommansTrait for CommandModel {
             }
 
             if let Err(e) = chain.change_model(input) {
-                error!("Unable to change model. {e}")
+                error!("Unable to change model. {e}");
             }
         }
 

@@ -1,13 +1,15 @@
 use std::{
-    io::{self, Write},
+    io,
     sync::mpsc::{self, Receiver, Sender, TryRecvError},
     thread::{self, JoinHandle, sleep},
     time::Duration,
 };
 
 use anyhow::{Result, bail};
-use colored::Colorize;
+use crossterm::{cursor, execute, style, terminal};
 use log::{error, info};
+
+use crate::ui;
 
 const FRAMES: &[&str] = &["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
 
@@ -20,6 +22,35 @@ enum SpinMessage {
 pub struct AdoSpinner {
     tx: Sender<SpinMessage>,
     thread_handle: Option<JoinHandle<()>>,
+}
+
+fn draw_box(stdout: &mut io::Stdout, frame: &str) {
+    let w = ui::terminal_width();
+    let inner = w.saturating_sub(2);
+
+    let title = format!("{frame} Thinking...");
+    let top = ui::format_top_border(&title, w);
+    let bottom = ui::format_bottom_border(w);
+
+    let _ = execute!(
+        stdout,
+        cursor::MoveToColumn(0),
+        terminal::Clear(terminal::ClearType::FromCursorDown),
+        style::SetForegroundColor(style::Color::DarkGrey),
+        style::Print(format!("{top}\n│{}│\n{bottom}", " ".repeat(inner))),
+        style::ResetColor,
+        // Move back to top of box for next frame redraw
+        cursor::MoveUp(2),
+        cursor::MoveToColumn(0),
+    );
+}
+
+fn clear_box(stdout: &mut io::Stdout) {
+    let _ = execute!(
+        stdout,
+        cursor::MoveToColumn(0),
+        terminal::Clear(terminal::ClearType::FromCursorDown),
+    );
 }
 
 fn spinner(rx: &Receiver<SpinMessage>) {
@@ -35,20 +66,13 @@ fn spinner(rx: &Receiver<SpinMessage>) {
 
         // Keep spinning until Stop arrives
         for frame in FRAMES.iter().cycle() {
-            print!("\r{}", frame.green());
+            draw_box(&mut stdout, frame);
 
-            if let Err(e) = stdout.flush() {
-                error!("Unable to flush stdout ({e})");
-            }
-
-            thread::sleep(Duration::from_millis(50));
+            thread::sleep(Duration::from_millis(80));
 
             match rx.try_recv() {
                 Ok(SpinMessage::Stop) => {
-                    print!("            \r");
-                    if let Err(e) = stdout.flush() {
-                        error!("Unable to flush stdout ({e})");
-                    }
+                    clear_box(&mut stdout);
                     break;
                 }
                 Ok(SpinMessage::Quit) | Err(TryRecvError::Disconnected) => return,
