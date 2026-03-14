@@ -5,7 +5,6 @@ edition.workspace = true
 
 [dependencies]
 adolib.workspace = true
-ansi-to-tui.workspace = true
 clap.workspace = true
 colored.workspace = true
 dirs.workspace = true
@@ -13,7 +12,6 @@ env_logger.workspace = true
 figlet-rs.workspace = true
 log.workspace = true
 rust-embed.workspace = true
-ratatui.workspace = true
 crossterm.workspace = true
 tui-input.workspace = true
 which.workspace = true

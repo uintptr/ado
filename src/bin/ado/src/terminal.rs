@@ -1,10 +1,9 @@
 use std::{
     fmt::Display,
     fs,
-    io::Write,
+    io::{self, Write},
     path::PathBuf,
     process::{Command, Stdio},
-    sync::mpsc::Sender,
 };
 
 pub const PKG_VERSION: &str = env!("CARGO_PKG_VERSION");
@@ -15,13 +14,11 @@ use adolib::{
     data::types::{AdoData, AdoDataArtifact, AdoDataArtifactType, AdoDataStatus},
 };
 use anyhow::{Context, Result};
+use crossterm::{execute, style, terminal};
 use log::{error, info};
 use which::which;
 
-use ansi_to_tui::IntoText;
-use ratatui::{style::{Color, Style}, text::{Line, Span}};
-
-use crate::tui_app::TuiEvent;
+use crate::spinner::AdoSpinner;
 
 fn handler_command<S>(cmd_line: S) -> Result<String>
 where
@@ -41,58 +38,54 @@ where
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// TuiConsole — routes all output through a channel for the split-pane TUI
+// Console — prints directly to stdout
 ///////////////////////////////////////////////////////////////////////////////
 
-pub struct TuiConsole {
-    tx: Sender<TuiEvent>,
+pub struct Console {
     glow: Option<PathBuf>,
+    spinner: AdoSpinner,
 }
 
-impl TuiConsole {
+impl Default for Console {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Console {
     #[must_use]
-    pub fn new(tx: Sender<TuiEvent>) -> Self {
+    pub fn new() -> Self {
         let glow = which("glow").ok();
-        Self { tx, glow }
-    }
-
-    fn send(&self, event: TuiEvent) {
-        let _ = self.tx.send(event);
-    }
-
-    fn send_lines(&self, text: &str) {
-        for line in text.lines() {
-            self.send(TuiEvent::PlainLine(line.to_string()));
-        }
-        if text.ends_with('\n') {
-            self.send(TuiEvent::PlainLine(String::new()));
+        Self {
+            glow,
+            spinner: AdoSpinner::new(),
         }
     }
 
-    /// Convert raw ANSI bytes from glow into owned ratatui `Line<'static>` objects.
-    fn ansi_to_lines(bytes: &[u8]) -> Vec<Line<'static>> {
-        match bytes.into_text() {
-            Ok(text) => text
-                .lines
-                .into_iter()
-                .map(|line| {
-                    Line::from(
-                        line.spans
-                            .into_iter()
-                            .map(|span| Span::styled(span.content.into_owned(), span.style))
-                            .collect::<Vec<_>>(),
-                    )
-                })
-                .collect(),
-            Err(_) => String::from_utf8_lossy(bytes)
-                .lines()
-                .map(|l| Line::from(l.to_string()))
-                .collect(),
-        }
+    #[allow(clippy::unused_self)]
+    fn print_separator(&self) {
+        let width = terminal::size().map(|(w, _)| w as usize).unwrap_or(80);
+        let sep = "─".repeat(width.min(500));
+        let mut stdout = io::stdout();
+        let _ = execute!(
+            stdout,
+            style::SetForegroundColor(style::Color::DarkGrey),
+            style::Print(format!("{sep}\n")),
+            style::ResetColor
+        );
     }
 
-    /// Render `text` via glow (ANSI styled) if available, otherwise send as plain lines.
-    /// stderr is suppressed so glow can never corrupt the TUI alternate screen.
+    #[allow(clippy::unused_self)]
+    fn print_lines(&self, text: &str) {
+        let mut stdout = io::stdout();
+        let _ = stdout.write_all(text.as_bytes());
+        if !text.ends_with('\n') {
+            let _ = stdout.write_all(b"\n");
+        }
+        let _ = stdout.flush();
+    }
+
+    /// Render `text` via glow if available, otherwise print plain.
     fn display_text(&self, text: &str) {
         if let Some(glow_path) = &self.glow {
             let result = Command::new(glow_path)
@@ -100,8 +93,6 @@ impl TuiConsole {
                 .arg("0")
                 .arg("-s")
                 .arg("dark")
-                .env("CLICOLOR_FORCE", "1")
-                .env("COLORTERM", "truecolor")
                 .stdin(Stdio::piped())
                 .stdout(Stdio::piped())
                 .stderr(Stdio::null())
@@ -117,14 +108,13 @@ impl TuiConsole {
                 && output.status.success()
                 && !output.stdout.is_empty()
             {
-                let lines = Self::ansi_to_lines(&output.stdout);
-                if !lines.is_empty() {
-                    self.send(TuiEvent::StyledLines(lines));
-                    return;
-                }
+                let mut stdout = io::stdout();
+                let _ = stdout.write_all(&output.stdout);
+                let _ = stdout.flush();
+                return;
             }
         }
-        self.send_lines(text);
+        self.print_lines(text);
     }
 
     fn display_artifact(&self, artifact: &AdoDataArtifact) {
@@ -134,7 +124,7 @@ impl TuiConsole {
                 self.display_text(&format!("```{}\n{}\n```", lang, artifact.content));
             }
             AdoDataArtifactType::Note => self.display_text(&artifact.content),
-            _ => error!("artifact {} not handled in TuiConsole", artifact.artifact_type),
+            _ => error!("artifact {} not handled in Console", artifact.artifact_type),
         }
     }
 
@@ -142,7 +132,7 @@ impl TuiConsole {
         match artifact.artifact_type {
             AdoDataArtifactType::File => {
                 if let Some(path) = &artifact.path {
-                    self.send_lines(&format!(
+                    self.print_lines(&format!(
                         "Writing {} bytes to {}",
                         artifact.content.len(),
                         path.display()
@@ -156,7 +146,7 @@ impl TuiConsole {
                 }
             }
             AdoDataArtifactType::Command => {
-                self.send_lines(&format!("executing \"{}\"", artifact.content));
+                self.print_lines(&format!("executing \"{}\"", artifact.content));
                 match handler_command(&artifact.content) {
                     Ok(v) => Some(v),
                     Err(e) => Some(format!("Unable to execute {}. Error: {e}", artifact.content)),
@@ -170,22 +160,26 @@ impl TuiConsole {
     }
 }
 
-impl ConsoleTrait for TuiConsole {
+impl ConsoleTrait for Console {
     fn error_message(&self, message: &str) {
-        let line = Line::from(Span::styled(
-            format!("Error: {message}"),
-            Style::default().fg(Color::Red),
-        ));
-        self.send(TuiEvent::StyledLines(vec![line]));
+        let mut stdout = io::stdout();
+        let _ = execute!(
+            stdout,
+            style::SetForegroundColor(style::Color::Red),
+            style::Print(format!("Error: {message}\n")),
+            style::ResetColor
+        );
     }
 
     fn io(&self, data: AdoData) -> Option<String> {
+        self.spinner.stop();
+
         let status_label = match data.meta.status {
             AdoDataStatus::Error => "Error",
             AdoDataStatus::Partial => "Partial",
             AdoDataStatus::Ok => "Ok",
         };
-        self.send(TuiEvent::PlainLine(format!("{} {}", status_label, data.meta.intent)));
+        println!("{status_label} {}", data.meta.intent);
 
         let ret = match data.meta.status {
             AdoDataStatus::Ok => {
@@ -198,7 +192,7 @@ impl ConsoleTrait for TuiConsole {
                 None
             }
             AdoDataStatus::Error => {
-                self.send(TuiEvent::PlainLine(format!("Error: {}", data.response.message)));
+                self.error_message(&data.response.message);
                 None
             }
             AdoDataStatus::Partial => {
@@ -219,21 +213,22 @@ impl ConsoleTrait for TuiConsole {
             }
         };
 
-        self.send(TuiEvent::Separator);
+        self.print_separator();
         ret
     }
 
     fn print_markdown(&self, s: &str) {
+        self.spinner.stop();
         self.display_text(s);
-        self.send(TuiEvent::Separator);
+        self.print_separator();
     }
 
     fn enter_thinking(&self, message: &str) {
-        info!("TUI thinking: {message}");
-        self.send(TuiEvent::ThinkingStart);
+        info!("Thinking: {message}");
+        self.spinner.start();
     }
 
     fn leave_thinking(&self) {
-        self.send(TuiEvent::ThinkingStop);
+        self.spinner.stop();
     }
 }

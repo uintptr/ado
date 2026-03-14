@@ -1,22 +1,15 @@
 use std::{
     env,
-    io::{self, stdout},
+    io::{self, Write},
     time::Duration,
 };
 
 use anyhow::Result;
 use crossterm::{
-    ExecutableCommand, cursor,
+    cursor, execute, queue,
     event::{self, Event, KeyCode, KeyModifiers},
-    terminal,
-};
-use ratatui::{
-    Terminal,
-    backend::CrosstermBackend,
-    layout::{Constraint, Layout},
-    style::{Color, Modifier, Style},
-    text::{Line, Span},
-    widgets::{Block, Borders, Clear, List, ListItem, Paragraph, Widget},
+    style::{self, Attribute},
+    terminal::{self, ClearType},
 };
 use tui_input::backend::crossterm::EventHandler;
 use tui_input::{Input, InputRequest};
@@ -63,14 +56,11 @@ impl InputState {
 // Find the @token context around the cursor
 pub(crate) fn find_at_context(line: &str, cursor: usize) -> Option<(usize, String)> {
     let cursor = cursor.min(line.len());
-    // Walk back to a valid char boundary
     let cursor = (0..=cursor).rev().find(|&i| line.is_char_boundary(i))?;
     let before = &line[..cursor];
 
-    // Scan backwards for @
     let at_pos = before.rfind('@')?;
 
-    // No whitespace between @ and cursor
     let start = at_pos.saturating_add(1);
     let between = &before[start..];
     if between.contains(' ') {
@@ -87,7 +77,6 @@ pub(crate) fn find_matching_files(partial: &str) -> Vec<String> {
 
     let Ok(cwd) = env::current_dir() else { return Vec::new() };
 
-    // Treat input as a filename pattern: search **/* then filter case-insensitively
     let pattern = format!("{}/**/*", cwd.display());
     let partial_lower = partial.to_lowercase();
     let mut results = Vec::new();
@@ -97,7 +86,6 @@ pub(crate) fn find_matching_files(partial: &str) -> Vec<String> {
     };
 
     for entry in entries.flatten() {
-        // Skip hidden paths (any component starting with .)
         let Ok(rel) = entry.strip_prefix(&cwd) else { continue };
 
         if rel.components().any(|c| c.as_os_str().to_string_lossy().starts_with('.')) {
@@ -127,7 +115,6 @@ pub(crate) fn update_suggestions(state: &mut InputState, commands: &[String]) {
     let line = state.value().to_string();
     let cursor = state.cursor();
 
-    // Check for @file context
     if let Some((at_pos, partial)) = find_at_context(&line, cursor) {
         let files = find_matching_files(&partial);
         if !files.is_empty() {
@@ -139,10 +126,9 @@ pub(crate) fn update_suggestions(state: &mut InputState, commands: &[String]) {
         }
     }
 
-    // Check for command completion (first word starting with /)
     let before_cursor = &line[..cursor];
     if !before_cursor.contains(' ') && before_cursor.starts_with('/') {
-        let partial = &before_cursor[1..]; // strip /
+        let partial = &before_cursor[1..];
         let matches = find_matching_commands(partial, commands);
         if !matches.is_empty() {
             state.suggestions = matches;
@@ -168,7 +154,6 @@ pub(crate) fn accept_suggestion(state: &mut InputState) {
     };
 
     if let Some(at_pos) = state.at_start {
-        // @file completion: replace @partial with @suggestion
         let line = state.value().to_string();
         let cursor = state.cursor();
         let before_at = &line[..at_pos];
@@ -177,7 +162,6 @@ pub(crate) fn accept_suggestion(state: &mut InputState) {
         let new_cursor = at_pos.saturating_add(1).saturating_add(suggestion.len());
 
         state.input = Input::new(new_line);
-        // Move cursor to correct position
         let current = state.input.cursor();
         if new_cursor < current {
             for _ in 0..current.saturating_sub(new_cursor) {
@@ -189,7 +173,6 @@ pub(crate) fn accept_suggestion(state: &mut InputState) {
             }
         }
     } else {
-        // Command completion: replace entire input
         let new_line = format!("/{suggestion}");
         state.input = Input::new(new_line);
     }
@@ -228,7 +211,6 @@ pub(crate) fn history_next(state: &mut InputState, history: &[String]) {
         Some(i) => {
             let next = i.saturating_add(1);
             if next >= history.len() {
-                // Restore saved input
                 state.history_index = None;
                 let saved = state.saved_input.clone();
                 state.input = Input::new(saved);
@@ -242,95 +224,71 @@ pub(crate) fn history_next(state: &mut InputState, history: &[String]) {
     }
 }
 
-pub fn read_line(prompt: &str, history: &mut [String], commands: &[String]) -> Result<InputResult> {
-    terminal::enable_raw_mode()?;
+/// Render the prompt, input value, and any suggestions below.
+/// Returns the number of suggestion lines rendered below the input.
+fn render(stdout: &mut io::Stdout, state: &InputState, prompt: &str, prev_popup_lines: usize) -> io::Result<usize> {
+    // Move back up to clear previous popup lines
+    if prev_popup_lines > 0 {
+        // We're currently at the end of the last popup line (or input line if popup was cleared).
+        // Move up past all popup lines to get back to the input line.
+        queue!(stdout, cursor::MoveUp(u16::try_from(prev_popup_lines).unwrap_or(u16::MAX)))?;
+    }
 
-    let mut stdout = stdout();
-    stdout.execute(cursor::Show)?;
-
-    let backend = CrosstermBackend::new(stdout);
-    let mut terminal = Terminal::with_options(
-        backend,
-        ratatui::TerminalOptions {
-            viewport: ratatui::Viewport::Inline(u16::try_from(MAX_SUGGESTIONS).unwrap_or(u16::MAX).saturating_add(2)),
-        },
+    // Clear from input line down (clears old popup too)
+    queue!(
+        stdout,
+        cursor::MoveToColumn(0),
+        terminal::Clear(ClearType::FromCursorDown),
     )?;
 
-    let mut state = InputState::new();
-    let result = run_event_loop(&mut terminal, &mut state, prompt, history, commands);
+    // Print prompt + input value
+    queue!(
+        stdout,
+        style::SetForegroundColor(style::Color::Green),
+        style::Print(prompt),
+        style::ResetColor,
+        style::Print(state.value()),
+    )?;
 
-    // Push the completed prompt+input into scrollback before closing
-    if let Ok(InputResult::Line(ref line)) = result {
-        let prompt_line = Line::from(vec![
-            Span::styled(prompt, Style::default().fg(Color::Green)),
-            Span::raw(line.as_str()),
-        ]);
-        terminal.insert_before(1, |buf| {
-            Paragraph::new(prompt_line).render(buf.area, buf);
-        })?;
-    }
-
-    // Restore terminal
-    terminal::disable_raw_mode()?;
-    let mut stdout = io::stdout();
-    stdout.execute(cursor::Show)?;
-
-    result
-}
-
-fn to_u16(val: usize) -> u16 {
-    u16::try_from(val).unwrap_or(u16::MAX)
-}
-
-fn draw_frame(frame: &mut ratatui::Frame, state: &InputState, prompt: &str, popup_height: u16) {
-    let area = frame.area();
-
-    let chunks =
-        Layout::vertical([Constraint::Length(popup_height), Constraint::Length(1), Constraint::Min(0)]).split(area);
-
-    let Some(popup_area) = chunks.first().copied() else {
-        return;
+    // Render suggestions below
+    let popup_lines = if state.show_popup && !state.suggestions.is_empty() {
+        let count = state.suggestions.len().min(MAX_SUGGESTIONS);
+        for (i, s) in state.suggestions.iter().take(count).enumerate() {
+            if i == state.suggestion_index {
+                queue!(
+                    stdout,
+                    style::Print("\n"),
+                    style::SetBackgroundColor(style::Color::DarkGrey),
+                    style::SetForegroundColor(style::Color::White),
+                    style::SetAttribute(Attribute::Bold),
+                    style::Print(format!("  {s}")),
+                    style::SetAttribute(Attribute::Reset),
+                    style::ResetColor,
+                )?;
+            } else {
+                queue!(
+                    stdout,
+                    style::Print("\n"),
+                    style::SetForegroundColor(style::Color::Grey),
+                    style::Print(format!("  {s}")),
+                    style::ResetColor,
+                )?;
+            }
+        }
+        count
+    } else {
+        0
     };
-    let Some(input_area) = chunks.get(1).copied() else {
-        return;
-    };
 
-    if state.show_popup && !state.suggestions.is_empty() {
-        let items: Vec<ListItem> = state
-            .suggestions
-            .iter()
-            .enumerate()
-            .map(|(i, s)| {
-                let style = if i == state.suggestion_index {
-                    Style::default()
-                        .bg(Color::DarkGray)
-                        .fg(Color::White)
-                        .add_modifier(Modifier::BOLD)
-                } else {
-                    Style::default().fg(Color::Gray)
-                };
-                ListItem::new(Line::from(Span::styled(s.clone(), style)))
-            })
-            .collect();
-
-        let list = List::new(items).block(
-            Block::default()
-                .borders(Borders::ALL)
-                .border_style(Style::default().fg(Color::DarkGray)),
-        );
-
-        frame.render_widget(Clear, popup_area);
-        frame.render_widget(list, popup_area);
+    // Move cursor back to the input line at the correct column
+    if popup_lines > 0 {
+        queue!(stdout, cursor::MoveUp(u16::try_from(popup_lines).unwrap_or(u16::MAX)))?;
     }
+    let cursor_col = prompt.len().saturating_add(state.cursor());
+    queue!(stdout, cursor::MoveToColumn(u16::try_from(cursor_col).unwrap_or(u16::MAX)))?;
 
-    let cursor_pos = to_u16(state.cursor()).saturating_add(to_u16(prompt.len()));
-    let input_line = Line::from(vec![
-        Span::styled(prompt, Style::default().fg(Color::Green)),
-        Span::raw(state.value()),
-    ]);
-
-    frame.render_widget(Paragraph::new(input_line), input_area);
-    frame.set_cursor_position((input_area.x.saturating_add(cursor_pos), input_area.y));
+    stdout.flush()?;
+    Ok(popup_lines)
 }
 
 fn handle_key(
@@ -396,29 +354,41 @@ fn handle_key(
     None
 }
 
-fn run_event_loop(
-    terminal: &mut Terminal<CrosstermBackend<io::Stdout>>,
-    state: &mut InputState,
-    prompt: &str,
-    history: &[String],
-    commands: &[String],
-) -> Result<InputResult> {
-    loop {
-        let popup_height = if state.show_popup {
-            to_u16(state.suggestions.len().min(MAX_SUGGESTIONS)).saturating_add(2)
-        } else {
-            0
-        };
+pub fn read_line(prompt: &str, history: &mut [String], commands: &[String]) -> Result<InputResult> {
+    terminal::enable_raw_mode()?;
+    let mut stdout = io::stdout();
+    execute!(stdout, cursor::Show)?;
 
-        terminal.draw(|frame| {
-            draw_frame(frame, state, prompt, popup_height);
-        })?;
+    let mut state = InputState::new();
+    let mut prev_popup_lines = 0;
 
-        if event::poll(Duration::from_millis(50))?
-            && let Event::Key(key) = event::read()?
-            && let Some(result) = handle_key(state, key, history, commands)
-        {
-            return Ok(result);
+    prev_popup_lines = render(&mut stdout, &state, prompt, prev_popup_lines)?;
+
+    let result = loop {
+        if !event::poll(Duration::from_millis(50))? {
+            continue;
         }
+        if let Event::Key(key) = event::read()? {
+            if let Some(result) = handle_key(&mut state, key, history, commands) {
+                break result;
+            }
+            prev_popup_lines = render(&mut stdout, &state, prompt, prev_popup_lines)?;
+        }
+    };
+
+    // Clean up: clear popup lines, move to a fresh line
+    if prev_popup_lines > 0 {
+        // Already on input line; clear popup below
+        queue!(
+            stdout,
+            cursor::MoveToColumn(0),
+            terminal::Clear(ClearType::FromCursorDown),
+        )?;
     }
+    // Move to start of next line
+    execute!(stdout, style::Print("\r\n"))?;
+
+    terminal::disable_raw_mode()?;
+
+    Ok(result)
 }

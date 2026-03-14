@@ -73,7 +73,7 @@ fn main() -> Result<()> {
 
     let history = ado::tui_app::load_history(&history_file);
 
-    if let Err(e) = ado::tui_app::run(commands, history, &history_file, command_names) {
+    if let Err(e) = ado::tui_app::run(commands, history, &history_file, &command_names) {
         error!("{e}");
     }
 
