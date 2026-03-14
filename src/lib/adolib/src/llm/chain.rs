@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -48,9 +50,9 @@ pub trait LLMChainTrait {
     fn reset(&mut self);
     fn models(&self) -> Vec<String>;
     fn model(&self) -> &str;
-    fn change_model<S>(&mut self, model: S)
+    fn change_model<S>(&mut self, model: S) -> Result<()>
     where
-        S: Into<String>;
+        S: AsRef<str> + Display;
     fn usage(&self) -> LLMUsage;
     fn dump_chain(&self) -> Result<AdoData>;
 }
@@ -159,9 +161,9 @@ impl LLMChain {
         }
     }
 
-    pub fn change_model<S>(&mut self, model: S)
+    pub fn change_model<S>(&mut self, model: S) -> Result<()>
     where
-        S: Into<String>,
+        S: AsRef<str> + Display,
     {
         match self {
             LLMChain::Ollama(ollama) => ollama.change_model(model),

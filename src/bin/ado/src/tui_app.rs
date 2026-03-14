@@ -10,7 +10,7 @@ use std::{
 use anyhow::Result;
 use crossterm::{
     ExecutableCommand, cursor,
-    event::{self, Event, KeyCode, KeyModifiers},
+    event::{self, Event, KeyCode, KeyModifiers, MouseEventKind},
     terminal,
 };
 use log::error;
@@ -426,27 +426,35 @@ fn run_event_loop(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>, app: &m
             continue;
         }
 
-        if let Event::Key(key) = event::read()? {
-            if key.kind == event::KeyEventKind::Release {
-                continue;
+        match event::read()? {
+            Event::Key(key) => {
+                if key.kind == event::KeyEventKind::Release {
+                    continue;
+                }
+                match key.code {
+                    KeyCode::Char('c' | 'd') if key.modifiers.contains(KeyModifiers::CONTROL) => {
+                        return Ok(());
+                    }
+                    KeyCode::PageUp => {
+                        let half = output_height / 2;
+                        app.scroll_up(half.max(1));
+                    }
+                    KeyCode::PageDown => {
+                        let half = output_height / 2;
+                        app.scroll_down(half.max(1), output_width, output_height);
+                    }
+                    _ if app.mode == AppMode::Input => {
+                        handle_input_key(app, key);
+                    }
+                    _ => {}
+                }
             }
-            match key.code {
-                KeyCode::Char('c' | 'd') if key.modifiers.contains(KeyModifiers::CONTROL) => {
-                    return Ok(());
-                }
-                KeyCode::PageUp => {
-                    let half = output_height / 2;
-                    app.scroll_up(half.max(1));
-                }
-                KeyCode::PageDown => {
-                    let half = output_height / 2;
-                    app.scroll_down(half.max(1), output_width, output_height);
-                }
-                _ if app.mode == AppMode::Input => {
-                    handle_input_key(app, key);
-                }
+            Event::Mouse(mouse) => match mouse.kind {
+                MouseEventKind::ScrollUp => app.scroll_up(3),
+                MouseEventKind::ScrollDown => app.scroll_down(3, output_width, output_height),
                 _ => {}
-            }
+            },
+            _ => {}
         }
     }
 }
@@ -501,6 +509,7 @@ pub fn run(
     out.execute(terminal::EnterAlternateScreen)?;
     out.execute(terminal::Clear(terminal::ClearType::All))?;
     out.execute(cursor::Hide)?;
+    out.execute(event::EnableMouseCapture)?;
 
     let backend = CrosstermBackend::new(out);
     let mut terminal = Terminal::new(backend)?;
@@ -519,6 +528,7 @@ pub fn run(
     // Restore terminal
     terminal::disable_raw_mode()?;
     let mut out = io::stdout();
+    out.execute(event::DisableMouseCapture)?;
     out.execute(terminal::LeaveAlternateScreen)?;
     out.execute(cursor::Show)?;
 

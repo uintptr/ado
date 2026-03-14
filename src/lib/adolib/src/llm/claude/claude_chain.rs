@@ -1,4 +1,4 @@
-use std::sync::atomic::AtomicI32;
+use std::{fmt::Display, sync::atomic::AtomicI32};
 
 use crate::{
     config::loader::AdoConfig,
@@ -103,11 +103,12 @@ impl LLMChainTrait for ClaudeChain {
         &self.api.config.model
     }
 
-    fn change_model<S>(&mut self, model: S)
+    fn change_model<S>(&mut self, model: S) -> Result<()>
     where
-        S: Into<String>,
+        S: AsRef<str> + Display,
     {
-        self.api.config.model = model.into();
+        self.api.config.model = model.as_ref().to_string();
+        Ok(())
     }
 
     fn usage(&self) -> LLMUsage {

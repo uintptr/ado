@@ -71,7 +71,9 @@ impl UserCommansTrait for CommandModel {
                 error!("{e}");
             }
 
-            chain.change_model(input);
+            if let Err(e) = chain.change_model(input) {
+                error!("Unable to change model. {e}")
+            }
         }
 
         let s = format!("# Model: {}", self.config.llm_provider());

@@ -29,6 +29,8 @@ pub enum Error {
     InvalidJsonType,
     #[error("HttpGetFailure")]
     HttpGetFailure,
+    #[error("HttpDeleteFailure")]
+    HttpDeleteFailure,
     #[error("QueryMissingError")]
     QueryMissingError,
     #[error("ConfigNotFound")]
@@ -108,8 +110,6 @@ pub enum Error {
     TomlSer(#[from] toml::ser::Error),
     #[error(transparent)]
     JsonDeserialize(#[from] serde_json::Error),
-    #[error(transparent)]
-    LoggingError(#[from] log::SetLoggerError),
     #[error(transparent)]
     Base64Error(#[from] base64::DecodeError),
     #[error(transparent)]

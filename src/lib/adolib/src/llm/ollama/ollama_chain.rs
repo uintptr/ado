@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use crate::{
     config::loader::AdoConfig,
     data::types::AdoData,
@@ -69,11 +71,14 @@ impl LLMChainTrait for OllamaChain {
         &self.api.config.model
     }
 
-    fn change_model<S>(&mut self, model: S)
+    fn change_model<S>(&mut self, model: S) -> Result<()>
     where
-        S: Into<String>,
+        S: AsRef<str> + Display,
     {
-        self.api.config.model = model.into();
+        //self.api.set_model(&model)?;
+        self.api.config.model = model.as_ref().to_string();
+
+        Ok(())
     }
 
     fn usage(&self) -> LLMUsage {
