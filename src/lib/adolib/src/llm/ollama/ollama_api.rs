@@ -99,8 +99,6 @@ pub struct OllamaApi {
 }
 
 impl OllamaApi {
-    #[must_use]
-
     pub fn new(config: &ConfigOllama) -> Self {
         Self { config: config.clone() }
     }
@@ -150,7 +148,7 @@ impl OllamaApi {
     pub fn chat(&self, chat: &OllamaChat) -> Result<OllamaChatResponse> {
         let url = format!("{}/api/chat", self.config.endpoint);
 
-        let resp_json = rest_post(&url, &chat)?;
+        let resp_json = rest_post(&url, chat)?;
 
         let resp: OllamaChatResponse = serde_json::from_str(&resp_json)?;
 
