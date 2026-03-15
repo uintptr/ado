@@ -52,6 +52,30 @@ impl Default for Console {
     }
 }
 
+fn print_separator() {
+    let width = terminal::size().map(|(w, _)| w as usize).unwrap_or(80);
+    let sep = "─".repeat(width.min(500));
+    let mut stdout = io::stdout();
+    let _ = execute!(
+        stdout,
+        style::SetForegroundColor(style::Color::DarkGrey),
+        style::Print(format!("{sep}\n")),
+        style::ResetColor
+    );
+}
+
+fn print_lines<S>(text: S)
+where
+    S: AsRef<str>,
+{
+    let mut stdout = io::stdout();
+    let _ = stdout.write_all(text.as_ref().as_bytes());
+    if !text.as_ref().ends_with('\n') {
+        let _ = stdout.write_all(b"\n");
+    }
+    let _ = stdout.flush();
+}
+
 impl Console {
     #[must_use]
     pub fn new() -> Self {
@@ -60,29 +84,6 @@ impl Console {
             glow,
             spinner: AdoSpinner::new(),
         }
-    }
-
-    #[allow(clippy::unused_self)]
-    fn print_separator(&self) {
-        let width = terminal::size().map(|(w, _)| w as usize).unwrap_or(80);
-        let sep = "─".repeat(width.min(500));
-        let mut stdout = io::stdout();
-        let _ = execute!(
-            stdout,
-            style::SetForegroundColor(style::Color::DarkGrey),
-            style::Print(format!("{sep}\n")),
-            style::ResetColor
-        );
-    }
-
-    #[allow(clippy::unused_self)]
-    fn print_lines(&self, text: &str) {
-        let mut stdout = io::stdout();
-        let _ = stdout.write_all(text.as_bytes());
-        if !text.ends_with('\n') {
-            let _ = stdout.write_all(b"\n");
-        }
-        let _ = stdout.flush();
     }
 
     /// Render `text` via glow if available, otherwise print plain.
@@ -114,7 +115,7 @@ impl Console {
                 return;
             }
         }
-        self.print_lines(text);
+        print_lines(text);
     }
 
     fn display_artifact(&self, artifact: &AdoDataArtifact) {
@@ -128,11 +129,11 @@ impl Console {
         }
     }
 
-    fn process_partial_artifact(&self, artifact: &AdoDataArtifact) -> Option<String> {
+    fn process_partial_artifact(artifact: &AdoDataArtifact) -> Option<String> {
         match artifact.artifact_type {
             AdoDataArtifactType::File => {
                 if let Some(path) = &artifact.path {
-                    self.print_lines(&format!(
+                    print_lines(format!(
                         "Writing {} bytes to {}",
                         artifact.content.len(),
                         path.display()
@@ -146,7 +147,7 @@ impl Console {
                 }
             }
             AdoDataArtifactType::Command => {
-                self.print_lines(&format!("executing \"{}\"", artifact.content));
+                print_lines(format!("executing \"{}\"", artifact.content));
                 match handler_command(&artifact.content) {
                     Ok(v) => Some(v),
                     Err(e) => Some(format!("Unable to execute {}. Error: {e}", artifact.content)),
@@ -179,6 +180,7 @@ impl ConsoleTrait for Console {
             AdoDataStatus::Partial => "Partial",
             AdoDataStatus::Ok => "Ok",
         };
+
         println!("{status_label} {}", data.meta.intent);
 
         let ret = match data.meta.status {
@@ -200,7 +202,7 @@ impl ConsoleTrait for Console {
                 let mut results = Vec::new();
                 if let Some(artifacts) = &data.response.artifacts {
                     for artifact in artifacts {
-                        if let Some(r) = self.process_partial_artifact(artifact) {
+                        if let Some(r) = Console::process_partial_artifact(artifact) {
                             results.push(r);
                         }
                     }
@@ -213,14 +215,14 @@ impl ConsoleTrait for Console {
             }
         };
 
-        self.print_separator();
+        print_separator();
         ret
     }
 
     fn print_markdown(&self, s: &str) {
         self.spinner.stop();
         self.display_text(s);
-        self.print_separator();
+        print_separator();
     }
 
     fn enter_thinking(&self, message: &str) {

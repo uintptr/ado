@@ -120,10 +120,7 @@ impl OllamaApi {
     fn stop_model(&self, model: &str) -> Result<()> {
         let url = format!("{}/api/generate", self.config.endpoint);
 
-        let request = OllamaGenerate {
-            model: model.as_ref(),
-            keep_alive: 0,
-        };
+        let request = OllamaGenerate { model, keep_alive: 0 };
 
         rest_post(&url, &request)?;
         Ok(())
