@@ -152,6 +152,13 @@ fn build_editor(history_file: &Path, commands: Vec<String>) -> Result<Reedline> 
         ]),
     );
 
+    // ESC clears the current input buffer
+    keybindings.add_binding(
+        KeyModifiers::NONE,
+        KeyCode::Esc,
+        ReedlineEvent::Edit(vec![EditCommand::SelectAll, EditCommand::CutToEnd]),
+    );
+
     // Auto-trigger completion menu only on '/' and '@' (the trigger chars)
     for c in ['/', '@'] {
         keybindings.add_binding(
@@ -174,7 +181,8 @@ fn build_editor(history_file: &Path, commands: Vec<String>) -> Result<Reedline> 
         .with_edit_mode(edit_mode)
         .with_quick_completions(true)
         .with_partial_completions(true)
-        .with_history(history);
+        .with_history(history)
+        .use_bracketed_paste(true);
 
     Ok(editor)
 }
