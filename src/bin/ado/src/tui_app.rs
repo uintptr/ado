@@ -11,12 +11,8 @@ use crate::{
     terminal::{Console, PKG_NAME, PKG_VERSION},
 };
 
-pub fn run(
-    mut commands: UserCommands,
-    history_file: &Path,
-    command_names: Vec<String>,
-) -> Result<()> {
-    if let Ok(banner) = render_banner(format!("{PKG_NAME} {PKG_VERSION}"), "pagga") {
+pub fn run(mut commands: UserCommands, history_file: &Path, command_names: Vec<String>) -> Result<()> {
+    if let Ok(banner) = render_banner(format!("{} {PKG_VERSION}", PKG_NAME.to_uppercase())) {
         println!("{banner}");
     }
 
