@@ -18,10 +18,13 @@ pub struct OllamaChain {
 impl OllamaChain {
     pub fn new(config: &AdoConfig) -> Result<Self> {
         let ollama = config.ollama()?;
+        let api = OllamaApi::new(ollama);
+
+        api.set_model(&ollama.model)?;
 
         Ok(Self {
-            api: OllamaApi::new(ollama),
-            chat: OllamaChat::new(&ollama.model),
+            api,
+            chat: OllamaChat::new(&ollama.model, ollama.thinking),
         })
     }
 }
@@ -76,6 +79,8 @@ impl LLMChainTrait for OllamaChain {
         S: AsRef<str> + Display,
     {
         self.api.set_model(&model)?;
+        self.chat.model = model.as_ref().to_string();
+        self.api.config.model = model.as_ref().to_string();
         Ok(())
     }
 

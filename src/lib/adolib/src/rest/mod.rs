@@ -3,7 +3,7 @@ use std::fmt::Display;
 use log::{error, info};
 use serde::Serialize;
 
-use crate::error::{Error, Result};
+use crate::error::Result;
 
 pub fn rest_get<S>(url: S) -> Result<String>
 where
@@ -52,25 +52,4 @@ where
     let resp_json = res.body_mut().read_to_string()?;
 
     Ok(resp_json)
-}
-
-pub fn rest_delete<S>(url: S) -> Result<()>
-where
-    S: AsRef<str> + Display,
-{
-    let res = ureq::delete(url.as_ref()).call()?;
-
-    let log_msg = format!(
-        "get {url} -> code={} reason={}",
-        res.status().as_u16(),
-        res.status().as_str()
-    );
-
-    if res.status().is_success() {
-        info!("{log_msg}");
-        Ok(())
-    } else {
-        error!("{log_msg}");
-        Err(Error::HttpDeleteFailure)
-    }
 }

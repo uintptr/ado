@@ -1,12 +1,12 @@
 use std::{fmt::Display, vec};
 
-use log::error;
+use log::{error, info};
 use serde::{Deserialize, Serialize};
 
 use crate::{
     error::Result,
     llm::{chain::LLMRole, ollama::ollama_config::ConfigOllama},
-    rest::{rest_delete, rest_get, rest_post},
+    rest::{rest_get, rest_post},
 };
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -61,19 +61,23 @@ pub struct OllamaChatResponse {
 
 #[derive(Debug, Serialize)]
 pub struct OllamaChat {
-    model: String,
+    pub model: String,
     messages: Vec<OllamaMessage>,
+    think: bool,
     stream: bool,
 }
 
 impl OllamaChat {
-    pub fn new<M>(model: M) -> Self
+    pub fn new<M>(model: M, think: bool) -> Self
     where
         M: AsRef<str>,
     {
+        info!("thinking: {think}");
+
         Self {
             model: model.as_ref().to_string(),
             messages: vec![],
+            think,
             stream: false,
         }
     }
@@ -93,7 +97,7 @@ impl OllamaChat {
     }
 }
 
-// https://github.com/ollama/ollama/blob/main/docs/api.md
+// https://docs.ollama.com/api/generate
 pub struct OllamaApi {
     pub config: ConfigOllama,
 }
@@ -114,8 +118,15 @@ impl OllamaApi {
     }
 
     fn stop_model(&self, model: &str) -> Result<()> {
-        let url = format!("{}/api/models/{model}", self.config.endpoint);
-        rest_delete(&url)
+        let url = format!("{}/api/generate", self.config.endpoint);
+
+        let request = OllamaGenerate {
+            model: model.as_ref(),
+            keep_alive: 0,
+        };
+
+        rest_post(&url, &request)?;
+        Ok(())
     }
 
     fn stop_all(&self) -> Result<()> {
@@ -169,7 +180,7 @@ impl OllamaApi {
     where
         S: Into<String>,
     {
-        let mut chat = OllamaChat::new(&self.config.model);
+        let mut chat = OllamaChat::new(&self.config.model, self.config.thinking);
 
         chat.add_content(LLMRole::User, content);
 

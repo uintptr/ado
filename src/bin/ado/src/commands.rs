@@ -29,15 +29,7 @@ pub trait UserCommansTrait: Send {
 struct CommandHelp;
 struct CommandModels;
 struct CommandReset;
-struct CommandModel {
-    config: AdoConfig,
-}
-
-impl CommandModel {
-    pub fn new(config: &AdoConfig) -> Self {
-        Self { config: config.clone() }
-    }
-}
+struct CommandModel;
 
 impl UserCommansTrait for CommandModel {
     fn name(&self) -> &'static str {
@@ -65,18 +57,12 @@ impl UserCommansTrait for CommandModel {
                 return;
             }
 
-            self.config.llm_provider_update(input);
-
-            if let Err(e) = self.config.sync() {
-                error!("{e}");
-            }
-
             if let Err(e) = chain.change_model(input) {
                 error!("Unable to change model. {e}");
             }
         }
 
-        let s = format!("# Model: {}", self.config.llm_provider());
+        let s = format!("# Model: {}", chain.model());
         console.print_markdown(&s);
     }
 }
@@ -229,13 +215,11 @@ impl UserCommands {
     pub fn new(config: &AdoConfig) -> Result<Self> {
         let chain = init_chain(config).context("Unable to initialize llm chain")?;
 
-        let command_model = CommandModel::new(config);
-
         let commands: Vec<Box<dyn UserCommansTrait>> = vec![
             Box::new(CommandHelp {}),
             Box::new(CommandModels {}),
             Box::new(CommandReset {}),
-            Box::new(command_model),
+            Box::new(CommandModel {}),
         ];
 
         Ok(Self { chain, commands })

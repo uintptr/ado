@@ -49,7 +49,8 @@ impl Completer for AdoCompleter {
         }
 
         // Check for /command completion
-        let before_cursor = if pos <= line.len() { &line[..pos] } else { line };
+        let safe_pos = (0..=pos.min(line.len())).rev().find(|&i| line.is_char_boundary(i)).unwrap_or(0);
+        let before_cursor = &line[..safe_pos];
         if !before_cursor.contains(' ') && before_cursor.starts_with('/') {
             let partial = &before_cursor[1..];
             let matches = find_matching_commands(partial, &self.commands);
