@@ -1,10 +1,10 @@
-use std::{env, path::Path};
+use std::{borrow::Cow, env, path::Path};
 
 use anyhow::Result;
 use reedline::{
-    Completer, DefaultPrompt, DefaultPromptSegment, EditCommand, FileBackedHistory, IdeMenu,
-    KeyCode, KeyModifiers, MenuBuilder, Reedline, ReedlineEvent, ReedlineMenu, Signal, Span,
-    Suggestion, default_emacs_keybindings, Emacs,
+    Completer, EditCommand, FileBackedHistory, IdeMenu, KeyCode, KeyModifiers, MenuBuilder,
+    Prompt, PromptEditMode, PromptHistorySearch, PromptHistorySearchStatus, Reedline, ReedlineEvent,
+    ReedlineMenu, Signal, Span, Suggestion, default_emacs_keybindings, Emacs,
 };
 
 const MAX_SUGGESTIONS: u16 = 7;
@@ -183,13 +183,31 @@ pub fn create_editor(history_file: &Path, commands: Vec<String>) -> Result<Reedl
     build_editor(history_file, commands)
 }
 
-pub fn read_line(editor: &mut Reedline) -> Result<InputResult> {
-    let prompt = DefaultPrompt {
-        left_prompt: DefaultPromptSegment::Basic(">".to_string()),
-        right_prompt: DefaultPromptSegment::Empty,
-    };
+struct AdoPrompt;
 
-    match editor.read_line(&prompt) {
+impl Prompt for AdoPrompt {
+    fn render_prompt_left(&self) -> Cow<'_, str> {
+        Cow::Borrowed("")
+    }
+    fn render_prompt_right(&self) -> Cow<'_, str> {
+        Cow::Borrowed("")
+    }
+    fn render_prompt_indicator(&self, _edit_mode: PromptEditMode) -> Cow<'_, str> {
+        Cow::Borrowed("> ")
+    }
+    fn render_prompt_multiline_indicator(&self) -> Cow<'_, str> {
+        Cow::Borrowed(": ")
+    }
+    fn render_prompt_history_search_indicator(&self, history_search: PromptHistorySearch) -> Cow<'_, str> {
+        match history_search.status {
+            PromptHistorySearchStatus::Passing => Cow::Borrowed("(search): "),
+            PromptHistorySearchStatus::Failing => Cow::Borrowed("(failed): "),
+        }
+    }
+}
+
+pub fn read_line(editor: &mut Reedline) -> Result<InputResult> {
+    match editor.read_line(&AdoPrompt) {
         Ok(Signal::Success(line)) => Ok(InputResult::Line(line)),
         Ok(Signal::CtrlC | Signal::CtrlD) => Ok(InputResult::Eof),
         Err(e) => Err(e.into()),

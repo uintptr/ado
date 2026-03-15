@@ -31,7 +31,7 @@ fn draw_box(stdout: &mut io::Stdout, frame: &str) {
 
     // Top border with spinner title embedded
     let title = format!(" {frame} Thinking... ");
-    let title_len = title.len();
+    let title_len = title.chars().count();
     let fill = inner.saturating_sub(title_len).saturating_sub(1); // -1 for leading ─
     let top = format!("┌─{title}{}┐", "─".repeat(fill));
 
