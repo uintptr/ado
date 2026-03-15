@@ -16,7 +16,7 @@ which.workspace = true
 anyhow.workspace = true
 shell-words.workspace = true
 glob.workspace = true
-reedline = "0.46"
+reedline.workspace = true
 
 [lints]
 workspace = true
@@ -25,4 +25,4 @@ workspace = true
 tempfile.workspace = true
 
 [build-dependencies]
-home.workspace = true
+dirs.workspace = true
