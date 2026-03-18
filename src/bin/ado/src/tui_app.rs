@@ -1,4 +1,4 @@
-use std::{io, path::Path};
+use std::path::Path;
 
 use adolib::console::ConsoleTrait;
 use anyhow::Result;
@@ -11,7 +11,10 @@ use crate::{
     terminal::{Console, PKG_NAME, PKG_VERSION},
 };
 
-pub fn run(mut commands: UserCommands, history_file: &Path, command_names: Vec<String>) -> Result<()> {
+pub fn run(mut commands: UserCommands, history_file: &Path) -> Result<()> {
+    // Build the list of command names and history path before moving commands
+    let command_names: Vec<String> = commands.list_commands().iter().map(|c| c.name().to_string()).collect();
+
     if let Ok(banner) = render_banner(format!("{} {PKG_VERSION}", PKG_NAME.to_uppercase())) {
         println!("{banner}");
     }
@@ -24,16 +27,6 @@ pub fn run(mut commands: UserCommands, history_file: &Path, command_names: Vec<S
         if trimmed.is_empty() {
             continue;
         }
-
-        // Echo the user input
-        let mut stdout = io::stdout();
-        let _ = crossterm::execute!(
-            stdout,
-            crossterm::style::SetForegroundColor(crossterm::style::Color::Green),
-            crossterm::style::Print("> "),
-            crossterm::style::ResetColor,
-            crossterm::style::Print(format!("{trimmed}\n"))
-        );
 
         if let Err(e) = commands.handler(&trimmed, &console) {
             error!("handler error: {e}");

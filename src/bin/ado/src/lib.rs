@@ -1,5 +1,6 @@
 pub(crate) mod banner;
 pub mod commands;
+pub mod headless;
 pub mod input;
 pub mod intrinsics;
 pub mod spinner;

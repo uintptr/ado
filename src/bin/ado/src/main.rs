@@ -1,10 +1,10 @@
 use std::fs;
 
-use ado::commands::UserCommands;
+use ado::{commands::UserCommands, headless::headless_run};
 use adolib::{config::loader::AdoConfig, error::Error};
 use anyhow::{Context, Result, anyhow};
 use clap::Parser;
-use log::{LevelFilter, error};
+use log::LevelFilter;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -12,6 +12,10 @@ struct UserArgs {
     /// verbose
     #[arg(short, long)]
     verbose: bool,
+
+    /// verbose
+    #[arg(long)]
+    headless: bool,
 
     /// config file path
     #[arg(short, long)]
@@ -61,9 +65,6 @@ fn main() -> Result<()> {
 
     let commands = UserCommands::new(&config)?;
 
-    // Build the list of command names and history path before moving commands
-    let command_names: Vec<String> = commands.list_commands().iter().map(|c| c.name().to_string()).collect();
-
     let config_dir = dirs::config_dir().ok_or(Error::ConfigNotFound)?;
     let history_file = config_dir.join("ado").join("history.txt");
 
@@ -71,9 +72,9 @@ fn main() -> Result<()> {
         fs::create_dir_all(&config_dir)?;
     }
 
-    if let Err(e) = ado::tui_app::run(commands, &history_file, command_names) {
-        error!("{e}");
+    if args.headless {
+        headless_run(commands)
+    } else {
+        ado::tui_app::run(commands, &history_file)
     }
-
-    Ok(())
 }
