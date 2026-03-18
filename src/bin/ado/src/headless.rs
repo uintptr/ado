@@ -17,6 +17,5 @@ impl ConsoleTrait for HeadlessConsole {
 
 pub fn headless_run(mut _commands: UserCommands) -> Result<()> {
     let _console = HeadlessConsole {};
-
     Ok(())
 }
