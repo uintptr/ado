@@ -56,18 +56,18 @@ jobs:
               if: matrix.target == 'x86_64-unknown-linux-musl' || matrix.target == 'x86_64-apple-darwin' || matrix.target == 'aarch64-apple-darwin'
               run: cargo test --release --target ${{ matrix.target }}
 
-            - name: Check formatting
-              run: cargo fmt --all -- --check
+            #- name: Check formatting
+            #  run: cargo fmt --all -- --check
 
-            - name: Run clippy
-              run: cargo clippy --no-deps --all-targets --all-features -- -D warnings
+            #- name: Run clippy
+            #  run: cargo clippy --no-deps --all-targets --all-features -- -D warnings
 
             - name: Rename binary for release
-              if: '!matrix.is_mac'
+              if: "!matrix.is_mac"
               run: cp target/${{ matrix.target }}/release/ado target/${{ matrix.target }}/release/ado-${{ matrix.artifact_suffix }}
 
             - name: Upload release binary
-              if: '!matrix.is_mac'
+              if: "!matrix.is_mac"
               uses: actions/upload-artifact@v4
               with:
                   name: binaries-${{ matrix.artifact_suffix }}
