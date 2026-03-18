@@ -1,16 +1,14 @@
+use std::fmt::Display;
+
 use crate::{
     config::loader::AdoConfig,
     data::types::AdoData,
-    error::Result,
+    error::{Error, Result},
     llm::{
-        chain::{LLMChainTrait, LLMUsage},
+        chain::{LLMChainTrait, LLMRole, LLMUsage},
         ollama::ollama_api::{OllamaApi, OllamaChat},
     },
-    mcp::matrix::McpMatrix,
-    ui::ConsoleDisplayTrait,
 };
-
-use async_trait::async_trait;
 
 pub struct OllamaChain {
     api: OllamaApi,
@@ -20,49 +18,70 @@ pub struct OllamaChain {
 impl OllamaChain {
     pub fn new(config: &AdoConfig) -> Result<Self> {
         let ollama = config.ollama()?;
+        let api = OllamaApi::new(ollama);
+
+        api.set_model(&ollama.model)?;
 
         Ok(Self {
-            api: OllamaApi::new(ollama)?,
-            chat: OllamaChat::new(&ollama.model),
+            api,
+            chat: OllamaChat::new(&ollama.model, ollama.thinking),
         })
     }
 }
 
-#[async_trait(?Send)]
 impl LLMChainTrait for OllamaChain {
-    async fn link<C>(&mut self, _mcp: &McpMatrix, content: &str, console: &mut C) -> Result<()>
-    where
-        C: ConsoleDisplayTrait,
-    {
-        self.chat.add_content("user", content);
+    fn call(&mut self) -> Result<AdoData> {
+        let resp = self.api.chat(&self.chat)?;
 
-        let resp = self.api.chat(&self.chat).await?;
+        self.chat.add_content(LLMRole::Assistant, &resp.message.content);
 
-        let resp_str = resp.message.content.to_string();
+        let data: AdoData = resp.message.content.parse()?;
 
-        self.chat.add_message(resp.message);
-
-        console.display(AdoData::String(resp_str))
+        Ok(data)
     }
 
-    async fn message(&self, content: &str) -> Result<String> {
-        let resp = self.api.message(content).await?;
+    fn models(&self) -> Vec<String> {
+        let mut names = Vec::new();
+
+        if let Ok(ollama_models) = self.api.models() {
+            for model in ollama_models {
+                names.push(model.name);
+            }
+        }
+        names
+    }
+
+    fn add_content<S>(&mut self, role: LLMRole, content: S)
+    where
+        S: Into<String>,
+    {
+        self.chat.add_content(role, content);
+    }
+
+    fn message<S>(&self, content: S) -> Result<String>
+    where
+        S: Into<String>,
+    {
+        let resp = self.api.message(content)?;
         Ok(resp.message.content)
     }
 
     fn reset(&mut self) {
-        self.chat.reset()
+        self.chat.reset();
     }
 
     fn model(&self) -> &str {
         &self.api.config.model
     }
 
-    fn change_model<S>(&mut self, model: S)
+    fn change_model<S>(&mut self, model: S) -> Result<()>
     where
-        S: AsRef<str>,
+        S: AsRef<str> + Display,
     {
-        self.api.config.model = model.as_ref().into()
+        self.api.set_model(&model)?;
+        self.chat.model = model.as_ref().to_string();
+        self.api.config.model = model.as_ref().to_string();
+        Ok(())
     }
 
     fn usage(&self) -> LLMUsage {
@@ -73,47 +92,24 @@ impl LLMChainTrait for OllamaChain {
     }
 
     fn dump_chain(&self) -> Result<AdoData> {
-        unimplemented!()
+        Err(Error::NotImplemented)
     }
 }
 
 #[cfg(test)]
 mod ollama_tests {
-    use rstaples::logging::StaplesLogger;
 
     use crate::{
         config::loader::AdoConfig,
         llm::{chain::LLMChainTrait, ollama::ollama_chain::OllamaChain},
-        mcp::matrix::McpMatrix,
-        ui::NopConsole,
     };
 
-    #[tokio::test]
-    async fn test_message() {
-        StaplesLogger::new().with_stdout().start();
-
+    #[test]
+    fn test_message() {
         let config_file = AdoConfig::from_default().unwrap();
 
         let chain = OllamaChain::new(&config_file).unwrap();
 
-        chain.message("hello world").await.unwrap();
-    }
-
-    #[tokio::test]
-    async fn test_chain() {
-        StaplesLogger::new().with_stdout().start();
-
-        let config_file = AdoConfig::from_default().unwrap();
-
-        let mut chain = OllamaChain::new(&config_file).unwrap();
-
-        let mut console = NopConsole::new();
-
-        let mcp = McpMatrix::new();
-
-        chain.link(&mcp, "Hello World", &mut console).await.unwrap();
-        chain.link(&mcp, "Can you tell a joke", &mut console).await.unwrap();
-
-        chain.message("hello world").await.unwrap();
+        chain.message("hello world").unwrap();
     }
 }

@@ -1,20 +1,16 @@
 use std::{
-    collections::HashMap,
     fs,
+    io::Write,
     path::{Path, PathBuf},
 };
 
-use directories::ProjectDirs;
 use log::{error, info};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    const_vars::{CONFIG_FILE_NAME, DIRS_APP, DIRS_ORG, DIRS_QUALIFIER, STORE_PERMANENT},
+    const_vars::CONFIG_FILE_NAME,
     error::{Error, Result},
     llm::config::{ClaudeConfig, ConfigOllama},
-    mcp::types::McpConfig,
-    search::{google::GoogleConfig, serp::SerpApiConfig},
-    storage::{PersistentStorageTrait, persistent::PersistentStorage},
 };
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -25,22 +21,13 @@ pub struct ConfigLlm {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
-pub struct ConfigSearch {
-    pub google: Option<GoogleConfig>,
-    pub serp: Option<SerpApiConfig>,
-}
-
-#[derive(Debug, Serialize, Deserialize, Clone)]
 struct ConfigFile {
     llm: ConfigLlm,
-    search: Option<ConfigSearch>,
-    mcp: Option<HashMap<String, McpConfig>>,
 }
 
 #[derive(Clone)]
 pub enum AdoConfigSource {
     File { path: PathBuf },
-    Webdis { storage: PersistentStorage },
     String,
 }
 
@@ -57,7 +44,7 @@ impl AdoConfig {
         Self { source, config_file }
     }
 
-    pub async fn sync(&self) -> Result<()> {
+    pub fn sync(&self) -> Result<()> {
         let toml_file = toml::to_string(&self.config_file)?;
 
         //
@@ -66,10 +53,13 @@ impl AdoConfig {
         match &self.source {
             AdoConfigSource::File { path } => {
                 info!("syncing {}", path.display());
-                fs::write(path, toml_file.as_bytes())?
+
+                let mut fd = fs::OpenOptions::new().write(true).truncate(true).create(true).open(path)?;
+
+                fd.lock()?;
+                fd.write_all(toml_file.as_bytes())?;
             }
-            AdoConfigSource::Webdis { storage } => storage.set("global", "config", toml_file, STORE_PERMANENT).await?,
-            _ => return Err(Error::NotImplemented),
+            AdoConfigSource::String => return Err(Error::NotImplemented),
         }
 
         Ok(())
@@ -105,15 +95,15 @@ impl AdoConfig {
     }
 
     pub fn from_default() -> Result<Self> {
-        let dirs = ProjectDirs::from(DIRS_QUALIFIER, DIRS_ORG, DIRS_APP).ok_or(Error::NotFound)?;
+        let config_dir = dirs::config_dir().ok_or(Error::ConfigNotFound)?;
 
-        let config_dir = dirs.config_dir();
+        let ado_config_dir = config_dir.join("ado");
 
-        if !config_dir.exists() {
-            fs::create_dir_all(config_dir)?;
+        if !ado_config_dir.exists() {
+            fs::create_dir_all(&ado_config_dir)?;
         }
 
-        let config_file = config_dir.join(CONFIG_FILE_NAME);
+        let config_file = ado_config_dir.join(CONFIG_FILE_NAME);
 
         AdoConfig::from_path(config_file)
     }
@@ -128,28 +118,12 @@ impl AdoConfig {
         Ok(AdoConfig::new(AdoConfigSource::String, config_file))
     }
 
-    #[cfg(target_arch = "wasm32")]
-    pub async fn from_webdis<U, S>(user_id: U, server: S) -> Result<Self>
-    where
-        U: AsRef<str>,
-        S: AsRef<str>,
-    {
-        let storage = PersistentStorage::new(&user_id, server);
-
-        let data = storage.get("global", "config").await?;
-
-        let source = AdoConfigSource::Webdis { storage: storage };
-
-        let config_file: ConfigFile = toml::from_str(&data)?;
-
-        Ok(AdoConfig::new(source, config_file))
-    }
-
+    #[must_use]
     pub fn llm_provider(&self) -> &str {
         &self.config_file.llm.provider
     }
 
-    pub fn update_llm<S>(&mut self, llm: S)
+    pub fn llm_provider_update<S>(&mut self, llm: S)
     where
         S: AsRef<str>,
     {
@@ -167,33 +141,6 @@ impl AdoConfig {
         match &self.config_file.llm.claude {
             Some(v) => Ok(v),
             None => Err(Error::ConfigNotFound),
-        }
-    }
-
-    pub fn search_google(&self) -> Result<&GoogleConfig> {
-        if let Some(search) = &self.config_file.search
-            && let Some(google) = &search.google
-        {
-            Ok(google)
-        } else {
-            Err(Error::ConfigNotFound)
-        }
-    }
-
-    pub fn search_setp(&self) -> Result<&SerpApiConfig> {
-        if let Some(search) = &self.config_file.search
-            && let Some(serp) = &search.serp
-        {
-            Ok(serp)
-        } else {
-            Err(Error::ConfigNotFound)
-        }
-    }
-
-    pub fn mcp_servers(&self) -> Option<&HashMap<String, McpConfig>> {
-        match &self.config_file.mcp {
-            Some(v) => Some(v),
-            None => None,
         }
     }
 }

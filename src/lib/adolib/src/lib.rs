@@ -1,14 +1,8 @@
 pub mod config;
+pub mod console;
 pub mod const_vars;
 pub mod data;
 pub mod error;
 pub mod llm;
-pub mod logging;
-pub mod mcp;
-pub mod search;
-pub mod shell;
-pub mod storage;
-//pub mod tools;
+pub(crate) mod rest;
 pub mod ui;
-#[cfg(target_arch = "wasm32")]
-pub mod wasm;

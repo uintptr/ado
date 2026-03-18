@@ -1,17 +1,13 @@
 use std::collections::HashMap;
 use std::fs;
 
-use derive_more::Display;
 use log::{error, info};
-use omcp::types::McpTool;
-use reqwest::Client;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 use crate::error::Error;
 use crate::error::Result;
 use crate::llm::claude::claude_config::ClaudeConfig;
-use crate::mcp::matrix::McpMatrix;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ClaudeErrorMessage {
@@ -47,20 +43,6 @@ pub enum ClaudeContentType {
     #[default]
     #[serde(rename = "text")]
     Text,
-    #[serde(rename = "tool_use")]
-    ToolUse,
-    #[serde(rename = "tool_result")]
-    ToolResult,
-}
-
-#[derive(Debug, Default, Deserialize, Serialize)]
-pub struct ClaudeToolResult {
-    #[serde(rename = "type")]
-    pub content_type: ClaudeContentType,
-    pub tool_use_id: String,
-    pub content: String,
-    #[serde(skip_serializing_if = "is_false")]
-    pub is_error: bool,
 }
 
 #[derive(Debug, Default, Deserialize, Serialize)]
@@ -93,7 +75,7 @@ pub struct ClaudeUsage {
     pub service_tier: String,
 }
 
-#[derive(Debug, Display, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub enum ClaudeStopReason {
     #[serde(rename = "end_turn")]
     EndTurn,
@@ -107,6 +89,20 @@ pub enum ClaudeStopReason {
     PauseTurn,
     #[serde(rename = "refusal")]
     Resusal,
+}
+
+impl core::fmt::Display for ClaudeStopReason {
+    fn fmt(&self, f: &mut core::fmt::Formatter) -> core::fmt::Result {
+        let s = match self {
+            Self::EndTurn => "EndTurn",
+            Self::MaxToken => "MaxToken",
+            Self::StopSequence => "StopSequence",
+            Self::ToolUse => "ToolUse",
+            Self::PauseTurn => "PauseTurn",
+            Self::Resusal => "Resusal",
+        };
+        write!(f, "{s}")
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -128,8 +124,17 @@ pub struct ClaudeResponse {
     pub usage: ClaudeUsage,
 }
 
+#[derive(Deserialize)]
+pub struct ClaudeModel {
+    pub id: String,
+}
+
+#[derive(Deserialize)]
+pub struct ClaudeModelResponse {
+    pub data: Vec<ClaudeModel>,
+}
+
 pub struct ClaudeApi {
-    client: Client,
     pub config: ClaudeConfig,
 }
 
@@ -141,66 +146,21 @@ pub struct ClaudeMessages {
     stream: bool,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     system: Vec<ClaudeContent>,
-    #[serde(skip_serializing_if = "Vec::is_empty")]
-    tools: Vec<McpTool>,
-}
-
-fn is_false(value: &bool) -> bool {
-    !*value
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 // IMPL
 ///////////////////////////////////////////////////////////////////////////////
 
-impl ClaudeToolResult {
-    pub fn new<S>(request: &ClaudeContent, result: S, success: bool) -> Self
-    where
-        S: AsRef<str>,
-    {
-        let tool_id = match &request.id {
-            Some(v) => v.to_string(),
-            None => "unknown".to_string(),
-        };
-
-        ClaudeToolResult {
-            content_type: ClaudeContentType::ToolResult,
-            tool_use_id: tool_id,
-            content: result.as_ref().to_string(),
-            is_error: !success,
-        }
-    }
-}
-
 impl ClaudeMessage {
     pub fn with_message<S>(role: ClaudeRole, message: S) -> Self
     where
-        S: AsRef<str>,
+        S: Into<String>,
     {
         Self {
             role,
-            content: Value::String(message.as_ref().to_string()),
+            content: Value::String(message.into()),
         }
-    }
-
-    pub fn with_content_list(role: ClaudeRole, content: Vec<&ClaudeContent>) -> Result<Self> {
-        let object_str = serde_json::to_string(&content)?;
-        let array: Vec<Value> = serde_json::from_str(&object_str)?;
-
-        Ok(Self {
-            role,
-            content: Value::Array(array),
-        })
-    }
-
-    pub fn with_tool_results(role: ClaudeRole, result: Vec<&ClaudeToolResult>) -> Result<Self> {
-        let object_str = serde_json::to_string(&result)?;
-        let array: Vec<Value> = serde_json::from_str(&object_str)?;
-
-        Ok(Self {
-            role,
-            content: Value::Array(array),
-        })
     }
 }
 
@@ -243,64 +203,61 @@ impl ClaudeMessages {
 
     pub fn add_message<C>(&mut self, role: ClaudeRole, message: C)
     where
-        C: AsRef<str>,
+        C: Into<String>,
     {
         let message = ClaudeMessage::with_message(role, message);
         self.messages.push(message);
     }
 
-    pub fn add_content(&mut self, role: ClaudeRole, content: &ClaudeContent) -> Result<()> {
-        let content_list = vec![content];
-
-        let message = ClaudeMessage::with_content_list(role, content_list)?;
-
-        self.messages.push(message);
-        Ok(())
-    }
-
-    pub fn add_result(&mut self, tool_result: &ClaudeToolResult) -> Result<()> {
-        let content_list = vec![tool_result];
-
-        let message = ClaudeMessage::with_tool_results(ClaudeRole::User, content_list)?;
-        self.messages.push(message);
-        Ok(())
-    }
-
     pub fn reset(&mut self) {
-        self.messages = vec![]
-    }
-
-    pub fn with_tools(&mut self, mcp: &McpMatrix) {
-        self.tools.clear();
-
-        for tool in mcp.list_tools() {
-            self.tools.push(tool);
-        }
+        self.messages = vec![];
     }
 }
 
 impl ClaudeApi {
-    pub fn new(config: &ClaudeConfig) -> Result<Self> {
-        Ok(Self {
-            client: Client::new(),
-            config: config.clone(),
-        })
+    #[must_use]
+    pub fn new(config: &ClaudeConfig) -> Self {
+        Self { config: config.clone() }
     }
 
-    pub async fn chat(&self, chat: &ClaudeMessages) -> Result<ClaudeResponse> {
+    pub fn models(&self) -> Result<Vec<ClaudeModel>> {
+        let url = format!("{}/v1/models", self.config.url);
+
+        let mut res = ureq::get(&url)
+            .header("x-api-key", &self.config.key)
+            .header("anthropic-version", &self.config.anthropic_version)
+            .call()?;
+
+        let log_msg = format!(
+            "get {} -> code={} reason={}",
+            url,
+            res.status().as_u16(),
+            res.status().as_str()
+        );
+
+        if res.status().is_success() {
+            info!("{log_msg}");
+        } else {
+            error!("{log_msg}");
+        }
+
+        let resp_json = &res.body_mut().read_to_string()?;
+
+        let resp: ClaudeModelResponse = serde_json::from_str(resp_json)?;
+
+        Ok(resp.data)
+    }
+
+    pub fn chat(&self, chat: &ClaudeMessages) -> Result<ClaudeResponse> {
         let req_json = serde_json::to_string_pretty(&chat)?;
 
         let url = format!("{}/v1/messages", self.config.url);
 
-        let req_builds = self
-            .client
-            .post(&url)
+        let mut res = ureq::post(&url)
             .header("Content-Type", "application/json")
             .header("x-api-key", &self.config.key)
             .header("anthropic-version", &self.config.anthropic_version)
-            .body(req_json);
-
-        let res = req_builds.send().await?;
+            .send(req_json)?;
 
         let log_msg = format!(
             "post {} -> code={} reason={}",
@@ -309,44 +266,44 @@ impl ClaudeApi {
             res.status().as_str()
         );
 
-        match res.status().is_success() {
-            true => info!("{log_msg}"),
-            false => error!("{log_msg}"),
+        if res.status().is_success() {
+            info!("{log_msg}");
+        } else {
+            error!("{log_msg}");
         }
 
         let success = res.status().is_success();
 
-        let resp_json = &res.text().await?;
+        let resp_json = &res.body_mut().read_to_string()?;
 
         if !success {
-            error!("{resp_json}")
+            error!("{resp_json}");
         }
 
         // convert a our struct
-        match serde_json::from_str::<ClaudeResponse>(resp_json) {
-            Ok(v) => Ok(v),
-            Err(_) => {
-                //
-                // Try to print it nicely, best effort
-                //
-                fs::write("/tmp/claude_serde_error.json", resp_json.as_bytes())?;
-                let claude_error: ClaudeError = serde_json::from_str(resp_json)?;
-                let pretty_error = serde_json::to_string_pretty(&claude_error)?;
-                let pretty_error = format!("# Claude Error\n\n```json\n{pretty_error}\n```");
-                Err(Error::LlmError { message: pretty_error })
-            }
+        if let Ok(v) = serde_json::from_str::<ClaudeResponse>(resp_json) {
+            Ok(v)
+        } else {
+            //
+            // Try to print it nicely, best effort
+            //
+            fs::write("/tmp/claude_serde_error.json", resp_json.as_bytes())?;
+            let claude_error: ClaudeError = serde_json::from_str(resp_json)?;
+            let pretty_error = serde_json::to_string_pretty(&claude_error)?;
+            let pretty_error = format!("# Claude Error\n\n```json\n{pretty_error}\n```");
+            Err(Error::LlmError { message: pretty_error })
         }
     }
 
-    pub async fn message<S>(&self, content: S) -> Result<ClaudeResponse>
+    pub fn message<S>(&self, content: S) -> Result<ClaudeResponse>
     where
-        S: AsRef<str>,
+        S: Into<String>,
     {
         let mut chat = ClaudeMessages::new(&self.config.model, 4096);
 
         chat.add_message(ClaudeRole::User, content);
 
-        self.chat(&chat).await
+        self.chat(&chat)
     }
 }
 
@@ -360,11 +317,10 @@ mod tests {
 
     use log::info;
 
-    use crate::{llm::claude::claude_api::ClaudeResponse, logging::logger::setup_logger};
+    use crate::llm::claude::claude_api::ClaudeResponse;
 
     #[test]
     fn test_response() {
-        setup_logger(true).unwrap();
         let test_file = Path::new("/tmp").join("claude_response.json");
 
         let resp = fs::read_to_string(test_file).unwrap();

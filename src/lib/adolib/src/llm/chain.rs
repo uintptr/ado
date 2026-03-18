@@ -1,17 +1,16 @@
-#![allow(dead_code)] // message is dead code for native but required for wasm
-use async_trait::async_trait;
+use std::fmt::Display;
+
 use serde::{Deserialize, Serialize};
 
 use crate::{
     config::loader::AdoConfig,
-    data::types::{AdoData, AdoDataMarkdown},
+    console::ConsoleTrait,
+    data::types::AdoData,
     error::{Error, Result},
     llm::{claude::claude_chain::ClaudeChain, ollama::ollama_chain::OllamaChain},
-    mcp::matrix::McpMatrix,
-    ui::ConsoleDisplayTrait,
 };
 
-use log::error;
+use log::{error, info};
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct LLMUsage {
@@ -19,41 +18,43 @@ pub struct LLMUsage {
     pub output_tokens: u64,
 }
 
-impl AdoDataMarkdown for &LLMUsage {
-    fn to_markdown(self) -> Result<String> {
-        let mut lines = Vec::new();
-
-        lines.push("# LLM Usage".to_string());
-        lines.push(format!(" * Input Tokens: {}", self.input_tokens));
-        lines.push(format!(" * Ouput Tokens: {}", self.output_tokens));
-
-        let md = lines.join("\n");
-        Ok(md)
-    }
-}
-
 pub enum LLMToolState {
     Enable,
     Disable,
 }
 
-#[async_trait(?Send)]
+pub enum LLMRole {
+    System,
+    Assistant,
+    User,
+}
+
+impl From<LLMRole> for String {
+    fn from(val: LLMRole) -> Self {
+        match val {
+            LLMRole::Assistant => "assistant".to_string(),
+            LLMRole::System => "system".to_string(),
+            LLMRole::User => "user".to_string(),
+        }
+    }
+}
+
 pub trait LLMChainTrait {
-    async fn link<C>(&mut self, mcp: &McpMatrix, content: &str, console: &mut C) -> Result<()>
+    fn add_content<S>(&mut self, role: LLMRole, content: S)
     where
-        C: ConsoleDisplayTrait;
-    async fn message(&self, content: &str) -> Result<String>;
+        S: Into<String>;
+    fn call(&mut self) -> Result<AdoData>;
+    fn message<S>(&self, content: S) -> Result<String>
+    where
+        S: Into<String>;
     fn reset(&mut self);
+    fn models(&self) -> Vec<String>;
     fn model(&self) -> &str;
-    fn change_model<S: AsRef<str>>(&mut self, _model: S);
+    fn change_model<S>(&mut self, model: S) -> Result<()>
+    where
+        S: AsRef<str> + Display;
     fn usage(&self) -> LLMUsage;
     fn dump_chain(&self) -> Result<AdoData>;
-    fn enable_mcp(&mut self, _mcp: &McpMatrix) -> Result<()> {
-        Err(Error::NotImplemented)
-    }
-    fn disable_mcp(&mut self) -> Result<()> {
-        Err(Error::NotImplemented)
-    }
 }
 
 pub enum LLMChain {
@@ -81,21 +82,68 @@ impl LLMChain {
         Ok(chain)
     }
 
-    pub async fn message(&self, content: &str) -> Result<String> {
+    fn call(&mut self) -> Result<AdoData> {
         match self {
-            LLMChain::Ollama(ollama) => ollama.message(content).await,
-            LLMChain::Claude(claude) => claude.message(content).await,
+            LLMChain::Claude(claude) => claude.call(),
+            LLMChain::Ollama(ollama) => ollama.call(),
         }
     }
 
-    pub async fn link<C>(&mut self, mcp: &McpMatrix, content: &str, console: &mut C) -> Result<()>
+    #[must_use]
+    pub fn models(&self) -> Vec<String> {
+        match self {
+            LLMChain::Claude(claude) => claude.models(),
+            LLMChain::Ollama(ollama) => ollama.models(),
+        }
+    }
+
+    pub fn message<S>(&self, content: S) -> Result<String>
     where
-        C: ConsoleDisplayTrait,
+        S: Into<String>,
     {
         match self {
-            LLMChain::Ollama(ollama) => ollama.link(mcp, content, console).await,
-            LLMChain::Claude(claude) => claude.link(mcp, content, console).await,
+            LLMChain::Ollama(ollama) => ollama.message(content),
+            LLMChain::Claude(claude) => claude.message(content),
         }
+    }
+
+    pub fn add_content<S>(&mut self, role: LLMRole, content: S)
+    where
+        S: Into<String>,
+    {
+        match self {
+            LLMChain::Ollama(ollama) => ollama.add_content(role, content),
+            LLMChain::Claude(claude) => claude.add_content(role, content),
+        }
+    }
+
+    pub fn link<C, S>(&mut self, content: S, console: &C) -> Result<()>
+    where
+        C: ConsoleTrait + Send + Sync,
+        S: Into<String>,
+    {
+        self.add_content(LLMRole::User, content);
+
+        loop {
+            console.enter_thinking("");
+            let ret = self.call();
+            console.leave_thinking();
+
+            let data = ret?;
+
+            match console.io(data) {
+                Some(r) => {
+                    //
+                    // we're continuing...
+                    //
+                    self.add_content(LLMRole::User, &r);
+                    info!("console returned {r}");
+                }
+                None => break,
+            }
+        }
+
+        Ok(())
     }
 
     pub fn reset(&mut self) {
@@ -105,6 +153,7 @@ impl LLMChain {
         }
     }
 
+    #[must_use]
     pub fn model(&self) -> &str {
         match self {
             LLMChain::Ollama(ollama) => ollama.model(),
@@ -112,9 +161,9 @@ impl LLMChain {
         }
     }
 
-    pub fn change_model<S>(&mut self, model: S)
+    pub fn change_model<S>(&mut self, model: S) -> Result<()>
     where
-        S: AsRef<str>,
+        S: AsRef<str> + Display,
     {
         match self {
             LLMChain::Ollama(ollama) => ollama.change_model(model),
@@ -122,6 +171,7 @@ impl LLMChain {
         }
     }
 
+    #[must_use]
     pub fn usage(&self) -> LLMUsage {
         match self {
             LLMChain::Ollama(ollama) => ollama.usage(),
@@ -133,20 +183,6 @@ impl LLMChain {
         match self {
             LLMChain::Ollama(ollama) => ollama.dump_chain(),
             LLMChain::Claude(claude) => claude.dump_chain(),
-        }
-    }
-
-    pub fn enable_mcp(&mut self, mcp: &McpMatrix) -> Result<()> {
-        match self {
-            LLMChain::Ollama(ollama) => ollama.enable_mcp(mcp),
-            LLMChain::Claude(claude) => claude.enable_mcp(mcp),
-        }
-    }
-
-    pub fn disable_mcp(&mut self) -> Result<()> {
-        match self {
-            LLMChain::Ollama(ollama) => ollama.disable_mcp(),
-            LLMChain::Claude(claude) => claude.disable_mcp(),
         }
     }
 }

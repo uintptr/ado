@@ -37,7 +37,7 @@ where
         || query.contains(" could you ")
         || query.contains(" would you ")
         || query.contains(" should I ")
-        || query.ends_with("?")
+        || query.ends_with('?')
     {
         return true;
     }

@@ -1,23 +1,14 @@
-use std::sync::atomic::{AtomicI32, Ordering};
+use std::{fmt::Display, sync::atomic::AtomicI32};
 
 use crate::{
     config::loader::AdoConfig,
     data::types::AdoData,
-    error::Result,
+    error::{Error, Result},
     llm::{
-        chain::{LLMChainTrait, LLMUsage},
-        claude::claude_api::{
-            ClaudeApi, ClaudeContentType, ClaudeMessages, ClaudeResponse, ClaudeRole, ClaudeStopReason,
-            ClaudeToolResult,
-        },
+        chain::{LLMChainTrait, LLMRole, LLMUsage},
+        claude::claude_api::{ClaudeApi, ClaudeMessages, ClaudeRole},
     },
-    mcp::matrix::McpMatrix,
-    ui::ConsoleDisplayTrait,
 };
-
-use async_trait::async_trait;
-use log::info;
-use omcp::types::McpParams;
 
 pub struct ClaudeChain {
     api: ClaudeApi,
@@ -46,109 +37,78 @@ impl ClaudeChain {
         }
 
         Ok(Self {
-            api: ClaudeApi::new(claude)?,
+            api: ClaudeApi::new(claude),
             msg_id: AtomicI32::new(0),
             messages,
             tokens: LLMUsage::default(),
         })
     }
-
-    async fn process_content<C>(&mut self, mcp: &McpMatrix, response: &ClaudeResponse, console: &mut C) -> Result<()>
-    where
-        C: ConsoleDisplayTrait,
-    {
-        for content in response.content.iter() {
-            match content.content_type {
-                ClaudeContentType::Text => {
-                    if let Some(text) = &content.text {
-                        console.display_string(text)?;
-                        self.messages.add_message(ClaudeRole::Assistant, text);
-                    }
-                }
-                ClaudeContentType::ToolUse => {
-                    if let Some(name) = &content.name {
-                        let mut params = McpParams::new(name);
-
-                        if let Some(input) = &content.input {
-                            let args = input.clone();
-                            params.set_argument(args);
-                        }
-
-                        self.messages.add_content(ClaudeRole::Assistant, content)?;
-
-                        let (mcp_data, success) = match mcp.call(&params).await {
-                            Ok(v) => (v, true),
-                            Err(e) => (format!("error: {e}"), false),
-                        };
-
-                        let result = ClaudeToolResult::new(content, mcp_data, success);
-
-                        self.messages.add_result(&result)?;
-                    }
-                }
-                ClaudeContentType::ToolResult => {
-                    panic!()
-                }
-            }
-        }
-
-        Ok(())
-    }
 }
 
-#[async_trait(?Send)]
 impl LLMChainTrait for ClaudeChain {
-    async fn link<C>(&mut self, mcp: &McpMatrix, content: &str, console: &mut C) -> Result<()>
-    where
-        C: ConsoleDisplayTrait,
-    {
-        self.messages.add_message(ClaudeRole::User, content);
+    fn call(&mut self) -> Result<AdoData> {
+        let resp = self.api.chat(&self.messages)?;
 
-        loop {
-            let resp = self.api.chat(&self.messages).await?;
+        self.tokens.input_tokens = self.tokens.input_tokens.saturating_add(resp.usage.input_tokens);
+        self.tokens.output_tokens = self.tokens.output_tokens.saturating_add(resp.usage.output_tokens);
 
-            self.tokens.input_tokens += resp.usage.input_tokens;
-            self.tokens.output_tokens += resp.usage.output_tokens;
+        let text = resp.message()?;
 
-            // in its own function so it can be tested from a local
-            // file
-            self.process_content(mcp, &resp, console).await?;
+        self.messages.add_message(ClaudeRole::Assistant, text);
 
-            //
-            // Keep going until it's done
-            //
-            if let ClaudeStopReason::EndTurn = resp.stop_reason {
-                break;
-            } else {
-                info!("{} != EndTurn. Continuing", resp.stop_reason);
+        let data: AdoData = text.parse()?;
+
+        Ok(data)
+    }
+
+    fn models(&self) -> Vec<String> {
+        let mut models = Vec::new();
+
+        if let Ok(ret_models) = self.api.models() {
+            for model in ret_models {
+                models.push(model.id);
             }
         }
 
-        self.msg_id.fetch_add(1, Ordering::SeqCst);
-
-        Ok(())
+        models
     }
 
-    async fn message(&self, content: &str) -> Result<String> {
-        let resp = self.api.message(content).await?;
+    fn add_content<S>(&mut self, role: LLMRole, content: S)
+    where
+        S: Into<String>,
+    {
+        let claude_role = match role {
+            LLMRole::Assistant | LLMRole::System => ClaudeRole::Assistant,
+            LLMRole::User => ClaudeRole::User,
+        };
+
+        self.messages.add_message(claude_role, content);
+    }
+
+    fn message<S>(&self, content: S) -> Result<String>
+    where
+        S: Into<String>,
+    {
+        let resp = self.api.message(content)?;
         Ok(resp.message()?.to_string())
     }
 
     fn reset(&mut self) {
         self.msg_id = AtomicI32::new(0);
         self.tokens = LLMUsage::default();
-        self.messages.reset()
+        self.messages.reset();
     }
 
     fn model(&self) -> &str {
         &self.api.config.model
     }
 
-    fn change_model<S>(&mut self, model: S)
+    fn change_model<S>(&mut self, model: S) -> Result<()>
     where
-        S: AsRef<str>,
+        S: AsRef<str> + Display,
     {
-        self.api.config.model = model.as_ref().into()
+        self.api.config.model = model.as_ref().to_string();
+        Ok(())
     }
 
     fn usage(&self) -> LLMUsage {
@@ -159,13 +119,7 @@ impl LLMChainTrait for ClaudeChain {
     }
 
     fn dump_chain(&self) -> Result<AdoData> {
-        let json_chain = serde_json::to_string_pretty(&self.messages)?;
-        Ok(AdoData::Json(json_chain))
-    }
-
-    fn enable_mcp(&mut self, mcp: &McpMatrix) -> Result<()> {
-        self.messages.with_tools(mcp);
-        Ok(())
+        Err(Error::NotImplemented)
     }
 }
 
@@ -175,92 +129,18 @@ impl LLMChainTrait for ClaudeChain {
 
 #[cfg(test)]
 mod tests {
-    use std::{fs, path::Path};
-
-    use log::info;
-    use rstaples::{file::find_file, logging::StaplesLogger};
 
     use crate::{
         config::loader::AdoConfig,
-        llm::{
-            chain::LLMChainTrait,
-            claude::{claude_api::ClaudeResponse, claude_chain::ClaudeChain},
-        },
-        logging::logger::setup_logger,
-        mcp::matrix::McpMatrix,
-        ui::NopConsole,
+        llm::{chain::LLMChainTrait, claude::claude_chain::ClaudeChain},
     };
 
-    #[tokio::test]
-    async fn test_message() {
-        StaplesLogger::new().with_stdout().start();
-
+    #[test]
+    fn test_message() {
         let config_file = AdoConfig::from_default().unwrap();
 
         let chain = ClaudeChain::new(&config_file).unwrap();
 
-        chain.message("hello world").await.unwrap();
-    }
-
-    #[tokio::test]
-    async fn test_chain() {
-        StaplesLogger::new().with_stdout().start();
-
-        let config_file = AdoConfig::from_default().unwrap();
-
-        let mut chain = ClaudeChain::new(&config_file).unwrap();
-
-        let mut console = NopConsole::new();
-
-        let mcp = McpMatrix::new();
-
-        chain.link(&mcp, "Hello World", &mut console).await.unwrap();
-        chain.link(&mcp, "Can you tell a joke", &mut console).await.unwrap();
-
-        chain.message("hello world").await.unwrap();
-    }
-
-    #[tokio::test]
-    async fn test_content_response() {
-        setup_logger(true).unwrap();
-        let test_file = Path::new("/tmp").join("claude_response.json");
-
-        let resp = fs::read_to_string(test_file).unwrap();
-
-        let resp: ClaudeResponse = serde_json::from_str(&resp).unwrap();
-
-        let config_file = AdoConfig::from_default().unwrap();
-        let mut chain = ClaudeChain::new(&config_file).unwrap();
-
-        let mut console = NopConsole::new();
-
-        let mcp = McpMatrix::new();
-
-        let ret = chain.process_content(&mcp, &resp, &mut console).await.unwrap();
-
-        info!("ret: {ret:?}");
-    }
-
-    #[tokio::test]
-    async fn test_mcp_response() {
-        setup_logger(true).unwrap();
-
-        let config = AdoConfig::from_default().unwrap();
-        let mut chain = ClaudeChain::new(&config).unwrap();
-
-        let test_file = Path::new("test").join("claude_mcp_use.json");
-        let test_file = find_file(test_file).unwrap();
-        let resp_json = fs::read_to_string(test_file).unwrap();
-        let resp: ClaudeResponse = serde_json::from_str(&resp_json).unwrap();
-
-        let mut console = NopConsole::new();
-
-        let mut mcp = McpMatrix::new();
-
-        mcp.load(&config, "ha").await.unwrap();
-
-        chain.process_content(&mcp, &resp, &mut console).await.unwrap();
-
-        info!("done");
+        chain.message("hello world").unwrap();
     }
 }

@@ -1,3 +1,9 @@
-mod banner;
-pub mod console;
-pub mod console_test;
+pub(crate) mod banner;
+pub mod commands;
+pub mod headless;
+pub mod input;
+pub mod intrinsics;
+pub mod spinner;
+pub mod terminal;
+pub mod tui_app;
+pub(crate) mod ui;
