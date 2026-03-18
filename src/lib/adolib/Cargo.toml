@@ -26,5 +26,4 @@ tempfile.workspace = true
 uuid.workspace = true
 
 [build-dependencies]
-chrono.workspace = true
 vergen-git2.workspace = true
