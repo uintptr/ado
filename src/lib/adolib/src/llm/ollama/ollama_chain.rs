@@ -105,6 +105,7 @@ mod ollama_tests {
     };
 
     #[test]
+    #[ignore = "requires a running Ollama instance"]
     fn test_message() {
         let config_file = AdoConfig::from_default().unwrap();
 

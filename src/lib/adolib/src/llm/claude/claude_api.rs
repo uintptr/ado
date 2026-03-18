@@ -313,20 +313,32 @@ impl ClaudeApi {
 
 #[cfg(test)]
 mod tests {
-    use std::{fs, path::Path};
-
-    use log::info;
-
     use crate::llm::claude::claude_api::ClaudeResponse;
 
     #[test]
     fn test_response() {
-        let test_file = Path::new("/tmp").join("claude_response.json");
+        let json = r#"{
+            "id": "msg_01XFDUDYJgAACzvnptvVoYEL",
+            "type": "message",
+            "role": "assistant",
+            "model": "claude-sonnet-4-6",
+            "content": [{ "type": "text", "text": "Hello!" }],
+            "stop_reason": "end_turn",
+            "stop_sequence": null,
+            "usage": {
+                "input_tokens": 10,
+                "cache_creation_input_tokens": 0,
+                "cache_read_input_tokens": 0,
+                "cache_creation": {
+                    "ephemeral_5m_input_tokens": 0,
+                    "ephemeral_1h_input_tokens": 0
+                },
+                "output_tokens": 5,
+                "service_tier": "standard"
+            }
+        }"#;
 
-        let resp = fs::read_to_string(test_file).unwrap();
-
-        let resp: ClaudeResponse = serde_json::from_str(&resp).unwrap();
-
-        info!("{resp:?}");
+        let resp: ClaudeResponse = serde_json::from_str(json).unwrap();
+        assert_eq!(resp.content.first().and_then(|c| c.text.as_deref()), Some("Hello!"));
     }
 }
