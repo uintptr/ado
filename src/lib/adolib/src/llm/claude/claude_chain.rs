@@ -136,6 +136,7 @@ mod tests {
     };
 
     #[test]
+    #[ignore = "requires a Claude API key and network access"]
     fn test_message() {
         let config_file = AdoConfig::from_default().unwrap();
 
