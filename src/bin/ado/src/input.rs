@@ -2,9 +2,9 @@ use std::{borrow::Cow, env, path::Path};
 
 use anyhow::Result;
 use reedline::{
-    Completer, EditCommand, FileBackedHistory, IdeMenu, KeyCode, KeyModifiers, MenuBuilder,
-    Prompt, PromptEditMode, PromptHistorySearch, PromptHistorySearchStatus, Reedline, ReedlineEvent,
-    ReedlineMenu, Signal, Span, Suggestion, default_emacs_keybindings, Emacs,
+    Completer, EditCommand, Emacs, FileBackedHistory, IdeMenu, KeyCode, KeyModifiers, MenuBuilder, Prompt,
+    PromptEditMode, PromptHistorySearch, PromptHistorySearchStatus, Reedline, ReedlineEvent, ReedlineMenu, Signal,
+    Span, Suggestion, default_emacs_keybindings,
 };
 
 const MAX_SUGGESTIONS: u16 = 7;
@@ -173,7 +173,10 @@ fn build_editor(history_file: &Path, commands: Vec<String>) -> Result<Reedline> 
 
     let edit_mode = Box::new(Emacs::new(keybindings));
 
-    let history = Box::new(FileBackedHistory::with_file(HISTORY_CAPACITY, history_file.to_path_buf())?);
+    let history = Box::new(FileBackedHistory::with_file(
+        HISTORY_CAPACITY,
+        history_file.to_path_buf(),
+    )?);
 
     let editor = Reedline::create()
         .with_completer(completer)
