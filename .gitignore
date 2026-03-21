@@ -10,8 +10,9 @@
 container/templates/opensearch.xml
 *.tgz
 user.json
-config.toml
+config*.toml
 .env
 test_config.json
 ado-update.json
 /Cargo.lock
+/ado.log
