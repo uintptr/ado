@@ -1,7 +1,6 @@
 use std::collections::HashMap;
 
 use async_trait::async_trait;
-use rand::seq::IndexedRandom;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 
@@ -82,8 +81,14 @@ impl SearchTrait for SerpApi {
     async fn query<S: AsRef<str>>(&self, query: S) -> Result<WebResult> {
         let mut args = HashMap::new();
 
-        let mut rng = rand::rng();
-        let api_key = self.config.api_keys.choose(&mut rng).ok_or(Error::ApiKeyNotFound)?;
+        #[cfg(not(target_arch = "wasm32"))]
+        let api_key = {
+            use rand::seq::IndexedRandom;
+            let mut rng = rand::rng();
+            self.config.api_keys.choose(&mut rng).ok_or(Error::ApiKeyNotFound)?
+        };
+        #[cfg(target_arch = "wasm32")]
+        let api_key = self.config.api_keys.first().ok_or(Error::ApiKeyNotFound)?;
 
         args.insert("engine", self.config.engine.as_str());
         args.insert("q", query.as_ref());

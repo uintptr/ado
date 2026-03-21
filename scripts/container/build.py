@@ -19,16 +19,12 @@ WWW_IGNORE_LIST = ["config.toml", "test_config.json"]
 @dataclass
 class UserArgs:
     domain_name: str
-    cert_file: str
-    cert_key: str
     output: str
     debug: bool
     www_root: str
     test_config: str | None
 
     def __post_init__(self) -> None:
-        self.cert_file = os.path.abspath(self.cert_file)
-        self.cert_key = os.path.abspath(self.cert_key)
         self.output = os.path.abspath(self.output)
 
         if self.test_config is not None:
@@ -316,12 +312,6 @@ def main() -> int:
 
     parser = argparse.ArgumentParser()
 
-    script_root = os.path.abspath(os.path.dirname(sys.argv[0]))
-    def_cert_root = os.path.join(script_root, "certs")
-
-    def_cert = os.path.join(def_cert_root, "fullchain.pem")
-    def_key = os.path.join(def_cert_root, "privkey.pem")
-
     def_output = os.path.join(os.getcwd(), "container.tgz")
 
     parser.add_argument("-n",
@@ -334,18 +324,6 @@ def main() -> int:
                         "--debug",
                         action="store_true",
                         help="Debug build")
-
-    parser.add_argument("-c",
-                        "--cert-file",
-                        type=str,
-                        default=def_cert,
-                        help=f"/path/to/fullchain.pem. Default: {def_cert}")
-
-    parser.add_argument("-k",
-                        "--cert-key",
-                        type=str,
-                        default=def_key,
-                        help=f"/path/to/privkey.pem. Default: {def_key}")
 
     parser.add_argument("-o",
                         "--output",
@@ -371,14 +349,9 @@ def main() -> int:
 
         print("Docker Builder:")
         printkv("Domain Name", args.domain_name)
-        printkv("Certificate File", args.cert_file)
-        printkv("Certificate Private Key", args.cert_key)
         printkv("WWW Root", args.www_root)
         printkv("Debug Build", args.debug)
         printkv("Test Config", args.test_config)
-
-        assert os.path.isfile(args.cert_file)
-        assert os.path.isfile(args.cert_key)
 
         builder = DockerBuilder(args)
         builder.build()
