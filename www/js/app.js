@@ -1,7 +1,7 @@
 //@ts-check
 
 import * as utils from "./utils.js";
-import init, { AdoWasm } from "./pkg/adolib.js";
+import { AdoClient } from "./ado-client.js";
 import {
     navigateWithLoading,
     configureLoadingScreen,
@@ -9,21 +9,9 @@ import {
 
 const marked = window["marked"];
 
-class UserConfig {
-    /**
-     * @param {string} user_id
-     * @param {string} config_file
-     */
-    constructor(user_id, config_file) {
-        this.user_id = user_id;
-        this.config_file = config_file;
-    }
-}
-
-// Configure loading screen with minimal delays
 configureLoadingScreen({
-    enableDelay: false, // Disable artificial delays
-    minAnimationTime: 200, // Set minimal animation time
+    enableDelay: false,
+    minAnimationTime: 200,
 });
 
 // @ts-ignore
@@ -55,19 +43,6 @@ function set_ready_status(status) {
 }
 
 /**
- * @param {AdoWasm} wctx
- */
-function set_version(wctx) {
-    const version = wctx.version();
-
-    const version_container = document.querySelector("#version-tag");
-
-    if (null != version_container && version_container instanceof HTMLElement) {
-        version_container.textContent = version;
-    }
-}
-
-/**
  * @param {any} item
  * @param {string} name
  * @returns {HTMLElement | null}
@@ -92,7 +67,6 @@ function search_new_card(item, name) {
 
         let url = new URL(link);
 
-        // decomposed URL
         let components = url.pathname.split("/");
         components[0] = url.hostname;
 
@@ -137,15 +111,6 @@ async function display_search_results(json_data) {
 }
 
 /**
- * @param {object} status
- */
-function display_status(status) {
-    let md = " ### Status\n";
-    md += " #### Model: `" + status.model + "`\n";
-    display_string(md);
-}
-
-/**
  * @param {string} response
  * @param {boolean} markdown
  * @param {string | null} chat_source
@@ -163,7 +128,6 @@ function display_string(response, markdown = true, chat_source = null) {
     const result = utils.new_template("command_result");
 
     if (null != result) {
-        // to rebuild the context
         if (null != chat_source) {
             result.setAttribute("chat-source", chat_source);
             result.setAttribute("chat-data", response);
@@ -174,7 +138,6 @@ function display_string(response, markdown = true, chat_source = null) {
         if (text_container != null && text_container instanceof HTMLElement) {
             if (true == markdown) {
                 text_container.innerHTML = marked.parse(response);
-                // Apply syntax highlighting to code blocks
                 // @ts-ignore
                 if (window.hljs) {
                     result.querySelectorAll("pre code").forEach((block) => {
@@ -187,11 +150,7 @@ function display_string(response, markdown = true, chat_source = null) {
             }
 
             container.appendChild(result);
-        } else {
-            console.error("unable to find text container");
         }
-    } else {
-        console.error("couldn't find template");
     }
 }
 
@@ -205,31 +164,60 @@ function display_reset() {
 }
 
 /**
- * @param {object} ado_data
+ * @param {object} artifact
  */
-function display_adodata(ado_data) {
-    const data = ado_data.data;
-
-    if (data.hasOwnProperty("UsageString")) {
-        let usage = "```\n" + data.UsageString + "\n```";
-        display_string(usage);
-    } else if (data.hasOwnProperty("SearchData")) {
-        const object = data.SearchData;
-        display_search_results(object.json_string);
-    } else if (data == "Reset") {
-        display_reset();
-    } else if (data.hasOwnProperty("String")) {
-        let md = data.String.includes("```");
-        display_string(data.String, md);
-    } else {
-        display_string(ado_data.markdown);
+function display_artifact(artifact) {
+    switch (artifact.type) {
+        case "code": {
+            const lang = artifact.language || "";
+            display_string("```" + lang + "\n" + artifact.content + "\n```");
+            break;
+        }
+        case "diff":
+            display_string("```diff\n" + artifact.content + "\n```");
+            break;
+        case "command":
+            display_string("`" + artifact.content + "`");
+            break;
+        default:
+            display_string(artifact.content);
+            break;
     }
 }
 
 /**
- * @param {AdoWasm} wctx
+ * Handle a response from the ado backend.
+ * @param {any} data - Either an AdoData JSON object or a plain text string.
  */
-function init_cmd_line(wctx) {
+function display_response(data) {
+    if (typeof data === "string") {
+        // Plain text from print_markdown (e.g. /models output)
+        display_string(data);
+        return;
+    }
+
+    if (data.error) {
+        display_string("`Error: " + data.error.message + "`");
+        return;
+    }
+
+    if (data.response) {
+        if (data.response.message) {
+            display_string(data.response.message);
+        }
+
+        if (data.response.artifacts) {
+            for (const artifact of data.response.artifacts) {
+                display_artifact(artifact);
+            }
+        }
+    }
+}
+
+/**
+ * @param {AdoClient} client
+ */
+function init_cmd_line(client) {
     const cmd_input = document.getElementById("cmd_line");
 
     if (cmd_input != null && cmd_input instanceof HTMLInputElement) {
@@ -243,9 +231,6 @@ function init_cmd_line(wctx) {
 
         cmd_input.addEventListener("keyup", async function (e) {
             if (e.key == "Enter") {
-                //
-                // hide the keyboard
-                //
                 if (true == utils.isMobile()) {
                     cmd_input.blur();
                 }
@@ -257,7 +242,7 @@ function init_cmd_line(wctx) {
                     display_string(cmd_line, false);
 
                     try {
-                        let ret = await wctx.queue(cmd_line);
+                        client.send(cmd_line);
                     } catch (error) {
                         let err_msg = "error: " + error;
                         display_string("`" + err_msg + "`");
@@ -267,25 +252,53 @@ function init_cmd_line(wctx) {
                 cmd_input.value = "";
             }
         });
-    } else {
-        console.error("couldn't find the search input");
     }
 }
 
 /**
- * @param {AdoWasm} wctx
- * @param {string} query
+ * Simple client-side question detection.
+ * @param {string} text
+ * @returns {boolean}
  */
-async function navigate_to_lucky(wctx, query) {
-    let res = await wctx.query("lucky " + query);
-    await navigateWithLoading(res.data.String);
+function is_question(text) {
+    const q = text.trim().toLowerCase();
+    if (q.endsWith("?")) return true;
+
+    const words = [
+        "who",
+        "what",
+        "when",
+        "where",
+        "why",
+        "how",
+        "is",
+        "are",
+        "can",
+        "could",
+        "would",
+        "should",
+        "do",
+        "does",
+        "did",
+        "will",
+    ];
+    return words.some((w) => q.startsWith(w + " "));
 }
 
 /**
- * @param {AdoWasm} wctx
+ * @param {string} query
+ */
+async function navigate_to_lucky(query) {
+    const url =
+        "https://www.google.com/search?btnI&q=" + encodeURIComponent(query);
+    await navigateWithLoading(url);
+}
+
+/**
+ * @param {AdoClient} client
  * @param {string} search
  */
-async function search_handler(wctx, search) {
+async function search_handler(client, search) {
     const urlParams = new URLSearchParams(search);
 
     const q = urlParams.get("q");
@@ -294,172 +307,74 @@ async function search_handler(wctx, search) {
         let q_plus_two = q.slice(2);
 
         if (q.startsWith("s ")) {
-            //
-            // assume this is a search
-            //
-            let res = await wctx.queue("search " + q);
+            let google_url =
+                "https://google.com/search?q=" + encodeURIComponent(q_plus_two);
+            await navigateWithLoading(google_url);
         } else if (q.startsWith("i ")) {
-            //
-            // Google image search
-            //
             let google_image_url =
-                "https://www.google.com/search?q=" + q_plus_two + "&tbm=isch";
+                "https://www.google.com/search?q=" +
+                encodeURIComponent(q_plus_two) +
+                "&tbm=isch";
             await navigateWithLoading(google_image_url);
         } else if (q.startsWith("a ")) {
-            //
-            // amazon search
-            //
-            let amazon_url = "https://www.amazon.ca/s?k=" + q_plus_two;
+            let amazon_url =
+                "https://www.amazon.ca/s?k=" + encodeURIComponent(q_plus_two);
             await navigateWithLoading(amazon_url);
         } else if (q.startsWith("c ")) {
-            //
-            // assume this is a chat request
-            //
-            let res = await wctx.queue(q_plus_two);
+            client.send(q_plus_two);
         } else if (q.startsWith("g ")) {
-            //
-            // google search
-            //
-            let google_url = "https://google.com/search?q=" + q_plus_two;
+            let google_url =
+                "https://google.com/search?q=" + encodeURIComponent(q_plus_two);
             await navigateWithLoading(google_url);
         } else if (q.startsWith("l ")) {
-            //
-            // I'm feeling lucky google search
-            //
-            await navigate_to_lucky(wctx, q_plus_two);
+            await navigate_to_lucky(q_plus_two);
         } else if (q.startsWith("r ")) {
-            //
-            // Find the associated subreddit
-            //
-            let res = await wctx.query("reddit " + q_plus_two);
-            let reddit_url = "https://old.reddit.com" + res.data.String + "/";
+            let reddit_url =
+                "https://old.reddit.com/search?q=" +
+                encodeURIComponent(q_plus_two);
             await navigateWithLoading(reddit_url);
         } else if (q.startsWith("t ")) {
-            //
-            // ticker
-            //
-            let yfi_url = "https://finance.yahoo.com/quote/" + q_plus_two + "/";
+            let yfi_url =
+                "https://finance.yahoo.com/quote/" +
+                encodeURIComponent(q_plus_two) +
+                "/";
             await navigateWithLoading(yfi_url);
         } else if (q.startsWith("w ")) {
-            //
-            // wikipedia
-            //
-            await navigate_to_lucky(wctx, "wikipedia " + q_plus_two);
+            await navigate_to_lucky("wikipedia " + q_plus_two);
         } else {
-            //
-            // detect if this is a question
-            //
-            if (true == wctx.is_question(q)) {
-                let res = await wctx.queue(q);
+            if (is_question(q)) {
+                client.send(q);
             } else {
-                //
-                // fallback to google "I'm Feeling Lucky" url. In most
-                // cases this is better than a search result
-                //
-                await navigate_to_lucky(wctx, q);
+                await navigate_to_lucky(q);
             }
         }
     }
 }
 
-/**
- * @param {string} user_id
- * @returns {Promise<string | null>}
- */
-
-async function get_config_file(user_id) {
-    let config_file = null;
-    const webdis_url = "/webdis//GET/" + user_id;
-    let config = await utils.fetch_as_dict(webdis_url);
-
-    if (null != config) {
-        config_file = config.GET;
-    }
-
-    return config_file;
-}
-
-/**
- * @returns {Promise<string|null>}
- */
-async function get_user() {
-    let config = localStorage.getItem("user_config");
-
-    if (null == config) {
-        config = await utils.fetch_as_string("https://ado.uintptr.ca/user.json");
-    }
-
-    if (null != config) {
-        localStorage.setItem("user_config", config);
-    }
-
-    return config;
-}
-/*
- * @param {object} data
- */
-function wasm_display_callback(data) {
-    display_adodata(data);
-}
-
-function wasm_display_spinner_start() {
-    set_ready_status("THINKING...");
-}
-
-function wasm_display_spinner_stop() {
-    set_ready_status("READY");
-}
-
-/**
- * @returns {Promise<UserConfig|null>}
- */
-async function get_config() {
-    let user_json = await get_user();
-
-    if (null != user_json) {
-        let user = JSON.parse(user_json);
-
-        const config_file = await get_config_file(user.user_id);
-
-        if (config_file != null) {
-            return new UserConfig(user.user_id, config_file);
-        }
-    }
-
-    // in case it was burned in at build time ( for testing purposes )
-    return await utils.fetch_as_dict("/test_config.json");
-}
-
 async function main() {
-    // loading the wasm bits
-    await init();
+    const client = new AdoClient();
 
-    // get the config.toml file
-    let config = await get_config();
+    client.onResponse = (data) => display_response(data);
+    client.onThinkingStart = () => set_ready_status("THINKING...");
+    client.onThinkingStop = () => set_ready_status("READY");
 
-    if (config != null) {
-        let wctx = new AdoWasm(config.user_id, config.config_file);
+    try {
+        await client.connect();
+    } catch (e) {
+        console.error("Failed to connect to ado backend", e);
+        set_ready_status("OFFLINE");
+        return;
+    }
 
-        set_version(wctx);
+    set_ready_status("READY");
 
-        init_cmd_line(wctx);
+    init_cmd_line(client);
 
-        const search = window.location.search;
+    const search = window.location.search;
 
-        // from the URL bar
-        if (search != null && search.length > 0) {
-            search_handler(wctx, search);
-        }
-    } else {
-        await navigateWithLoading("/login.html");
+    if (search != null && search.length > 0) {
+        search_handler(client, search);
     }
 }
-
-// @ts-ignore
-window.wasm_display = wasm_display_callback;
-// @ts-ignore
-window.wasm_display_spinner_start = wasm_display_spinner_start;
-// @ts-ignore
-window.wasm_display_spinner_stop = wasm_display_spinner_stop;
 
 await main();

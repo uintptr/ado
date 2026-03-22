@@ -19,20 +19,23 @@ WWW_IGNORE_LIST = ["config.toml", "test_config.json"]
 @dataclass
 class UserArgs:
     domain_name: str
-    cert_file: str
-    cert_key: str
     output: str
-    debug: bool
     www_root: str
     test_config: str | None
+    ado_bin: str | None
+    ado_config: str | None
 
     def __post_init__(self) -> None:
-        self.cert_file = os.path.abspath(self.cert_file)
-        self.cert_key = os.path.abspath(self.cert_key)
         self.output = os.path.abspath(self.output)
 
         if self.test_config is not None:
             self.test_config = os.path.abspath(self.test_config)
+
+        if self.ado_bin is not None:
+            self.ado_bin = os.path.abspath(self.ado_bin)
+
+        if self.ado_config is not None:
+            self.ado_config = os.path.abspath(self.ado_config)
 
 
 @dataclass
@@ -122,6 +125,23 @@ def shell_exec(cmd_line: str,
     return ret, out_str, out_err
 
 
+def find_container_runtime() -> tuple[str, str]:
+    """Return (runtime_bin, compose_cmd) for docker or podman."""
+    for runtime_name in ("docker", "podman"):
+        runtime = shutil.which(runtime_name)
+        if runtime is None:
+            continue
+        # prefer the subcommand form (v2-style)
+        ret, _, _ = shell_exec(f"{runtime} compose version", check=False)
+        if ret == 0:
+            return runtime, f"{runtime} compose"
+        # fall back to standalone docker-compose / podman-compose
+        standalone = shutil.which(f"{runtime_name}-compose")
+        if standalone is not None:
+            return runtime, standalone
+    raise AssertionError("neither docker nor podman is installed")
+
+
 class DockerBuilder:
 
     def __init__(self, args: UserArgs) -> None:
@@ -129,15 +149,7 @@ class DockerBuilder:
 
         self.script_root = os.path.abspath(os.path.dirname(sys.argv[0]))
 
-        self.docker = shutil.which("docker")
-
-        if self.docker is None:
-            raise AssertionError("docker is not installed")
-
-        self.wasm_pack = shutil.which("wasm-pack")
-
-        if self.wasm_pack is None:
-            raise AssertionError("wasm-pack is not installed")
+        self.runtime, self.compose = find_container_runtime()
 
     def __get_template(self, file_name: str) -> str:
 
@@ -151,9 +163,6 @@ class DockerBuilder:
     def __www_copytree_ignore(self, dir: str, files: list[str]) -> list[str]:
 
         basename = os.path.basename(dir)
-
-        if basename == "js" and "pkg" in files:
-            return ["pkg"]
 
         if basename == "www":
 
@@ -171,7 +180,7 @@ class DockerBuilder:
     def __copy_static_content(self, out_dir: str) -> None:
 
         www_root = os.path.join(self.script_root, os.pardir, os.pardir)
-        www_root = os.path.join(www_root, "src", "lib", "adolib", "www")
+        www_root = os.path.join(www_root, "www")
         www_root = os.path.abspath(www_root)
 
         shutil.copytree(www_root, out_dir, ignore=self.__www_copytree_ignore)
@@ -184,33 +193,12 @@ class DockerBuilder:
         with open(out_file, "w+") as f:
             f.write(xml_file)
 
-    def __build_wasm(self, wasm_pkg_root: str) -> None:
-
-        wd = os.path.join(self.script_root, os.pardir, os.pardir)
-        wd = os.path.abspath(wd)
-
-        cmd_line = f"{self.wasm_pack} build"
-        cmd_line += f" src/lib/adolib/ --target web -d {wasm_pkg_root}"
-
-        if self.args.debug:
-            cmd_line += " --no-opt --debug"
-
-        shell_exec(cmd_line, cwd=wd)
-
     def __build_www(self, www_root: str) -> None:
 
         self.__copy_static_content(www_root)
 
         open_search = os.path.join(www_root, "opensearch.xml")
         self.__copy_open_search(open_search)
-
-        wasm_pkg_root = os.path.join(www_root, "js", "pkg")
-        self.__build_wasm(wasm_pkg_root)
-
-    def __build_certs(self, certs_root: str) -> None:
-
-        shutil.copy2(self.args.cert_file, certs_root)
-        shutil.copy2(self.args.cert_key, certs_root)
 
     def __build_nginx(self, container_root: str) -> None:
 
@@ -225,17 +213,39 @@ class DockerBuilder:
         with open(nginx_conf, "w+") as f:
             f.write(template)
 
-        nginx_main = os.path.join(container_root, "nginx.conf")
+    def __cargo_build_ado(self) -> str:
 
-        with open(nginx_main, "w+") as f:
-            f.write(self.__get_template("nginx_main.conf"))
+        wd = os.path.join(self.script_root, os.pardir, os.pardir)
+        wd = os.path.abspath(wd)
 
-    def __build_webdis(self, webdis_root: str) -> None:
+        target = "x86_64-unknown-linux-gnu"
 
-        webdis_json = os.path.join(self.script_root,
-                                   "webdis",
-                                   "webdis.prod.json")
-        shutil.copy2(webdis_json, webdis_root)
+        cross = shutil.which("cross")
+        tool = cross if cross is not None else shutil.which("cargo")
+
+        if tool is None:
+            raise AssertionError("neither cross nor cargo is installed")
+
+        env = {}
+        if cross is not None:
+            env["CROSS_CONTAINER_ENGINE"] = self.runtime
+
+        shell_exec(f"{tool} build --release --target {target} --bin ado",
+                   cwd=wd, env=env)
+
+        return os.path.join(wd, "target", target, "release", "ado")
+
+    def __build_ado(self, ado_root: str) -> None:
+
+        dockerfile = os.path.join(self.script_root, "ado", "Dockerfile")
+        shutil.copy2(dockerfile, ado_root)
+
+        ado_bin = self.args.ado_bin if self.args.ado_bin is not None else self.__cargo_build_ado()
+        shutil.copy2(ado_bin, os.path.join(ado_root, "ado"))
+
+        if self.args.ado_config is not None:
+            shutil.copy2(self.args.ado_config,
+                         os.path.join(ado_root, "config.toml"))
 
     def __build_docker_compose(self, container_root: str) -> None:
 
@@ -247,6 +257,10 @@ class DockerBuilder:
 
         with open(compose_file, "w+") as f:
             f.write(template)
+
+    def __build_containers(self, container_root: str) -> None:
+
+        shell_exec(f"{self.compose} build", cwd=container_root)
 
     def __build_test_config(self, config_path: str, www_root: str) -> None:
 
@@ -284,28 +298,26 @@ class DockerBuilder:
                 self.__build_test_config(self.args.test_config, www_root)
 
             #
-            # /etc/certs
-            #
-            certs_root = os.path.join(container_root, "certs")
-            os.mkdir(certs_root)
-            self.__build_certs(certs_root)
-
-            #
             # /etc/nginx/conf.d/
             #
             self.__build_nginx(container_root)
 
             #
-            # webdis
+            # ado (headless + ttyd)
             #
-            webdis_root = os.path.join(container_root, "webdis")
-            os.mkdir(webdis_root)
-            self.__build_webdis(webdis_root)
+            ado_root = os.path.join(container_root, "ado")
+            os.mkdir(ado_root)
+            self.__build_ado(ado_root)
 
             #
             # docker compose file
             #
             self.__build_docker_compose(container_root)
+
+            #
+            # build containers
+            #
+            self.__build_containers(container_root)
 
             tarball(container_root, self.args.output)
 
@@ -330,23 +342,6 @@ def main() -> int:
                         required=True,
                         help="Server Domain Name")
 
-    parser.add_argument("-d",
-                        "--debug",
-                        action="store_true",
-                        help="Debug build")
-
-    parser.add_argument("-c",
-                        "--cert-file",
-                        type=str,
-                        default=def_cert,
-                        help=f"/path/to/fullchain.pem. Default: {def_cert}")
-
-    parser.add_argument("-k",
-                        "--cert-key",
-                        type=str,
-                        default=def_key,
-                        help=f"/path/to/privkey.pem. Default: {def_key}")
-
     parser.add_argument("-o",
                         "--output",
                         type=str,
@@ -363,24 +358,29 @@ def main() -> int:
                         type=str,
                         help="/path/to/test/config.toml")
 
+    parser.add_argument("--ado-bin",
+                        type=str,
+                        help="/path/to/ado linux binary")
+
+    parser.add_argument("--ado-config",
+                        type=str,
+                        help="/path/to/ado/config.toml")
+
     try:
 
         args = parser.parse_args()
         # type check
         args = UserArgs(**vars(args))
 
-        print("Docker Builder:")
-        printkv("Domain Name", args.domain_name)
-        printkv("Certificate File", args.cert_file)
-        printkv("Certificate Private Key", args.cert_key)
-        printkv("WWW Root", args.www_root)
-        printkv("Debug Build", args.debug)
-        printkv("Test Config", args.test_config)
-
-        assert os.path.isfile(args.cert_file)
-        assert os.path.isfile(args.cert_key)
-
         builder = DockerBuilder(args)
+
+        print(f"Container Builder ({builder.runtime}):")
+        printkv("Domain Name", args.domain_name)
+        printkv("WWW Root", args.www_root)
+        printkv("Test Config", args.test_config)
+        printkv("Ado Binary", args.ado_bin)
+        printkv("Ado Config", args.ado_config)
+
         builder.build()
 
         printkv("Output Image", args.output)
@@ -389,7 +389,7 @@ def main() -> int:
 
         status = 0
     except AssertionError as e:
-        print(e)
+        print(f"Assertion failure: {e}")
     except KeyboardInterrupt:
         pass
 
