@@ -31,6 +31,62 @@ if (window.hljs) {
 
 export {};
 
+/** @type {HTMLElement|null} */
+let thinking_el = null;
+
+function show_thinking() {
+    const container = document.getElementById("results");
+    if (container instanceof HTMLElement) {
+        utils.show_element(container);
+        thinking_el = document.createElement("div");
+        thinking_el.className = "result-item thinking-card";
+        thinking_el.innerHTML =
+            '<div class="thinking-dots"><span></span><span></span><span></span></div>';
+        container.appendChild(thinking_el);
+        thinking_el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+}
+
+function hide_thinking() {
+    if (thinking_el) {
+        thinking_el.remove();
+        thinking_el = null;
+    }
+}
+
+function scroll_to_latest() {
+    const container = document.getElementById("results");
+    if (container instanceof HTMLElement && container.lastElementChild) {
+        container.lastElementChild.scrollIntoView({
+            behavior: "smooth",
+            block: "nearest",
+        });
+    }
+}
+
+/**
+ * @param {HTMLElement} container
+ */
+function add_copy_buttons(container) {
+    container.querySelectorAll("pre").forEach((pre) => {
+        if (pre.querySelector(".copy-btn")) return;
+        const btn = document.createElement("button");
+        btn.className = "copy-btn";
+        btn.textContent = "copy";
+        btn.addEventListener("click", () => {
+            const code = pre.querySelector("code");
+            const text = code ? code.innerText : pre.innerText;
+            navigator.clipboard.writeText(text).then(() => {
+                btn.textContent = "copied!";
+                setTimeout(() => {
+                    btn.textContent = "copy";
+                }, 2000);
+            });
+        });
+        pre.appendChild(btn);
+    });
+}
+
 /**
  * @param {string} status
  */
@@ -107,6 +163,7 @@ async function display_search_results(json_data) {
         });
 
         utils.show_element(container);
+        scroll_to_latest();
     }
 }
 
@@ -114,8 +171,14 @@ async function display_search_results(json_data) {
  * @param {string} response
  * @param {boolean} markdown
  * @param {string | null} chat_source
+ * @param {string | null} extra_class
  */
-function display_string(response, markdown = true, chat_source = null) {
+function display_string(
+    response,
+    markdown = true,
+    chat_source = null,
+    extra_class = null,
+) {
     const container = document.getElementById("results");
 
     if (container == null || !(container instanceof HTMLElement)) {
@@ -133,6 +196,10 @@ function display_string(response, markdown = true, chat_source = null) {
             result.setAttribute("chat-data", response);
         }
 
+        if (extra_class) {
+            result.classList.add(extra_class);
+        }
+
         const text_container = result.querySelector("#command_text");
 
         if (text_container != null && text_container instanceof HTMLElement) {
@@ -145,16 +212,19 @@ function display_string(response, markdown = true, chat_source = null) {
                         window.hljs.highlightElement(block);
                     });
                 }
+                add_copy_buttons(result);
             } else {
                 text_container.innerText = response;
             }
 
             container.appendChild(result);
+            scroll_to_latest();
         }
     }
 }
 
 function display_reset() {
+    hide_thinking();
     const results = document.getElementById("results");
 
     if (results != null && results instanceof HTMLElement) {
@@ -221,12 +291,44 @@ function init_cmd_line(client) {
     const cmd_input = document.getElementById("cmd_line");
 
     if (cmd_input != null && cmd_input instanceof HTMLInputElement) {
+        /** @type {string[]} */
+        const history = [];
+        let hist_idx = -1;
+        let hist_draft = "";
+
         document.addEventListener("keydown", function (event) {
             if (event.ctrlKey) {
                 return;
             }
 
             cmd_input.focus();
+        });
+
+        cmd_input.addEventListener("keydown", function (e) {
+            if (e.key === "ArrowUp") {
+                e.preventDefault();
+                if (history.length === 0) return;
+                if (hist_idx === -1) hist_draft = cmd_input.value;
+                if (hist_idx < history.length - 1) hist_idx++;
+                cmd_input.value = history[history.length - 1 - hist_idx];
+                cmd_input.setSelectionRange(
+                    cmd_input.value.length,
+                    cmd_input.value.length,
+                );
+            } else if (e.key === "ArrowDown") {
+                e.preventDefault();
+                if (hist_idx <= 0) {
+                    hist_idx = -1;
+                    cmd_input.value = hist_draft;
+                } else {
+                    hist_idx--;
+                    cmd_input.value = history[history.length - 1 - hist_idx];
+                }
+                cmd_input.setSelectionRange(
+                    cmd_input.value.length,
+                    cmd_input.value.length,
+                );
+            }
         });
 
         cmd_input.addEventListener("keyup", async function (e) {
@@ -237,9 +339,12 @@ function init_cmd_line(client) {
 
                 const cmd_line = cmd_input.value;
                 cmd_input.value = "";
+                hist_idx = -1;
+                hist_draft = "";
 
                 if (cmd_line.length > 0) {
-                    display_string(cmd_line, false);
+                    history.push(cmd_line);
+                    display_string(cmd_line, false, null, "user-cmd");
 
                     try {
                         client.send(cmd_line);
@@ -250,6 +355,8 @@ function init_cmd_line(client) {
                 }
             } else if (e.key == "Escape") {
                 cmd_input.value = "";
+                hist_idx = -1;
+                hist_draft = "";
             }
         });
     }
@@ -355,8 +462,14 @@ async function main() {
     const client = new AdoClient();
 
     client.onResponse = (data) => display_response(data);
-    client.onThinkingStart = () => set_ready_status("THINKING...");
-    client.onThinkingStop = () => set_ready_status("READY");
+    client.onThinkingStart = () => {
+        set_ready_status("THINKING...");
+        show_thinking();
+    };
+    client.onThinkingStop = () => {
+        set_ready_status("READY");
+        hide_thinking();
+    };
 
     try {
         await client.connect();
