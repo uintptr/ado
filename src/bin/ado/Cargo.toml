@@ -16,6 +16,7 @@ log.workspace = true
 reedline.workspace = true
 rust-embed.workspace = true
 shell-words.workspace = true
+walkdir.workspace = true
 which.workspace = true
 
 [dev-dependencies]

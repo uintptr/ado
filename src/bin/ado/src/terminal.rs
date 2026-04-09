@@ -76,6 +76,33 @@ where
     let _ = stdout.flush();
 }
 
+fn print_status(status: &AdoDataStatus, intent: &str) {
+    let (icon, color) = match status {
+        AdoDataStatus::Ok => ("✓", style::Color::Green),
+        AdoDataStatus::Error => ("✗", style::Color::Red),
+        AdoDataStatus::Partial => ("⟳", style::Color::Yellow),
+    };
+    let mut stdout = io::stdout();
+    let _ = execute!(
+        stdout,
+        style::SetForegroundColor(color),
+        style::Print(format!("{icon} ")),
+        style::SetForegroundColor(style::Color::DarkGrey),
+        style::Print(format!("{intent}\n")),
+        style::ResetColor
+    );
+}
+
+fn print_action(text: &str) {
+    let mut stdout = io::stdout();
+    let _ = execute!(
+        stdout,
+        style::SetForegroundColor(style::Color::Cyan),
+        style::Print(format!("  {text}\n")),
+        style::ResetColor
+    );
+}
+
 impl Console {
     #[must_use]
     pub fn new() -> Self {
@@ -133,8 +160,8 @@ impl Console {
         match artifact.artifact_type {
             AdoDataArtifactType::File => {
                 if let Some(path) = &artifact.path {
-                    print_lines(format!(
-                        "Writing {} bytes to {}",
+                    print_action(&format!(
+                        "writing {} bytes to {}",
                         artifact.content.len(),
                         path.display()
                     ));
@@ -147,7 +174,7 @@ impl Console {
                 }
             }
             AdoDataArtifactType::Command => {
-                print_lines(format!("executing \"{}\"", artifact.content));
+                print_action(&format!("executing \"{}\"", artifact.content));
                 match handler_command(&artifact.content) {
                     Ok(v) => Some(v),
                     Err(e) => Some(format!("Unable to execute {}. Error: {e}", artifact.content)),
@@ -174,14 +201,8 @@ impl ConsoleTrait for Console {
 
     fn io(&self, data: AdoData) -> Option<String> {
         self.spinner.stop();
-
-        let status_label = match data.meta.status {
-            AdoDataStatus::Error => "Error",
-            AdoDataStatus::Partial => "Partial",
-            AdoDataStatus::Ok => "Ok",
-        };
-
-        println!("{status_label} {}", data.meta.intent);
+        println!();
+        print_status(&data.meta.status, &data.meta.intent);
 
         let ret = match data.meta.status {
             AdoDataStatus::Ok => {

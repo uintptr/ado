@@ -22,15 +22,20 @@ pub fn run(mut commands: UserCommands, history_file: &Path) -> Result<()> {
     let console = Console::new();
     let mut editor = input::create_editor(history_file, command_names)?;
 
-    while let InputResult::Line(line) = input::read_line(&mut editor)? {
-        let trimmed = line.trim().to_string();
-        if trimmed.is_empty() {
-            continue;
-        }
-
-        if let Err(e) = commands.handler(&trimmed, &console) {
-            error!("handler error: {e}");
-            console.error_message(&format!("{e}"));
+    loop {
+        let model = commands.current_model();
+        match input::read_line(&mut editor, &model)? {
+            InputResult::Line(line) => {
+                let trimmed = line.trim().to_string();
+                if trimmed.is_empty() {
+                    continue;
+                }
+                if let Err(e) = commands.handler(&trimmed, &console) {
+                    error!("handler error: {e}");
+                    console.error_message(&format!("{e}"));
+                }
+            }
+            InputResult::Eof => break,
         }
     }
 

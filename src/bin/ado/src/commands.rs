@@ -87,7 +87,19 @@ impl UserCommansTrait for CommandHelp {
         "help"
     }
 
-    fn callback(&mut self, _input: &str, _chain: &mut LLMChain, _console: &dyn ConsoleTrait) {}
+    fn callback(&mut self, _input: &str, _chain: &mut LLMChain, console: &dyn ConsoleTrait) {
+        console.print_markdown(
+            "# Commands\n\
+             * `/help` — show this help\n\
+             * `/model [name]` — show or switch the current model\n\
+             * `/models` — list all available models\n\
+             * `/reset` — clear the terminal screen\n\
+             \n\
+             ## Completion\n\
+             * Type `/` to trigger command completion\n\
+             * Type `@path` to attach a file (Tab to browse)",
+        );
+    }
 }
 
 impl UserCommansTrait for CommandModels {
@@ -223,6 +235,10 @@ impl UserCommands {
         ];
 
         Ok(Self { chain, commands })
+    }
+
+    pub fn current_model(&self) -> String {
+        self.chain.model().to_string()
     }
 
     pub fn command_models<C>(&self, console: &C) -> Result<()>
