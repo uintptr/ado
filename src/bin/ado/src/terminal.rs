@@ -1,6 +1,4 @@
 use std::{
-    fmt::Display,
-    fs,
     io::{self, Write},
     path::PathBuf,
     process::{Command, Stdio},
@@ -13,29 +11,11 @@ use adolib::{
     console::ConsoleTrait,
     data::types::{AdoData, AdoDataArtifact, AdoDataArtifactType, AdoDataStatus},
 };
-use anyhow::{Context, Result};
 use crossterm::{execute, style, terminal};
 use log::{error, info};
 use which::which;
 
-use crate::spinner::AdoSpinner;
-
-fn handler_command<S>(cmd_line: S) -> Result<String>
-where
-    S: AsRef<str> + Display,
-{
-    let args = shell_words::split(cmd_line.as_ref()).with_context(|| format!("Unable to split {cmd_line}"))?;
-
-    let cmd = args.first().with_context(|| format!("Empty command: {cmd_line}"))?;
-    let out = Command::new(cmd)
-        .args(args.get(1..).unwrap_or_default())
-        .output()
-        .with_context(|| format!("Unable to execute {cmd_line}"))?;
-
-    let data = String::from_utf8(out.stdout).context("Unable to convert stdout to a string")?;
-
-    Ok(data)
-}
+use crate::{agentic, spinner::AdoSpinner};
 
 ///////////////////////////////////////////////////////////////////////////////
 // Console — prints directly to stdout
@@ -53,7 +33,7 @@ impl Default for Console {
 }
 
 fn print_separator() {
-    let width = terminal::size().map(|(w, _)| w as usize).unwrap_or(80);
+    let width = terminal::size().map_or(80, |(w, _)| w as usize);
     let sep = "─".repeat(width.min(500));
     let mut stdout = io::stdout();
     let _ = execute!(
@@ -155,37 +135,6 @@ impl Console {
             _ => error!("artifact {} not handled in Console", artifact.artifact_type),
         }
     }
-
-    fn process_partial_artifact(artifact: &AdoDataArtifact) -> Option<String> {
-        match artifact.artifact_type {
-            AdoDataArtifactType::File => {
-                if let Some(path) = &artifact.path {
-                    print_action(&format!(
-                        "writing {} bytes to {}",
-                        artifact.content.len(),
-                        path.display()
-                    ));
-                    match fs::write(path, artifact.content.as_bytes()) {
-                        Ok(()) => Some(format!("{} was successfully written to disk", path.display())),
-                        Err(e) => Some(format!("Unable to write {} to disk. Error: {e}", path.display())),
-                    }
-                } else {
-                    Some("File path is missing".into())
-                }
-            }
-            AdoDataArtifactType::Command => {
-                print_action(&format!("executing \"{}\"", artifact.content));
-                match handler_command(&artifact.content) {
-                    Ok(v) => Some(v),
-                    Err(e) => Some(format!("Unable to execute {}. Error: {e}", artifact.content)),
-                }
-            }
-            _ => {
-                error!("unhandled type: {}", artifact.artifact_type);
-                None
-            }
-        }
-    }
 }
 
 impl ConsoleTrait for Console {
@@ -223,7 +172,7 @@ impl ConsoleTrait for Console {
                 let mut results = Vec::new();
                 if let Some(artifacts) = &data.response.artifacts {
                     for artifact in artifacts {
-                        if let Some(r) = Console::process_partial_artifact(artifact) {
+                        if let Some(r) = agentic::execute_partial_artifact(artifact, &print_action) {
                             results.push(r);
                         }
                     }

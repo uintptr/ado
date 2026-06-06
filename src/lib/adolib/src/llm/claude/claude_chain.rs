@@ -1,5 +1,7 @@
 use std::{fmt::Display, sync::atomic::AtomicI32};
 
+use log::info;
+
 use crate::{
     config::loader::AdoConfig,
     data::types::AdoData,
@@ -29,6 +31,9 @@ impl ClaudeChain {
 
         let mut messages = ClaudeMessages::new(&claude.model, claude.max_tokens);
 
+        // Constrain responses to the AdoData schema (structured outputs).
+        messages.set_output_schema(&crate::data::types::ado_data_schema());
+
         // if the user defined instructions in the config file
         if let Some(instructions) = &claude.instructions {
             for i in instructions {
@@ -47,7 +52,15 @@ impl ClaudeChain {
 
 impl LLMChainTrait for ClaudeChain {
     fn call(&mut self) -> Result<AdoData> {
+        self.messages.set_cache_breakpoints();
+
         let resp = self.api.chat(&self.messages)?;
+
+        let usage = &resp.usage;
+        info!(
+            "tokens: input={} output={} cache_read={} cache_write={}",
+            usage.input_tokens, usage.output_tokens, usage.cache_read_input_tokens, usage.cache_creation_input_tokens
+        );
 
         self.tokens.input_tokens = self.tokens.input_tokens.saturating_add(resp.usage.input_tokens);
         self.tokens.output_tokens = self.tokens.output_tokens.saturating_add(resp.usage.output_tokens);
@@ -77,12 +90,13 @@ impl LLMChainTrait for ClaudeChain {
     where
         S: Into<String>,
     {
-        let claude_role = match role {
-            LLMRole::Assistant | LLMRole::System => ClaudeRole::Assistant,
-            LLMRole::User => ClaudeRole::User,
-        };
-
-        self.messages.add_message(claude_role, content);
+        match role {
+            // System instructions/prompts belong in the cacheable `system`
+            // field, not as assistant turns in the message list.
+            LLMRole::System => self.messages.add_system_prompt(content.into()),
+            LLMRole::Assistant => self.messages.add_message(ClaudeRole::Assistant, content),
+            LLMRole::User => self.messages.add_message(ClaudeRole::User, content),
+        }
     }
 
     fn message<S>(&self, content: S) -> Result<String>

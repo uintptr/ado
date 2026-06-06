@@ -45,6 +45,21 @@ pub enum ClaudeContentType {
     Text,
 }
 
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct ClaudeCacheControl {
+    #[serde(rename = "type")]
+    pub cache_type: String,
+}
+
+impl ClaudeCacheControl {
+    #[must_use]
+    pub fn ephemeral() -> Self {
+        Self {
+            cache_type: "ephemeral".to_string(),
+        }
+    }
+}
+
 #[derive(Debug, Default, Deserialize, Serialize)]
 pub struct ClaudeContent {
     #[serde(rename = "type")]
@@ -57,6 +72,10 @@ pub struct ClaudeContent {
     pub input: Option<HashMap<String, Value>>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub name: Option<String>,
+    /// Marks a prompt-caching breakpoint; everything up to and including this
+    /// block is cached. Only ever set on the last system block.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cache_control: Option<ClaudeCacheControl>,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -146,6 +165,8 @@ pub struct ClaudeMessages {
     stream: bool,
     #[serde(skip_serializing_if = "Vec::is_empty")]
     system: Vec<ClaudeContent>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    output_config: Option<Value>,
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -211,6 +232,61 @@ impl ClaudeMessages {
 
     pub fn reset(&mut self) {
         self.messages = vec![];
+    }
+
+    /// Constrain responses to the given JSON schema via Anthropic structured
+    /// outputs, so the model can only emit schema-valid JSON.
+    pub fn set_output_schema(&mut self, schema: &Value) {
+        self.output_config = Some(serde_json::json!({
+            "format": {
+                "type": "json_schema",
+                "schema": schema,
+            }
+        }));
+    }
+
+    /// Place prompt-caching breakpoints just before sending a request.
+    ///
+    /// Caching is a prefix match (render order: tools → system → messages), so
+    /// we set two `cache_control` markers:
+    ///   1. the last `system` block — caches the stable prompt prefix, and
+    ///   2. the last message — caches the growing conversation prefix (which
+    ///      includes the system prompts) incrementally across turns.
+    ///
+    /// Both are idempotent: any previous message breakpoint is stripped first
+    /// so we never exceed the 4-breakpoint limit. Note: a prefix shorter than
+    /// the model's minimum (4096 tokens on Opus) silently won't cache.
+    pub fn set_cache_breakpoints(&mut self) {
+        // System prefix: keep exactly one breakpoint, on the last block.
+        for block in &mut self.system {
+            block.cache_control = None;
+        }
+        if let Some(last) = self.system.last_mut() {
+            last.cache_control = Some(ClaudeCacheControl::ephemeral());
+        }
+
+        // Conversation prefix: move the breakpoint to the current last message.
+        // Revert any prior block-form content back to a plain string first.
+        for msg in &mut self.messages {
+            if msg.content.is_array() {
+                let text = msg
+                    .content
+                    .get(0)
+                    .and_then(|b| b.get("text"))
+                    .and_then(Value::as_str)
+                    .unwrap_or_default()
+                    .to_string();
+                msg.content = Value::String(text);
+            }
+        }
+        if let Some(last) = self.messages.last_mut() {
+            let text = last.content.as_str().unwrap_or_default().to_string();
+            last.content = serde_json::json!([{
+                "type": "text",
+                "text": text,
+                "cache_control": { "type": "ephemeral" }
+            }]);
+        }
     }
 }
 
@@ -313,7 +389,7 @@ impl ClaudeApi {
 
 #[cfg(test)]
 mod tests {
-    use crate::llm::claude::claude_api::ClaudeResponse;
+    use crate::llm::claude::claude_api::{ClaudeMessages, ClaudeResponse, ClaudeRole};
 
     #[test]
     fn test_response() {
@@ -340,5 +416,42 @@ mod tests {
 
         let resp: ClaudeResponse = serde_json::from_str(json).unwrap();
         assert_eq!(resp.content.first().and_then(|c| c.text.as_deref()), Some("Hello!"));
+    }
+
+    #[test]
+    fn test_cache_breakpoints() {
+        let mut chat = ClaudeMessages::new("claude-opus-4-7", 1024);
+        chat.add_system_prompt("system A");
+        chat.add_system_prompt("system B");
+        chat.add_message(ClaudeRole::User, "hello");
+        chat.add_message(ClaudeRole::Assistant, "hi");
+        chat.add_message(ClaudeRole::User, "again");
+
+        chat.set_cache_breakpoints();
+
+        // Only the LAST system block carries a breakpoint.
+        assert!(chat.system[0].cache_control.is_none());
+        assert!(chat.system[1].cache_control.is_some());
+
+        // Only the LAST message is converted to a cached text block.
+        assert!(chat.messages[0].content.is_string());
+        assert!(chat.messages[1].content.is_string());
+        let last = &chat.messages[2].content;
+        assert_eq!(last[0]["type"], "text");
+        assert_eq!(last[0]["text"], "again");
+        assert_eq!(last[0]["cache_control"]["type"], "ephemeral");
+
+        // Idempotent: a second pass moves the message breakpoint to the new
+        // last message and reverts the previous one — never accumulating.
+        chat.add_message(ClaudeRole::Assistant, "ok");
+        chat.set_cache_breakpoints();
+        assert!(chat.messages[2].content.is_string()); // reverted
+        assert_eq!(chat.messages[3].content[0]["cache_control"]["type"], "ephemeral");
+
+        // At most one system + one message breakpoint (well under the limit of 4).
+        let system_bps = chat.system.iter().filter(|b| b.cache_control.is_some()).count();
+        let msg_bps = chat.messages.iter().filter(|m| m.content.is_array()).count();
+        assert_eq!(system_bps, 1);
+        assert_eq!(msg_bps, 1);
     }
 }

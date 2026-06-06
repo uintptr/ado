@@ -237,6 +237,7 @@ impl UserCommands {
         Ok(Self { chain, commands })
     }
 
+    #[must_use]
     pub fn current_model(&self) -> String {
         self.chain.model().to_string()
     }

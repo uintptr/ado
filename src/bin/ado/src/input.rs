@@ -179,7 +179,7 @@ fn list_top_level_entries(cwd: &Path) -> Vec<String> {
         if name.starts_with('.') {
             continue;
         }
-        let is_dir = entry.file_type().map(|t| t.is_dir()).unwrap_or(false);
+        let is_dir = entry.file_type().is_ok_and(|t| t.is_dir());
         if is_dir {
             dirs.push(format!("{name}/"));
         } else {

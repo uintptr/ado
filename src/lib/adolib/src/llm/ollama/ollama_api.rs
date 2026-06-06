@@ -2,6 +2,7 @@ use std::{fmt::Display, vec};
 
 use log::{error, info};
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 use crate::{
     error::Result,
@@ -65,6 +66,10 @@ pub struct OllamaChat {
     messages: Vec<OllamaMessage>,
     think: bool,
     stream: bool,
+    /// JSON schema for structured outputs (Ollama enforces it via grammar-
+    /// constrained decoding, so it works on any model).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    format: Option<Value>,
 }
 
 impl OllamaChat {
@@ -79,7 +84,13 @@ impl OllamaChat {
             messages: vec![],
             think,
             stream: false,
+            format: None,
         }
+    }
+
+    /// Constrain responses to the given JSON schema (Ollama `format`).
+    pub fn set_output_schema(&mut self, schema: Value) {
+        self.format = Some(schema);
     }
 
     pub fn add_content<C>(&mut self, role: LLMRole, content: C)

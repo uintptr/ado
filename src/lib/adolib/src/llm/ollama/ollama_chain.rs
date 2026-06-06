@@ -22,10 +22,11 @@ impl OllamaChain {
 
         api.set_model(&ollama.model)?;
 
-        Ok(Self {
-            api,
-            chat: OllamaChat::new(&ollama.model, ollama.thinking),
-        })
+        let mut chat = OllamaChat::new(&ollama.model, ollama.thinking);
+        // Constrain responses to the AdoData schema (structured outputs).
+        chat.set_output_schema(crate::data::types::ado_data_schema());
+
+        Ok(Self { api, chat })
     }
 }
 

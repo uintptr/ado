@@ -299,6 +299,10 @@ function display_response(msg) {
         case "markdown":
             display_string(msg.text);
             return;
+        case "action":
+            // Agentic progress note (running a command / writing a file).
+            display_string("`» " + msg.text + "`", true, null, "action-note");
+            return;
         case "error":
             display_string("`Error: " + msg.message + "`");
             return;

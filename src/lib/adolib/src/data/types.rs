@@ -2,7 +2,7 @@ use std::{fmt::Display, path::PathBuf, str::FromStr};
 
 use log::{error, info};
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
+use serde_json::{Value, json};
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -67,6 +67,62 @@ pub struct AdoData {
     pub meta: AdoDataMeta,
     pub response: AdoDataResponse,
     pub error: Option<AdoDataError>,
+}
+
+/// JSON Schema describing [`AdoData`], shared by every backend to drive
+/// provider-native structured outputs (Claude `output_config.format`, Ollama
+/// `format`). The schema enforces the *shape* of the response so the model can
+/// no longer emit malformed JSON or wrap it in prose/fences.
+#[must_use]
+pub fn ado_data_schema() -> Value {
+    json!({
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+            "meta": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                    "status": { "type": "string", "enum": ["ok", "error", "partial"] },
+                    "intent": { "type": "string" },
+                    "confidence": { "type": "number" }
+                },
+                "required": ["status", "intent", "confidence"]
+            },
+            "response": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                    "message": { "type": "string" },
+                    "artifacts": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "additionalProperties": false,
+                            "properties": {
+                                "type": { "type": "string", "enum": ["code", "diff", "file", "command", "note"] },
+                                "language": { "type": ["string", "null"] },
+                                "path": { "type": ["string", "null"] },
+                                "content": { "type": "string" }
+                            },
+                            "required": ["type", "language", "path", "content"]
+                        }
+                    }
+                },
+                "required": ["message", "artifacts"]
+            },
+            "error": {
+                "type": ["object", "null"],
+                "additionalProperties": false,
+                "properties": {
+                    "code": { "type": "string" },
+                    "message": { "type": "string" }
+                },
+                "required": ["code", "message"]
+            }
+        },
+        "required": ["meta", "response", "error"]
+    })
 }
 
 impl FromStr for AdoData {

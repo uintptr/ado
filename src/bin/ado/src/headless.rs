@@ -1,11 +1,14 @@
 use std::io::{self, BufRead, Write};
 
-use adolib::{console::ConsoleTrait, data::types::AdoData};
+use adolib::{
+    console::ConsoleTrait,
+    data::types::{AdoData, AdoDataStatus},
+};
 use anyhow::Result;
 use log::error;
 use serde::Serialize;
 
-use crate::commands::UserCommands;
+use crate::{agentic, commands::UserCommands};
 
 /// Newline-delimited JSON protocol spoken over stdout in headless mode.
 ///
@@ -19,6 +22,8 @@ enum HeadlessMessage<'a> {
     Data { data: &'a AdoData },
     /// Plain markdown emitted by built-in commands (e.g. `/help`, `/models`).
     Markdown { text: &'a str },
+    /// A progress note for an agentic action (running a command, writing a file).
+    Action { text: &'a str },
     /// An error message.
     Error { message: &'a str },
 }
@@ -50,6 +55,25 @@ impl ConsoleTrait for HeadlessConsole {
 
     fn io(&self, data: AdoData) -> Option<String> {
         HeadlessMessage::Data { data: &data }.emit();
+
+        // A `partial` response carries artifacts (commands/files) for us to
+        // execute inside the container; run them and feed the results back so
+        // the agentic loop continues.
+        if matches!(data.meta.status, AdoDataStatus::Partial) {
+            let mut results = Vec::new();
+            if let Some(artifacts) = &data.response.artifacts {
+                for artifact in artifacts {
+                    let notify = |text: &str| HeadlessMessage::Action { text }.emit();
+                    if let Some(r) = agentic::execute_partial_artifact(artifact, &notify) {
+                        results.push(r);
+                    }
+                }
+            }
+            if !results.is_empty() {
+                return Some(results.join(" "));
+            }
+        }
+
         None
     }
 
