@@ -203,7 +203,7 @@ function display_string(
         const text_container = result.querySelector("#command_text");
 
         if (text_container != null && text_container instanceof HTMLElement) {
-            if (true == markdown) {
+            if (true == markdown && marked) {
                 text_container.innerHTML = marked.parse(response);
                 // @ts-ignore
                 if (window.hljs) {
@@ -214,6 +214,10 @@ function display_string(
                 }
                 add_copy_buttons(result);
             } else {
+                // Plain text, or markdown lib unavailable (CDN blocked/offline).
+                if (true == markdown && !marked) {
+                    console.warn("[ado] marked.js not loaded; rendering as text");
+                }
                 text_container.innerText = response;
             }
 
@@ -256,16 +260,10 @@ function display_artifact(artifact) {
 }
 
 /**
- * Handle a response from the ado backend.
- * @param {any} data - Either an AdoData JSON object or a plain text string.
+ * Render a structured AdoData response.
+ * @param {any} data
  */
-function display_response(data) {
-    if (typeof data === "string") {
-        // Plain text from print_markdown (e.g. /models output)
-        display_string(data);
-        return;
-    }
-
+function display_ado_data(data) {
     if (data.error) {
         display_string("`Error: " + data.error.message + "`");
         return;
@@ -281,6 +279,31 @@ function display_response(data) {
                 display_artifact(artifact);
             }
         }
+    }
+}
+
+/**
+ * Handle a message from the ado backend (NDJSON envelope, see ado-client.js).
+ * @param {any} msg
+ */
+function display_response(msg) {
+    if (typeof msg === "string") {
+        display_string(msg);
+        return;
+    }
+
+    switch (msg.type) {
+        case "data":
+            display_ado_data(msg.data);
+            return;
+        case "markdown":
+            display_string(msg.text);
+            return;
+        case "error":
+            display_string("`Error: " + msg.message + "`");
+            return;
+        default:
+            console.warn("unknown message type", msg);
     }
 }
 
@@ -343,12 +366,14 @@ function init_cmd_line(client) {
                 hist_draft = "";
 
                 if (cmd_line.length > 0) {
+                    console.log("[ado] command entered:", cmd_line);
                     history.push(cmd_line);
                     display_string(cmd_line, false, null, "user-cmd");
 
                     try {
                         client.send(cmd_line);
                     } catch (error) {
+                        console.error("[ado] send failed", error);
                         let err_msg = "error: " + error;
                         display_string("`" + err_msg + "`");
                     }
@@ -459,9 +484,13 @@ async function search_handler(client, search) {
 }
 
 async function main() {
+    console.log("[ado] app starting");
     const client = new AdoClient();
 
-    client.onResponse = (data) => display_response(data);
+    client.onResponse = (data) => {
+        console.log("[ado] dispatching response", data);
+        display_response(data);
+    };
     client.onThinkingStart = () => {
         set_ready_status("THINKING...");
         show_thinking();
@@ -474,7 +503,7 @@ async function main() {
     try {
         await client.connect();
     } catch (e) {
-        console.error("Failed to connect to ado backend", e);
+        console.error("[ado] failed to connect to ado backend", e);
         set_ready_status("OFFLINE");
         return;
     }
@@ -482,6 +511,7 @@ async function main() {
     set_ready_status("READY");
 
     init_cmd_line(client);
+    console.log("[ado] ready — command input wired");
 
     const search = window.location.search;
 

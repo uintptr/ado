@@ -1,20 +1,55 @@
-use std::io::{self, BufRead};
+use std::io::{self, BufRead, Write};
 
 use adolib::{console::ConsoleTrait, data::types::AdoData};
 use anyhow::Result;
 use log::error;
+use serde::Serialize;
 
 use crate::commands::UserCommands;
+
+/// Newline-delimited JSON protocol spoken over stdout in headless mode.
+///
+/// Exactly one compact (single-line) JSON object is written per message, so the
+/// webapp can split stdout on `\n` and parse each line independently. Every
+/// message carries a `type` discriminator.
+#[derive(Serialize)]
+#[serde(tag = "type", rename_all = "lowercase")]
+enum HeadlessMessage<'a> {
+    /// A structured LLM response.
+    Data { data: &'a AdoData },
+    /// Plain markdown emitted by built-in commands (e.g. `/help`, `/models`).
+    Markdown { text: &'a str },
+    /// An error message.
+    Error { message: &'a str },
+}
+
+impl HeadlessMessage<'_> {
+    /// Serialize as one line of JSON and flush so the client sees it promptly.
+    fn emit(&self) {
+        let line = match serde_json::to_string(self) {
+            Ok(line) => line,
+            Err(e) => {
+                error!("failed to serialize headless message: {e}");
+                return;
+            }
+        };
+
+        let mut stdout = io::stdout().lock();
+        if let Err(e) = writeln!(stdout, "{line}").and_then(|()| stdout.flush()) {
+            error!("failed to write headless message: {e}");
+        }
+    }
+}
 
 struct HeadlessConsole {}
 
 impl ConsoleTrait for HeadlessConsole {
     fn error_message(&self, message: &str) {
-        eprintln!("{message}");
+        HeadlessMessage::Error { message }.emit();
     }
 
     fn io(&self, data: AdoData) -> Option<String> {
-        println!("{data}");
+        HeadlessMessage::Data { data: &data }.emit();
         None
     }
 
@@ -22,7 +57,7 @@ impl ConsoleTrait for HeadlessConsole {
     fn leave_thinking(&self) {}
 
     fn print_markdown(&self, s: &str) {
-        println!("{s}");
+        HeadlessMessage::Markdown { text: s }.emit();
     }
 }
 

@@ -3,9 +3,6 @@ name = "adolib"
 version.workspace = true
 edition.workspace = true
 
-[lib]
-crate-type = ["cdylib", "rlib"]
-
 [dependencies]
 base64.workspace = true
 dirs.workspace = true

@@ -28,6 +28,15 @@
         <!-- Stylesheets -->
         <link rel="stylesheet" href="/css/main.css" />
         <link rel="stylesheet" href="/css/loading-screen.css" />
+        <link
+            rel="stylesheet"
+            href="https://cdn.jsdelivr.net/npm/@highlightjs/cdn-assets@11.9.0/styles/github-dark.min.css"
+        />
+
+        <!-- Third-party libs (regular scripts: run before the deferred modules
+             below, so window.marked / window.hljs are ready in time) -->
+        <script src="https://cdn.jsdelivr.net/npm/marked@4.3.0/marked.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/@highlightjs/cdn-assets@11.9.0/highlight.min.js"></script>
 
         <!-- Application modules -->
         <script src="/js/utils.js" type="module"></script>

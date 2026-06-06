@@ -1,16 +1,58 @@
 //@ts-check
 
 /**
+ * Toggle verbose client logging. Set `window.ADO_DEBUG = false` in the console
+ * (or before load) to silence it.
+ */
+const DEBUG = () =>
+    typeof window === "undefined" || window["ADO_DEBUG"] !== false;
+
+/**
+ * @param {string} msg
+ * @param {...any} args
+ */
+function log(msg, ...args) {
+    if (DEBUG()) console.log("%c[ado]", "color:#0c9", msg, ...args);
+}
+
+/**
+ * @param {string} msg
+ * @param {...any} args
+ */
+function warn(msg, ...args) {
+    console.warn("[ado]", msg, ...args);
+}
+
+/**
+ * ttyd wire protocol: byte 0 of every frame is an ASCII command char, the rest
+ * is the payload. (Confirmed against ttyd 1.7.x.)
+ */
+const Command = {
+    // client -> server
+    INPUT: "0".charCodeAt(0), // 0x30
+    RESIZE: "1".charCodeAt(0),
+    // server -> client
+    OUTPUT: "0".charCodeAt(0), // 0x30
+    SET_WINDOW_TITLE: "1".charCodeAt(0),
+    SET_PREFERENCES: "2".charCodeAt(0),
+};
+
+/**
  * WebSocket client for the ado headless backend via ttyd.
  *
- * ttyd protocol:
- *   - byte 0 of each frame is the message type (0 = stdin/stdout)
- *   - remaining bytes are the payload
+ * ttyd handshake: on open the client MUST send an init JSON message
+ * (`{AuthToken, columns, rows}`) — ttyd spawns/feeds the child only after it.
+ * Input is then sent as `[Command.INPUT, ...utf8]`, and stdout arrives as
+ * `[Command.OUTPUT, ...utf8]`.
  *
  * ado headless protocol:
  *   - input:  one line of text per command (newline-terminated)
- *   - output: either a JSON AdoData blob (pretty-printed, multi-line)
- *             or plain text (from /commands like /models)
+ *   - output: newline-delimited JSON (NDJSON) — one compact JSON object per
+ *             line, each tagged with a `type` field:
+ *               { "type": "data",     "data": { ...AdoData... } }
+ *               { "type": "markdown", "text": "..." }
+ *               { "type": "error",    "message": "..." }
+ *             Lines that aren't valid JSON (e.g. pty echo) are ignored.
  */
 export class AdoClient {
     constructor() {
@@ -26,8 +68,22 @@ export class AdoClient {
         this.onThinkingStart = null;
         /** @type {(() => void)|null} */
         this.onThinkingStop = null;
-        /** @type {number|null} */
-        this.flushTimer = null;
+    }
+
+    /**
+     * Resolve the ttyd WebSocket URL. Priority:
+     *   1. window.ADO_WS_URL  (injected by the dev server)
+     *   2. ?ado_ws=...        (query param override)
+     *   3. same-origin /ado/ws (production, behind nginx)
+     * @returns {string}
+     */
+    _resolveWsUrl() {
+        if (window["ADO_WS_URL"]) return window["ADO_WS_URL"];
+        const param = new URLSearchParams(window.location.search).get("ado_ws");
+        if (param) return param;
+        const protocol =
+            window.location.protocol === "https:" ? "wss:" : "ws:";
+        return `${protocol}//${window.location.host}/ado/ws`;
     }
 
     /**
@@ -36,76 +92,80 @@ export class AdoClient {
      */
     connect() {
         return new Promise((resolve, reject) => {
-            const protocol =
-                window.location.protocol === "https:" ? "wss:" : "ws:";
-            const wsUrl = `${protocol}//${window.location.host}/ado/ws`;
+            const wsUrl = this._resolveWsUrl();
 
-            this.ws = new WebSocket(wsUrl);
+            log("connecting to", wsUrl);
+            // ttyd only treats the connection as a terminal (and spawns the
+            // child process) if the client negotiates the "tty" subprotocol.
+            this.ws = new WebSocket(wsUrl, ["tty"]);
             this.ws.binaryType = "arraybuffer";
 
-            this.ws.onopen = () => resolve();
-            this.ws.onerror = (e) => reject(e);
+            this.ws.onopen = () => {
+                log("connection open — sending ttyd init handshake");
+                // ttyd won't feed the child process until it gets this.
+                const init = JSON.stringify({
+                    AuthToken: "",
+                    columns: 80,
+                    rows: 24,
+                });
+                this.ws.send(new TextEncoder().encode(init));
+                resolve();
+            };
+
+            this.ws.onerror = (e) => {
+                warn("websocket error", e);
+                reject(e);
+            };
+
+            this.ws.onclose = (e) => {
+                warn(
+                    `connection closed (code=${e.code} reason="${e.reason}" clean=${e.wasClean}). ` +
+                        "If this happened right after connecting, the ado backend process likely exited.",
+                );
+            };
 
             this.ws.onmessage = (event) => {
                 const data = new Uint8Array(event.data);
-                if (data[0] === 0) {
+                const cmd = data[0];
+                if (cmd === Command.OUTPUT) {
                     const text = new TextDecoder().decode(data.slice(1));
+                    log(`recv ${text.length} chars of stdout`);
                     this._handleOutput(text);
+                } else if (cmd === Command.SET_WINDOW_TITLE) {
+                    log("recv window title", new TextDecoder().decode(data.slice(1)));
+                } else if (cmd === Command.SET_PREFERENCES) {
+                    log("recv preferences");
+                } else {
+                    log(`recv unknown ttyd frame, first byte=${cmd}`);
                 }
             };
         });
     }
 
     /**
+     * Accumulate stdout and dispatch one message per complete line.
      * @param {string} text
      */
     _handleOutput(text) {
         this.buffer += text;
 
-        if (this.flushTimer) {
-            clearTimeout(this.flushTimer);
+        let idx;
+        while ((idx = this.buffer.indexOf("\n")) >= 0) {
+            const line = this.buffer.slice(0, idx).trim();
+            this.buffer = this.buffer.slice(idx + 1);
+            if (!line) continue;
+
+            let msg;
+            try {
+                msg = JSON.parse(line);
+            } catch {
+                // Not a protocol message (e.g. pty echo or stray output) — skip.
+                log("skip non-JSON line:", JSON.stringify(line));
+                continue;
+            }
+            log("message:", msg);
+            this._deliverResponse(msg);
         }
-
-        // Try to flush a complete JSON object immediately
-        if (this._tryFlushJson()) {
-            return;
-        }
-
-        // Otherwise debounce for plain-text responses
-        this.flushTimer = setTimeout(() => this._flush(), 200);
-    }
-
-    /**
-     * @returns {boolean}
-     */
-    _tryFlushJson() {
-        const trimmed = this.buffer.trim();
-        if (!trimmed.startsWith("{")) return false;
-
-        try {
-            const data = JSON.parse(trimmed);
-            this.buffer = "";
-            this._deliverResponse(data);
-            return true;
-        } catch {
-            return false;
-        }
-    }
-
-    _flush() {
-        const text = this.buffer.trim();
-        this.buffer = "";
-        if (!text) return;
-
-        try {
-            const data = JSON.parse(text);
-            this._deliverResponse(data);
-            return;
-        } catch {
-            // not JSON — deliver as plain text
-        }
-
-        this._deliverResponse(text);
     }
 
     /**
@@ -149,12 +209,25 @@ export class AdoClient {
      * @param {string} command
      */
     _sendRaw(command) {
-        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-            const encoded = new TextEncoder().encode(command + "\n");
-            const payload = new Uint8Array(1 + encoded.length);
-            payload[0] = 0; // ttyd stdin type
-            payload.set(encoded, 1);
-            this.ws.send(payload);
+        if (!this.ws) {
+            warn("cannot send: not connected", command);
+            return;
         }
+
+        const states = ["CONNECTING", "OPEN", "CLOSING", "CLOSED"];
+        if (this.ws.readyState !== WebSocket.OPEN) {
+            warn(
+                `cannot send: socket is ${states[this.ws.readyState]}, dropping`,
+                command,
+            );
+            return;
+        }
+
+        log("send:", command);
+        const encoded = new TextEncoder().encode(command + "\n");
+        const payload = new Uint8Array(1 + encoded.length);
+        payload[0] = Command.INPUT; // ttyd input command byte ('0')
+        payload.set(encoded, 1);
+        this.ws.send(payload);
     }
 }
