@@ -2,7 +2,7 @@ use std::fs;
 
 use ado::{commands::UserCommands, headless::headless_run};
 use adolib::{config::loader::AdoConfig, error::Error};
-use anyhow::{Context, Result, anyhow};
+use anyhow::{Context, Result};
 use clap::Parser;
 use log::LevelFilter;
 
@@ -31,28 +31,8 @@ fn load_config_local(local_config: Option<&String>) -> Result<AdoConfig> {
 }
 
 fn init_logging(verbose: bool) -> Result<()> {
-    let data_dir = dirs::data_dir().ok_or_else(|| anyhow!("Unable to find data dir"))?;
-
-    let pkg_name = env!("CARGO_PKG_NAME");
-
-    let log_dir = data_dir.join(pkg_name);
-
-    if !log_dir.exists() {
-        fs::create_dir_all(&log_dir).with_context(|| format!("Unable to create {}", log_dir.display()))?;
-    }
-
-    let log_file = log_dir.join(format!("{pkg_name}.log"));
-
-    let log_fd = fs::OpenOptions::new()
-        .append(true)
-        .create(true)
-        .open(&log_file)
-        .with_context(|| format!("Unable to open {} for writing", log_file.display()))?;
-
-    let target = env_logger::Target::Pipe(Box::new(log_fd));
-
     let level = if verbose { LevelFilter::Info } else { LevelFilter::Error };
-    env_logger::builder().filter_level(level).target(target).init();
+    env_logger::builder().filter_level(level).init();
     Ok(())
 }
 

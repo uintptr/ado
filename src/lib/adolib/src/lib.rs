@@ -5,4 +5,5 @@ pub mod data;
 pub mod error;
 pub mod llm;
 pub(crate) mod rest;
+pub mod search;
 pub mod ui;

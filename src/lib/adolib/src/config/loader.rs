@@ -11,6 +11,7 @@ use crate::{
     const_vars::CONFIG_FILE_NAME,
     error::{Error, Result},
     llm::config::{ClaudeConfig, ConfigOllama},
+    search::google::GoogleConfig,
 };
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -21,8 +22,14 @@ pub struct ConfigLlm {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ConfigSearch {
+    google: Option<GoogleConfig>,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
 struct ConfigFile {
     llm: ConfigLlm,
+    search: ConfigSearch,
 }
 
 #[derive(Clone)]
@@ -142,5 +149,13 @@ impl AdoConfig {
             Some(v) => Ok(v),
             None => Err(Error::ConfigNotFound),
         }
+    }
+
+    pub fn search_google(&self) -> Result<&GoogleConfig> {
+        if let Some(g) = &self.config_file.search.google {
+            return Ok(g);
+        }
+
+        Err(Error::ConfigNotFound)
     }
 }

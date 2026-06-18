@@ -2,17 +2,8 @@
 
 import * as utils from "./utils.js";
 import { AdoClient } from "./ado-client.js";
-import {
-    navigateWithLoading,
-    configureLoadingScreen,
-} from "./loading-screen.js";
 
 const marked = window["marked"];
-
-configureLoadingScreen({
-    enableDelay: false,
-    minAnimationTime: 200,
-});
 
 // @ts-ignore
 if (window.hljs) {
@@ -99,75 +90,6 @@ function set_ready_status(status) {
 }
 
 /**
- * @param {any} item
- * @param {string} name
- * @returns {HTMLElement | null}
- */
-function search_new_card(item, name) {
-    const result = utils.new_template(name);
-
-    if (result != null) {
-        const title = result.querySelector("#title_link");
-
-        let link = item.link;
-
-        if (title != null && title instanceof HTMLElement) {
-            title.innerHTML = item.title;
-
-            if (link.includes("www.reddit.com")) {
-                link = link.replace("/www/", "old");
-            }
-
-            title.setAttribute("href", link);
-        }
-
-        let url = new URL(link);
-
-        let components = url.pathname.split("/");
-        components[0] = url.hostname;
-
-        for (let i = 0; i < components.length; i++) {
-            components[i] = decodeURIComponent(components[i]);
-        }
-
-        let parts = components.join(" > ");
-        utils.set_selector_text(result, "#url_parts", parts);
-
-        const body = result.querySelector("#result_text");
-
-        if (body != null && body instanceof HTMLElement) {
-            body.innerHTML = item.snippet;
-        }
-    }
-
-    return result;
-}
-
-/**
- * @param {string} json_data
- */
-async function display_search_results(json_data) {
-    const container = document.getElementById("results");
-
-    if (container != null && container instanceof HTMLElement) {
-        let results = JSON.parse(json_data);
-
-        results.items.forEach((item) => {
-            let card = search_new_card(item, "search_result");
-
-            if (card != null && card instanceof HTMLElement) {
-                container.appendChild(card);
-                const item_b64 = utils.object_to_b64(item);
-                card.setAttribute("chat-data-b64", item_b64);
-            }
-        });
-
-        utils.show_element(container);
-        scroll_to_latest();
-    }
-}
-
-/**
  * @param {string} response
  * @param {boolean} markdown
  * @param {string | null} chat_source
@@ -224,16 +146,6 @@ function display_string(
             container.appendChild(result);
             scroll_to_latest();
         }
-    }
-}
-
-function display_reset() {
-    hide_thinking();
-    const results = document.getElementById("results");
-
-    if (results != null && results instanceof HTMLElement) {
-        utils.remove_all_children(results);
-        utils.hide_element(results);
     }
 }
 
@@ -391,102 +303,6 @@ function init_cmd_line(client) {
     }
 }
 
-/**
- * Simple client-side question detection.
- * @param {string} text
- * @returns {boolean}
- */
-function is_question(text) {
-    const q = text.trim().toLowerCase();
-    if (q.endsWith("?")) return true;
-
-    const words = [
-        "who",
-        "what",
-        "when",
-        "where",
-        "why",
-        "how",
-        "is",
-        "are",
-        "can",
-        "could",
-        "would",
-        "should",
-        "do",
-        "does",
-        "did",
-        "will",
-    ];
-    return words.some((w) => q.startsWith(w + " "));
-}
-
-/**
- * @param {string} query
- */
-async function navigate_to_lucky(query) {
-    const url =
-        "https://www.google.com/search?btnI&q=" + encodeURIComponent(query);
-    await navigateWithLoading(url);
-}
-
-/**
- * @param {AdoClient} client
- * @param {string} search
- */
-async function search_handler(client, search) {
-    const urlParams = new URLSearchParams(search);
-
-    const q = urlParams.get("q");
-
-    if (q != null) {
-        let q_plus_two = q.slice(2);
-
-        if (q.startsWith("s ")) {
-            let google_url =
-                "https://google.com/search?q=" + encodeURIComponent(q_plus_two);
-            await navigateWithLoading(google_url);
-        } else if (q.startsWith("i ")) {
-            let google_image_url =
-                "https://www.google.com/search?q=" +
-                encodeURIComponent(q_plus_two) +
-                "&tbm=isch";
-            await navigateWithLoading(google_image_url);
-        } else if (q.startsWith("a ")) {
-            let amazon_url =
-                "https://www.amazon.ca/s?k=" + encodeURIComponent(q_plus_two);
-            await navigateWithLoading(amazon_url);
-        } else if (q.startsWith("c ")) {
-            client.send(q_plus_two);
-        } else if (q.startsWith("g ")) {
-            let google_url =
-                "https://google.com/search?q=" + encodeURIComponent(q_plus_two);
-            await navigateWithLoading(google_url);
-        } else if (q.startsWith("l ")) {
-            await navigate_to_lucky(q_plus_two);
-        } else if (q.startsWith("r ")) {
-            let reddit_url =
-                "https://old.reddit.com/search?q=" +
-                encodeURIComponent(q_plus_two);
-            await navigateWithLoading(reddit_url);
-        } else if (q.startsWith("t ")) {
-            let yfi_url =
-                "https://finance.yahoo.com/quote/" +
-                encodeURIComponent(q_plus_two) +
-                "/";
-            await navigateWithLoading(yfi_url);
-        } else if (q.startsWith("w ")) {
-            await navigate_to_lucky("wikipedia " + q_plus_two);
-        } else {
-            if (is_question(q)) {
-                client.send(q);
-            } else {
-                await navigate_to_lucky(q);
-            }
-        }
-    }
-}
-
 async function main() {
     console.log("[ado] app starting");
     const client = new AdoClient();
@@ -516,12 +332,6 @@ async function main() {
 
     init_cmd_line(client);
     console.log("[ado] ready — command input wired");
-
-    const search = window.location.search;
-
-    if (search != null && search.length > 0) {
-        search_handler(client, search);
-    }
 }
 
 await main();

@@ -9,14 +9,6 @@
             content="Modern command search interface with advanced terminal features"
         />
 
-        <!-- Search integration -->
-        <link
-            rel="search"
-            type="application/opensearchdescription+xml"
-            title="frontpagecommand"
-            href="/opensearch.xml"
-        />
-
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -27,7 +19,6 @@
 
         <!-- Stylesheets -->
         <link rel="stylesheet" href="/css/main.css" />
-        <link rel="stylesheet" href="/css/loading-screen.css" />
         <link
             rel="stylesheet"
             href="https://cdn.jsdelivr.net/npm/@highlightjs/cdn-assets@11.9.0/styles/github-dark.min.css"
@@ -40,7 +31,6 @@
 
         <!-- Application modules -->
         <script src="/js/utils.js" type="module"></script>
-        <script src="/js/loading-screen.js" type="module"></script>
         <script src="/js/ado-client.js" type="module"></script>
         <script src="/js/app.js" type="module"></script>
 
@@ -167,22 +157,6 @@
                 />
             </div>
         </div>
-
-        <template id="search_result">
-            <div class="result-item">
-                <div class="result-title">
-                    <a
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        id="title_link"
-                        class="a-no-deco"
-                        href="/"
-                    ></a>
-                </div>
-                <div id="url_parts" class="result-breadcrumb"></div>
-                <div id="result_text" class="result-snippet"></div>
-            </div>
-        </template>
 
         <template id="command_result">
             <div id="command_item" class="result-item">

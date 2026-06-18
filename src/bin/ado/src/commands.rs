@@ -10,6 +10,7 @@ use adolib::{
     config::loader::AdoConfig,
     console::ConsoleTrait,
     llm::chain::{LLMChain, LLMRole},
+    search::{SearchTrait, WebSearch},
 };
 use anyhow::{Context, Result, bail};
 use log::{error, info};
@@ -30,6 +31,35 @@ struct CommandHelp;
 struct CommandModels;
 struct CommandReset;
 struct CommandModel;
+struct CommandSearch {
+    gcse: WebSearch,
+}
+
+impl CommandSearch {
+    pub fn new(config: &AdoConfig) -> Result<Self> {
+        let gcse = WebSearch::new(config)?;
+
+        Ok(Self { gcse })
+    }
+}
+
+impl UserCommansTrait for CommandSearch {
+    fn name(&self) -> &'static str {
+        "search"
+    }
+
+    fn callback(&mut self, input: &str, _chain: &mut LLMChain, console: &dyn ConsoleTrait) {
+        let input = input.trim_ascii_start().trim_ascii_end();
+
+        info!("input: {input}");
+
+        if let Ok(_result) = self.gcse.query(input) {
+            info!("worked!");
+        }
+
+        console.print_markdown("Hello World");
+    }
+}
 
 impl UserCommansTrait for CommandModel {
     fn name(&self) -> &'static str {
@@ -227,12 +257,16 @@ impl UserCommands {
     pub fn new(config: &AdoConfig) -> Result<Self> {
         let chain = init_chain(config).context("Unable to initialize llm chain")?;
 
-        let commands: Vec<Box<dyn UserCommansTrait>> = vec![
+        let mut commands: Vec<Box<dyn UserCommansTrait>> = vec![
             Box::new(CommandHelp {}),
             Box::new(CommandModels {}),
             Box::new(CommandReset {}),
             Box::new(CommandModel {}),
         ];
+
+        if let Ok(search) = CommandSearch::new(config) {
+            commands.push(Box::new(search));
+        }
 
         Ok(Self { chain, commands })
     }
