@@ -53,9 +53,10 @@ impl UserCommansTrait for CommandSearch {
 
         info!("input: {input}");
 
-        if let Ok(_result) = self.gcse.query(input) {
-            info!("worked!");
-        }
+        match self.gcse.query(input) {
+            Ok(_v) => info!("worked!"),
+            Err(e) => error!("query error {e}"),
+        };
 
         console.print_markdown("Hello World");
     }

@@ -1,3 +1,4 @@
+use log::error;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -60,7 +61,13 @@ impl SearchTrait for GoogleCSE {
             ("gl", self.google.geo.as_str()),
         ];
 
+        dbg!(&query);
+
         let mut res = ureq::get(&self.google.url).query_pairs(query).call()?;
+
+        if !res.status().is_success() {
+            error!("{} returned {}", self.google.url, res.status().as_str());
+        }
 
         let body = res.body_mut().read_to_string()?;
 
