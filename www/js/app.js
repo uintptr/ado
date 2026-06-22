@@ -90,6 +90,58 @@ function set_ready_status(status) {
 }
 
 /**
+ * Build a card for one web-search result (WebResultEntry).
+ * @param {{title:string, link:string, link_display:string, snippet:string}} entry
+ * @returns {HTMLElement | null}
+ */
+function search_new_card(entry) {
+    const card = utils.new_template("search_result");
+    if (card == null) return null;
+
+    const title = card.querySelector("#title_link");
+    if (title instanceof HTMLAnchorElement) {
+        // Google returns plain (non-HTML) title/snippet — use textContent.
+        title.textContent = entry.title || entry.link;
+        title.setAttribute("href", entry.link);
+    }
+
+    const parts = card.querySelector("#url_parts");
+    if (parts instanceof HTMLElement) {
+        parts.textContent = entry.link_display || entry.link;
+    }
+
+    const body = card.querySelector("#result_text");
+    if (body instanceof HTMLElement) {
+        body.textContent = entry.snippet || "";
+    }
+
+    return card;
+}
+
+/**
+ * Render a WebResult (`/search` output) as a list of result cards.
+ * @param {{entries: any[]}} result
+ */
+function display_search_results(result) {
+    const container = document.getElementById("results");
+    if (!(container instanceof HTMLElement)) return;
+
+    const entries = (result && result.entries) || [];
+    if (entries.length === 0) {
+        display_string("`No results.`");
+        return;
+    }
+
+    for (const entry of entries) {
+        const card = search_new_card(entry);
+        if (card != null) container.appendChild(card);
+    }
+
+    utils.show_element(container);
+    scroll_to_latest();
+}
+
+/**
  * @param {string} response
  * @param {boolean} markdown
  * @param {string | null} chat_source
@@ -211,6 +263,22 @@ function display_response(msg) {
         case "markdown":
             display_string(msg.text);
             return;
+        case "plaintext": {
+            // `/search` emits its WebResult as a JSON blob — render as cards;
+            // anything else printed verbatim falls back to text.
+            let parsed = null;
+            try {
+                parsed = JSON.parse(msg.text);
+            } catch {
+                /* not JSON */
+            }
+            if (parsed && Array.isArray(parsed.entries)) {
+                display_search_results(parsed);
+            } else {
+                display_string(msg.text);
+            }
+            return;
+        }
         case "action":
             // Agentic progress note (running a command / writing a file).
             display_string("`» " + msg.text + "`", true, null, "action-note");
@@ -303,6 +371,28 @@ function init_cmd_line(client) {
     }
 }
 
+/**
+ * Handle a `/search?q=...` deep link by running ado's `/search` command.
+ * The optional leading `s ` bang selects web search (also the default).
+ * @param {AdoClient} client
+ * @param {string} search - the location.search string
+ */
+function search_handler(client, search) {
+    const q = new URLSearchParams(search).get("q");
+    if (q == null) return;
+
+    const terms = (q.startsWith("s ") ? q.slice(2) : q).trim();
+    if (terms.length === 0) return;
+
+    console.log("[ado] search deep-link:", terms);
+    display_string(terms, false, null, "user-cmd");
+    try {
+        client.send("/search " + terms);
+    } catch (error) {
+        console.error("[ado] search failed", error);
+    }
+}
+
 async function main() {
     console.log("[ado] app starting");
     const client = new AdoClient();
@@ -332,6 +422,12 @@ async function main() {
 
     init_cmd_line(client);
     console.log("[ado] ready — command input wired");
+
+    // Deep link: /search?q=<query> runs a web search and shows result cards.
+    const params = window.location.search;
+    if (params && params.length > 0) {
+        search_handler(client, params);
+    }
 }
 
 await main();

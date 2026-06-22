@@ -130,6 +130,7 @@ impl UserCommansTrait for CommandHelp {
              * `/model [name]` — show or switch the current model\n\
              * `/models` — list all available models\n\
              * `/reset` — clear the terminal screen\n\
+             * `/search` -- search the web\n\
              \n\
              ## Completion\n\
              * Type `/` to trigger command completion\n\

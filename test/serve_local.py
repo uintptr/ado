@@ -71,8 +71,13 @@ def make_handler(www_dir: Path, ttyd_host: str, ttyd_port: int):
             super().end_headers()
 
         def do_GET(self):
+            path = self.path.split("?", 1)[0]
             if self.path == WS_PATH and self.headers.get("Upgrade", "").lower() == "websocket":
                 self._proxy_ws()
+            elif path == "/search":
+                # SPA deep-link: serve index.html; the app reads ?q= on load.
+                self.path = "/index.html"
+                super().do_GET()
             else:
                 super().do_GET()
 
