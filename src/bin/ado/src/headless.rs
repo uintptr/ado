@@ -19,13 +19,24 @@ use crate::{agentic, commands::UserCommands};
 #[serde(tag = "type", rename_all = "lowercase")]
 enum HeadlessMessage<'a> {
     /// A structured LLM response.
-    Data { data: &'a AdoData },
+    Data {
+        data: &'a AdoData,
+    },
     /// Plain markdown emitted by built-in commands (e.g. `/help`, `/models`).
-    Markdown { text: &'a str },
+    Markdown {
+        text: &'a str,
+    },
+    PlainText {
+        text: &'a str,
+    },
     /// A progress note for an agentic action (running a command, writing a file).
-    Action { text: &'a str },
+    Action {
+        text: &'a str,
+    },
     /// An error message.
-    Error { message: &'a str },
+    Error {
+        message: &'a str,
+    },
 }
 
 impl HeadlessMessage<'_> {
@@ -82,6 +93,10 @@ impl ConsoleTrait for HeadlessConsole {
 
     fn print_markdown(&self, s: &str) {
         HeadlessMessage::Markdown { text: s }.emit();
+    }
+
+    fn print_line(&self, s: &str) {
+        HeadlessMessage::PlainText { text: s }.emit();
     }
 }
 

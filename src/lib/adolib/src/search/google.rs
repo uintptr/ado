@@ -61,8 +61,6 @@ impl SearchTrait for GoogleCSE {
             ("gl", self.google.geo.as_str()),
         ];
 
-        dbg!(&query);
-
         let mut res = ureq::get(&self.google.url).query_pairs(query).call()?;
 
         if !res.status().is_success() {

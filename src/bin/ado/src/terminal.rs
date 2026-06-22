@@ -189,6 +189,10 @@ impl ConsoleTrait for Console {
         ret
     }
 
+    fn print_line(&self, s: &str) {
+        self.display_text(s);
+    }
+
     fn print_markdown(&self, s: &str) {
         self.spinner.stop();
         self.display_text(s);

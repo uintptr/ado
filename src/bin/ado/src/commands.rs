@@ -54,11 +54,16 @@ impl UserCommansTrait for CommandSearch {
         info!("input: {input}");
 
         match self.gcse.query(input) {
-            Ok(_v) => info!("worked!"),
-            Err(e) => error!("query error {e}"),
-        };
-
-        console.print_markdown("Hello World");
+            Ok(v) => {
+                let out_json = v.to_string();
+                console.print_line(&out_json);
+            }
+            Err(e) => {
+                let err = format!("query error {e}");
+                console.error_message(&err);
+                error!("{err}");
+            }
+        }
     }
 }
 

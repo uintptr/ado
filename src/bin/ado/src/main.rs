@@ -13,7 +13,7 @@ struct UserArgs {
     #[arg(short, long)]
     verbose: bool,
 
-    /// verbose
+    /// headless communicates thru stdin / stdout
     #[arg(long)]
     headless: bool,
 
@@ -30,16 +30,15 @@ fn load_config_local(local_config: Option<&String>) -> Result<AdoConfig> {
     .context("Unable to load local config")
 }
 
-fn init_logging(verbose: bool) -> Result<()> {
+fn init_logging(verbose: bool) {
     let level = if verbose { LevelFilter::Info } else { LevelFilter::Error };
     env_logger::builder().filter_level(level).init();
-    Ok(())
 }
 
 fn main() -> Result<()> {
     let args = UserArgs::parse();
 
-    init_logging(true)?;
+    init_logging(true);
 
     let config = load_config_local(args.config_file.as_ref())?;
 
