@@ -7,7 +7,7 @@ services:
         restart: unless-stopped
         image: nginx:latest
         ports:
-            - 8003:80
+            - 8004:80
         depends_on:
             - ado
         volumes:
