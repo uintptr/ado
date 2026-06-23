@@ -1,4 +1,5 @@
 use std::{
+    collections::HashMap,
     env::{self, consts::OS},
     fmt::Display,
     fs,
@@ -24,10 +25,13 @@ pub struct UserCommands {
 
 pub trait UserCommansTrait: Send {
     fn name(&self) -> &'static str;
+    fn desc(&self) -> &'static str;
     fn callback(&mut self, input: &str, chain: &mut LLMChain, console: &dyn ConsoleTrait);
 }
 
-struct CommandHelp;
+struct CommandHelp {
+    commands: HashMap<String, String>,
+}
 struct CommandModels;
 struct CommandReset;
 struct CommandModel;
@@ -46,6 +50,10 @@ impl CommandSearch {
 impl UserCommansTrait for CommandSearch {
     fn name(&self) -> &'static str {
         "search"
+    }
+
+    fn desc(&self) -> &'static str {
+        "search the web"
     }
 
     fn callback(&mut self, input: &str, _chain: &mut LLMChain, console: &dyn ConsoleTrait) {
@@ -69,7 +77,11 @@ impl UserCommansTrait for CommandSearch {
 
 impl UserCommansTrait for CommandModel {
     fn name(&self) -> &'static str {
-        "model"
+        "model [name]"
+    }
+
+    fn desc(&self) -> &'static str {
+        "show or switch the current model"
     }
 
     fn callback(&mut self, input: &str, chain: &mut LLMChain, console: &dyn ConsoleTrait) {
@@ -108,6 +120,10 @@ impl UserCommansTrait for CommandReset {
         "reset"
     }
 
+    fn desc(&self) -> &'static str {
+        "clear the terminal screen"
+    }
+
     fn callback(&mut self, _input: &str, _chain: &mut LLMChain, _console: &dyn ConsoleTrait) {
         let mut stdout = io::stdout();
         print!("{esc}c", esc = 27 as char);
@@ -118,30 +134,28 @@ impl UserCommansTrait for CommandReset {
     }
 }
 
-impl UserCommansTrait for CommandHelp {
-    fn name(&self) -> &'static str {
-        "help"
+impl CommandHelp {
+    pub fn new() -> Self {
+        Self {
+            commands: HashMap::new(),
+        }
     }
 
-    fn callback(&mut self, _input: &str, _chain: &mut LLMChain, console: &dyn ConsoleTrait) {
-        console.print_markdown(
-            "# Commands\n\
-             * `/help` — show this help\n\
-             * `/model [name]` — show or switch the current model\n\
-             * `/models` — list all available models\n\
-             * `/reset` — clear the terminal screen\n\
-             * `/search` -- search the web\n\
-             \n\
-             ## Completion\n\
-             * Type `/` to trigger command completion\n\
-             * Type `@path` to attach a file (Tab to browse)",
-        );
+    pub fn add<C, D>(&mut self, command: C, description: D)
+    where
+        C: Into<String>,
+        D: Into<String>,
+    {
+        self.commands.insert(command.into(), description.into());
     }
 }
 
 impl UserCommansTrait for CommandModels {
     fn name(&self) -> &'static str {
         "models"
+    }
+    fn desc(&self) -> &'static str {
+        "list all available models"
     }
 
     fn callback(&mut self, _input: &str, chain: &mut LLMChain, console: &dyn ConsoleTrait) {
@@ -160,6 +174,39 @@ impl UserCommansTrait for CommandModels {
         }
 
         console.print_markdown(&output.join("\n"));
+    }
+}
+
+impl UserCommansTrait for CommandHelp {
+    fn name(&self) -> &'static str {
+        "help"
+    }
+
+    fn desc(&self) -> &'static str {
+        "this help"
+    }
+
+    fn callback(&mut self, _input: &str, _chain: &mut LLMChain, console: &dyn ConsoleTrait) {
+        let mut lines = Vec::new();
+
+        lines.push("# Commands".into());
+
+        let line = format!("* /{} -- {}", self.name(), self.desc());
+        lines.push(line);
+
+        for (k, v) in &self.commands {
+            let line = format!("* /{k} -- {v}");
+            lines.push(line);
+        }
+
+        lines.push("".into());
+        lines.push("## Completion".into());
+        lines.push("* Type `/` to trigger command completion".into());
+        lines.push("* Type `@path` to attach a file (Tab to browse)".into());
+
+        let md = lines.join("\n");
+
+        console.print_markdown(&md);
     }
 }
 
@@ -264,16 +311,20 @@ impl UserCommands {
     pub fn new(config: &AdoConfig) -> Result<Self> {
         let chain = init_chain(config).context("Unable to initialize llm chain")?;
 
-        let mut commands: Vec<Box<dyn UserCommansTrait>> = vec![
-            Box::new(CommandHelp {}),
-            Box::new(CommandModels {}),
-            Box::new(CommandReset {}),
-            Box::new(CommandModel {}),
-        ];
+        let mut commands: Vec<Box<dyn UserCommansTrait>> =
+            vec![Box::new(CommandModels {}), Box::new(CommandReset {}), Box::new(CommandModel {})];
+
+        let mut help = CommandHelp::new();
 
         if let Ok(search) = CommandSearch::new(config) {
             commands.push(Box::new(search));
         }
+
+        for c in &commands {
+            help.add(c.name(), c.desc());
+        }
+
+        commands.push(Box::new(help));
 
         Ok(Self { chain, commands })
     }
