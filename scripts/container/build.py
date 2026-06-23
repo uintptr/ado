@@ -16,26 +16,28 @@ from typing import Any
 WWW_IGNORE_LIST = ["config.toml", "test_config.json"]
 
 
+DEFAULT_TARGET = "aarch64-unknown-linux-musl"
+
+
 @dataclass
 class UserArgs:
     domain_name: str
     output: str
     www_root: str
+    target: str
+    ado_config: str
     test_config: str | None
     ado_bin: str | None
-    ado_config: str | None
 
     def __post_init__(self) -> None:
         self.output = os.path.abspath(self.output)
+        self.ado_config = os.path.abspath(self.ado_config)
 
         if self.test_config is not None:
             self.test_config = os.path.abspath(self.test_config)
 
         if self.ado_bin is not None:
             self.ado_bin = os.path.abspath(self.ado_bin)
-
-        if self.ado_config is not None:
-            self.ado_config = os.path.abspath(self.ado_config)
 
 
 @dataclass
@@ -218,7 +220,7 @@ class DockerBuilder:
         wd = os.path.join(self.script_root, os.pardir, os.pardir)
         wd = os.path.abspath(wd)
 
-        target = "x86_64-unknown-linux-gnu"
+        target = self.args.target
 
         cross = shutil.which("cross")
         tool = cross if cross is not None else shutil.which("cargo")
@@ -243,9 +245,8 @@ class DockerBuilder:
         ado_bin = self.args.ado_bin if self.args.ado_bin is not None else self.__cargo_build_ado()
         shutil.copy2(ado_bin, os.path.join(ado_root, "ado"))
 
-        if self.args.ado_config is not None:
-            shutil.copy2(self.args.ado_config,
-                         os.path.join(ado_root, "config.toml"))
+        shutil.copy2(self.args.ado_config,
+                     os.path.join(ado_root, "config.toml"))
 
     def __build_docker_compose(self, container_root: str) -> None:
 
@@ -348,6 +349,13 @@ def main() -> int:
                         default="./www",
                         help="Docker www root directory")
 
+    parser.add_argument("-t",
+                        "--target",
+                        type=str,
+                        default=DEFAULT_TARGET,
+                        help=f"Rust target triple to build ado for. "
+                             f"Default: {DEFAULT_TARGET}")
+
     parser.add_argument("--test-config",
                         type=str,
                         help="/path/to/test/config.toml")
@@ -358,6 +366,7 @@ def main() -> int:
 
     parser.add_argument("--ado-config",
                         type=str,
+                        required=True,
                         help="/path/to/ado/config.toml")
 
     try:
@@ -371,6 +380,7 @@ def main() -> int:
         print(f"Container Builder ({builder.runtime}):")
         printkv("Domain Name", args.domain_name)
         printkv("WWW Root", args.www_root)
+        printkv("Target", args.target)
         printkv("Test Config", args.test_config)
         printkv("Ado Binary", args.ado_bin)
         printkv("Ado Config", args.ado_config)
