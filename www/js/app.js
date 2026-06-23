@@ -25,6 +25,14 @@ export {};
 /** @type {HTMLElement|null} */
 let thinking_el = null;
 
+/**
+ * Passthru mode: when set, the next search result is consumed by feeding its
+ * first entry's link to this function and redirecting to the returned URL,
+ * instead of rendering result cards. Returning null falls back to rendering.
+ * @type {((link: string) => string | null) | null}
+ */
+let pending_dest = null;
+
 function show_thinking() {
     const container = document.getElementById("results");
     if (container instanceof HTMLElement) {
@@ -273,6 +281,19 @@ function display_response(msg) {
                 /* not JSON */
             }
             if (parsed && Array.isArray(parsed.entries)) {
+                if (pending_dest) {
+                    const dest = pending_dest;
+                    pending_dest = null;
+                    const first = parsed.entries[0];
+                    const url =
+                        first && first.link ? dest(first.link) : null;
+                    if (url) {
+                        console.log("[ado] passthru redirect:", url);
+                        window.location.href = url;
+                        return;
+                    }
+                    // No usable result — fall back to rendering cards.
+                }
                 display_search_results(parsed);
             } else {
                 display_string(msg.text);
@@ -372,8 +393,68 @@ function init_cmd_line(client) {
 }
 
 /**
- * Handle a `/search?q=...` deep link by running ado's `/search` command.
- * The optional leading `s ` bang selects web search (also the default).
+ * Static "bang" shortcuts: a leading "<bang> " in the query redirects straight
+ * to the provider's search URL (`%s` = encoded terms), no ado search involved.
+ * @type {Record<string, string>}
+ */
+const SEARCH_BANGS = {
+    a: "https://www.amazon.ca/s?k=%s",
+    i: "https://www.google.com/search?tbm=isch&q=%s",
+};
+
+/**
+ * "Lucky" bangs: run an ado/Google search, then redirect to the first result.
+ * `query(terms)` builds the search string; `dest(link)` maps the first result's
+ * link to the final URL (return null to fall back to rendering result cards).
+ * @type {Record<string, {query: (t: string) => string, dest: (link: string) => string | null}>}
+ */
+const LUCKY_BANGS = {
+    // "r dev humor" → google "subreddit for dev humor" → first hit is
+    // reddit.com/r/ProgrammerHumor → send the user to the old.reddit.com page.
+    r: {
+        query: (t) => `what is the subreddit for ${t}`,
+        dest: (link) => {
+            try {
+                const u = new URL(link);
+                if (!u.hostname.endsWith("reddit.com")) return null;
+                u.hostname = "old.reddit.com";
+                return u.href;
+            } catch {
+                return null;
+            }
+        },
+    },
+};
+
+/**
+ * Send a `/search` to ado. When `dest` is non-null we're in passthru mode (see
+ * {@link pending_dest}); when null the results render as cards.
+ * @param {AdoClient} client
+ * @param {string} terms
+ * @param {((link: string) => string | null) | null} dest
+ */
+function run_search(client, terms, dest) {
+    pending_dest = dest;
+    console.log("[ado] search:", terms, dest ? "(passthru)" : "");
+    if (!dest) {
+        display_string(terms, false, null, "user-cmd");
+    }
+    try {
+        client.send("/search " + terms);
+    } catch (error) {
+        console.error("[ado] search failed", error);
+        pending_dest = null;
+    }
+}
+
+/**
+ * Handle a `/search?q=...` deep link.
+ * Behaviour by leading bang:
+ *   - `<bang> ` in {@link SEARCH_BANGS} → redirect to that external provider.
+ *   - `<bang> ` in {@link LUCKY_BANGS} → search, then redirect to first result.
+ *   - `s `                             → run ado's search, show results page.
+ *   - (no recognised prefix)          → "I'm feeling lucky": redirect to the
+ *                                        first ado result once it comes back.
  * @param {AdoClient} client
  * @param {string} search - the location.search string
  */
@@ -381,16 +462,42 @@ function search_handler(client, search) {
     const q = new URLSearchParams(search).get("q");
     if (q == null) return;
 
-    const terms = (q.startsWith("s ") ? q.slice(2) : q).trim();
-    if (terms.length === 0) return;
+    const trimmed = q.trim();
+    if (trimmed.length === 0) return;
 
-    console.log("[ado] search deep-link:", terms);
-    display_string(terms, false, null, "user-cmd");
-    try {
-        client.send("/search " + terms);
-    } catch (error) {
-        console.error("[ado] search failed", error);
+    // Split off a leading "<bang> " token.
+    const space = trimmed.indexOf(" ");
+    const bang = space === -1 ? "" : trimmed.slice(0, space);
+    const rest = space === -1 ? "" : trimmed.slice(space + 1).trim();
+
+    if (rest.length > 0) {
+        // Static external bang → redirect straight to the provider.
+        if (Object.prototype.hasOwnProperty.call(SEARCH_BANGS, bang)) {
+            const url = SEARCH_BANGS[bang].replace(
+                "%s",
+                encodeURIComponent(rest),
+            );
+            console.log("[ado] bang redirect:", bang, url);
+            window.location.href = url;
+            return;
+        }
+
+        // `s ` → normal results page.
+        if (bang === "s") {
+            run_search(client, rest, null);
+            return;
+        }
+
+        // Lucky bang → rewritten query, transformed result link.
+        if (Object.prototype.hasOwnProperty.call(LUCKY_BANGS, bang)) {
+            const { query, dest } = LUCKY_BANGS[bang];
+            run_search(client, query(rest), dest);
+            return;
+        }
     }
+
+    // Default: plain "I'm feeling lucky" on the whole query.
+    run_search(client, trimmed, (link) => link);
 }
 
 async function main() {
