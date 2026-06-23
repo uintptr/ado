@@ -12,7 +12,6 @@ services:
             - ado
         volumes:
             - ./conf.d:/etc/nginx/conf.d/
-            - ./certs:/etc/certs/
             - ./www:/var/www/
             - __WWW_ROOT__:/var/www/
     ado:

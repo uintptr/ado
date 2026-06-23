@@ -16,3 +16,4 @@ test_config.json
 ado-update.json
 /Cargo.lock
 /*.log
+/**/__pycache__

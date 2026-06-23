@@ -328,12 +328,6 @@ def main() -> int:
 
     parser = argparse.ArgumentParser()
 
-    script_root = os.path.abspath(os.path.dirname(sys.argv[0]))
-    def_cert_root = os.path.join(script_root, "certs")
-
-    def_cert = os.path.join(def_cert_root, "fullchain.pem")
-    def_key = os.path.join(def_cert_root, "privkey.pem")
-
     def_output = os.path.join(os.getcwd(), "container.tgz")
 
     parser.add_argument("-n",
