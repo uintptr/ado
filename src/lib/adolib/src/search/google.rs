@@ -1,5 +1,11 @@
-use log::error;
+use std::time::Duration;
+
+use log::{error, info};
+use moka::sync::Cache;
 use serde::{Deserialize, Serialize};
+
+const GOOGLE_CACHE_SIZE: u64 = 1_000;
+const GOOGLE_CACHE_TTL: Duration = Duration::from_hours(24);
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct GoogleConfig {
@@ -12,11 +18,12 @@ pub struct GoogleConfig {
 #[derive(Debug)]
 pub struct GoogleCSE {
     google: GoogleConfig,
+    cache: Cache<String, String>,
 }
 
 use crate::{
     config::loader::AdoConfig,
-    error::Result,
+    error::{Error, Result},
     search::{
         SearchTrait,
         results::{WebResult, WebResultEntry},
@@ -54,6 +61,43 @@ fn parse_results(data: &str) -> Result<WebResult> {
 
 impl SearchTrait for GoogleCSE {
     fn query<S: AsRef<str>>(&self, query: S) -> Result<WebResult> {
+        let json_data = self.query_layerd(query)?;
+        parse_results(&json_data)
+    }
+}
+
+impl GoogleCSE {
+    pub fn new(config: &AdoConfig) -> Result<Self> {
+        let google = config.search_google()?.clone();
+
+        let cache = Cache::builder()
+            .max_capacity(GOOGLE_CACHE_SIZE)
+            .time_to_live(GOOGLE_CACHE_TTL)
+            .build();
+
+        Ok(Self { google, cache })
+    }
+
+    fn query_cached<S: AsRef<str>>(&self, query: S) -> Option<String> {
+        self.cache.get(query.as_ref())
+    }
+
+    fn query_layerd<S: AsRef<str>>(&self, query: S) -> Result<String> {
+        if let Some(cached) = self.query_cached(&query) {
+            info!("{} was cached", query.as_ref());
+            return Ok(cached);
+        }
+
+        let ret = self.query_remote(&query);
+
+        if let Ok(data) = &ret {
+            self.cache.insert(query.as_ref().into(), data.clone());
+        }
+
+        ret
+    }
+
+    fn query_remote<S: AsRef<str>>(&self, query: S) -> Result<String> {
         let query = vec![
             ("key", self.google.key.as_str()),
             ("cx", self.google.cx.as_str()),
@@ -65,19 +109,12 @@ impl SearchTrait for GoogleCSE {
 
         if !res.status().is_success() {
             error!("{} returned {}", self.google.url, res.status().as_str());
+            return Err(Error::HttpGetFailure);
         }
 
         let body = res.body_mut().read_to_string()?;
 
-        parse_results(&body)
-    }
-}
-
-impl GoogleCSE {
-    pub fn new(config: &AdoConfig) -> Result<Self> {
-        let google = config.search_google()?.clone();
-
-        Ok(Self { google })
+        Ok(body)
     }
 }
 

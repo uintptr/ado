@@ -319,7 +319,7 @@ pub fn read_line(editor: &mut Reedline, model: &str) -> Result<InputResult> {
     let prompt = AdoPrompt::new(model);
     match editor.read_line(&prompt) {
         Ok(Signal::Success(line)) => Ok(InputResult::Line(line)),
-        Ok(Signal::CtrlC | Signal::CtrlD) => Ok(InputResult::Eof),
+        Ok(_) => Ok(InputResult::Eof),
         Err(e) => Err(e.into()),
     }
 }
