@@ -98,6 +98,17 @@ function set_ready_status(status) {
 }
 
 /**
+ * Update the version tag from the backend (sourced from Cargo.toml).
+ * @param {string} version
+ */
+function set_version(version) {
+    const el = document.getElementById("version-tag");
+    if (el instanceof HTMLElement) {
+        el.textContent = "v" + version;
+    }
+}
+
+/**
  * Build a card for one web-search result (WebResultEntry).
  * @param {{title:string, link:string, link_display:string, snippet:string}} entry
  * @returns {HTMLElement | null}
@@ -146,7 +157,6 @@ function display_search_results(result) {
     }
 
     utils.show_element(container);
-    scroll_to_latest();
 }
 
 /**
@@ -265,6 +275,9 @@ function display_response(msg) {
     }
 
     switch (msg.type) {
+        case "version":
+            set_version(msg.version);
+            return;
         case "data":
             display_ado_data(msg.data);
             return;

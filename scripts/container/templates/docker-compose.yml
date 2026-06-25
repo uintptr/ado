@@ -3,20 +3,36 @@ services:
         dns:
             - 8.8.8.8
             - 8.8.4.4
-        container_name: ado
+        container_name: ado-ng
         restart: unless-stopped
         image: nginx:latest
         ports:
             - 8004:80
         depends_on:
-            - ado
+            - ado-ng
         volumes:
             - ./conf.d:/etc/nginx/conf.d/
             - ./www:/var/www/
             - __WWW_ROOT__:/var/www/
-    ado:
-        build:
-            context: ./ado
+    ado-ng:
+        image: debian:bookworm-slim
+        dns:
+            - 8.8.8.8
+            - 8.8.4.4
         restart: unless-stopped
         expose:
             - "7681"
+        volumes:
+            - ./bin:/usr/local/bin:ro
+            - ./config.toml:/config.toml:ro
+        command:
+            [
+                "ttyd",
+                "-W",
+                "-p",
+                "7681",
+                "ado",
+                "--headless",
+                "--config-file",
+                "/config.toml",
+            ]

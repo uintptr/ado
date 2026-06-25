@@ -9,6 +9,7 @@ import subprocess
 import sys
 import tarfile
 import tempfile
+import urllib.request
 import uuid
 from dataclasses import asdict, dataclass
 from typing import Any
@@ -17,6 +18,23 @@ WWW_IGNORE_LIST = ["config.toml", "test_config.json"]
 
 
 DEFAULT_TARGET = "aarch64-unknown-linux-musl"
+
+TTYD_RELEASE_URL = "https://github.com/tsl0922/ttyd/releases/latest/download"
+
+# Map the arch component of a rust target triple to a ttyd release asset.
+TTYD_ARCH_MAP = {
+    "aarch64": "aarch64",
+    "x86_64": "x86_64",
+    "armv7": "armhf",
+    "arm": "arm",
+    "i686": "i686",
+    "i586": "i686",
+    "s390x": "s390x",
+    "mips": "mips",
+    "mips64": "mips64",
+    "mipsel": "mipsel",
+    "mips64el": "mips64el",
+}
 
 
 @dataclass
@@ -229,24 +247,47 @@ class DockerBuilder:
             raise AssertionError("neither cross nor cargo is installed")
 
         env = {}
+        extra = ""
         if cross is not None:
             env["CROSS_CONTAINER_ENGINE"] = self.runtime
+            # The project .cargo/config.toml forces `linker = "clang"` for the
+            # host triple (wild linker, dev-only). Build scripts/proc-macros
+            # compile for the host *inside* the cross container, which has no
+            # clang, so override it back to cc for the container build.
+            extra = ' --config \'target.x86_64-unknown-linux-gnu.linker="cc"\''
 
-        shell_exec(f"{tool} build --release --target {target} --bin ado",
+        shell_exec(f"{tool} build --release --target {target} --bin ado{extra}",
                    cwd=wd, env=env)
 
         return os.path.join(wd, "target", target, "release", "ado")
 
-    def __build_ado(self, ado_root: str) -> None:
+    def __download_ttyd(self, bin_dir: str) -> None:
 
-        dockerfile = os.path.join(self.script_root, "ado", "Dockerfile")
-        shutil.copy2(dockerfile, ado_root)
+        arch = self.args.target.split("-")[0]
+        asset = TTYD_ARCH_MAP.get(arch, arch)
+        url = f"{TTYD_RELEASE_URL}/ttyd.{asset}"
+
+        out_file = os.path.join(bin_dir, "ttyd")
+
+        try:
+            with urllib.request.urlopen(url) as resp, open(out_file, "wb") as f:
+                shutil.copyfileobj(resp, f)
+        except urllib.error.URLError as e:
+            raise AssertionError(f"failed to download ttyd from {url}", e)
+
+        os.chmod(out_file, 0o755)
+
+    def __build_bin(self, bin_dir: str) -> None:
+
+        os.mkdir(bin_dir)
 
         ado_bin = self.args.ado_bin if self.args.ado_bin is not None else self.__cargo_build_ado()
-        shutil.copy2(ado_bin, os.path.join(ado_root, "ado"))
 
-        shutil.copy2(self.args.ado_config,
-                     os.path.join(ado_root, "config.toml"))
+        ado_out = os.path.join(bin_dir, "ado")
+        shutil.copy2(ado_bin, ado_out)
+        os.chmod(ado_out, 0o755)
+
+        self.__download_ttyd(bin_dir)
 
     def __build_docker_compose(self, container_root: str) -> None:
 
@@ -258,10 +299,6 @@ class DockerBuilder:
 
         with open(compose_file, "w+") as f:
             f.write(template)
-
-    def __build_containers(self, container_root: str) -> None:
-
-        shell_exec(f"{self.compose} build", cwd=container_root)
 
     def __build_test_config(self, config_path: str, www_root: str) -> None:
 
@@ -304,21 +341,21 @@ class DockerBuilder:
             self.__build_nginx(container_root)
 
             #
-            # ado (headless + ttyd)
+            # bin/ado + bin/ttyd (downloaded for the target arch)
             #
-            ado_root = os.path.join(container_root, "ado")
-            os.mkdir(ado_root)
-            self.__build_ado(ado_root)
+            bin_dir = os.path.join(container_root, "bin")
+            self.__build_bin(bin_dir)
+
+            #
+            # ado config (bind-mounted into the container)
+            #
+            shutil.copy2(self.args.ado_config,
+                         os.path.join(container_root, "config.toml"))
 
             #
             # docker compose file
             #
             self.__build_docker_compose(container_root)
-
-            #
-            # build containers
-            #
-            self.__build_containers(container_root)
 
             tarball(container_root, self.args.output)
 
