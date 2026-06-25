@@ -4,15 +4,14 @@ use log::{error, info};
 use moka::sync::Cache;
 use serde::{Deserialize, Serialize};
 
-const GOOGLE_CACHE_SIZE: u64 = 1_000;
-const GOOGLE_CACHE_TTL: Duration = Duration::from_hours(24);
-
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct GoogleConfig {
     pub cx: String,
     pub geo: String,
     pub key: String,
     pub url: String,
+    pub cache_size: u64,
+    pub cache_ttl: u64,
 }
 
 #[derive(Debug)]
@@ -71,8 +70,8 @@ impl GoogleCSE {
         let google = config.search_google()?.clone();
 
         let cache = Cache::builder()
-            .max_capacity(GOOGLE_CACHE_SIZE)
-            .time_to_live(GOOGLE_CACHE_TTL)
+            .max_capacity(google.cache_size)
+            .time_to_live(Duration::from_secs(google.cache_ttl))
             .build();
 
         Ok(Self { google, cache })
