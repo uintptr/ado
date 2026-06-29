@@ -8,13 +8,15 @@ base64.workspace = true
 dirs.workspace = true
 glob.workspace = true
 log.workspace = true
-moka.workspace = true
+sled.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
 toml.workspace = true
 ureq.workspace = true
 walkdir.workspace = true
+md-5.workspace = true
+hex.workspace = true
 
 [dev-dependencies]
 env_logger.workspace = true

@@ -3,6 +3,7 @@ use log::info;
 use crate::{
     config::loader::AdoConfig,
     error::{Error, Result},
+    kv::cache::KVCache,
     search::{
         google::GoogleCSE,
         results::{WebResult, WebResultEntry},
@@ -13,13 +14,13 @@ pub(crate) mod google;
 
 pub mod results;
 
-pub enum WebSearch {
-    Google(GoogleCSE),
+pub enum WebSearch<'a> {
+    Google(GoogleCSE<'a>),
 }
 
-impl WebSearch {
-    pub fn new(config: &AdoConfig) -> Result<Self> {
-        if let Ok(google) = GoogleCSE::new(config) {
+impl<'a> WebSearch<'a> {
+    pub fn new(config: &AdoConfig, cache: &'a KVCache) -> Result<Self> {
+        if let Ok(google) = GoogleCSE::new(config, cache) {
             info!("Using google API");
             return Ok(WebSearch::Google(google));
         }
@@ -28,7 +29,7 @@ impl WebSearch {
     }
 }
 
-impl SearchTrait for WebSearch {
+impl SearchTrait for WebSearch<'_> {
     fn query<S: AsRef<str>>(&self, query: S) -> Result<WebResult> {
         match self {
             WebSearch::Google(g) => g.query(query),

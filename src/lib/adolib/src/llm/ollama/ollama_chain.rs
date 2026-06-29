@@ -59,9 +59,10 @@ impl LLMChainTrait for OllamaChain {
         self.chat.add_content(role, content);
     }
 
-    fn message<S>(&self, content: S) -> Result<String>
+    fn message<S, M>(&self, content: S, _model: Option<M>) -> Result<String>
     where
         S: Into<String>,
+        M: AsRef<str>,
     {
         let resp = self.api.message(content)?;
         Ok(resp.message.content)
@@ -112,6 +113,6 @@ mod ollama_tests {
 
         let chain = OllamaChain::new(&config_file).unwrap();
 
-        chain.message("hello world").unwrap();
+        chain.message("hello world", None::<&str>).unwrap();
     }
 }

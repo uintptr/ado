@@ -1,7 +1,4 @@
-use std::time::Duration;
-
 use log::{error, info};
-use moka::sync::Cache;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -15,19 +12,22 @@ pub struct GoogleConfig {
 }
 
 #[derive(Debug)]
-pub struct GoogleCSE {
+pub struct GoogleCSE<'a> {
     google: GoogleConfig,
-    cache: Cache<String, String>,
+    cache: &'a KVCache,
 }
 
 use crate::{
     config::loader::AdoConfig,
     error::{Error, Result},
+    kv::cache::KVCache,
     search::{
         SearchTrait,
         results::{WebResult, WebResultEntry},
     },
 };
+
+const GCSE_CACHE_REALM: &str = "gcse";
 
 #[derive(Deserialize)]
 struct GoogleItem {
@@ -48,37 +48,36 @@ fn parse_results(data: &str) -> Result<WebResult> {
     let entries = response
         .items
         .into_iter()
-        .map(|item| WebResultEntry {
-            title: item.title,
-            link: item.link,
-            link_display: item.display_link,
-            snippet: item.snippet,
+        .map(|item| {
+            let link = item.link.replace("www.reddit.com", "old.reddit.com");
+
+            WebResultEntry {
+                title: item.title,
+                link,
+                link_display: item.display_link,
+                snippet: item.snippet,
+            }
         })
         .collect();
     Ok(WebResult { entries })
 }
 
-impl SearchTrait for GoogleCSE {
+impl SearchTrait for GoogleCSE<'_> {
     fn query<S: AsRef<str>>(&self, query: S) -> Result<WebResult> {
         let json_data = self.query_layerd(query)?;
         parse_results(&json_data)
     }
 }
 
-impl GoogleCSE {
-    pub fn new(config: &AdoConfig) -> Result<Self> {
+impl<'a> GoogleCSE<'a> {
+    pub fn new(config: &AdoConfig, cache: &'a KVCache) -> Result<Self> {
         let google = config.search_google()?.clone();
-
-        let cache = Cache::builder()
-            .max_capacity(google.cache_size)
-            .time_to_live(Duration::from_secs(google.cache_ttl))
-            .build();
 
         Ok(Self { google, cache })
     }
 
     fn query_cached<S: AsRef<str>>(&self, query: S) -> Option<String> {
-        self.cache.get(query.as_ref())
+        self.cache.get_string(GCSE_CACHE_REALM, query)
     }
 
     fn query_layerd<S: AsRef<str>>(&self, query: S) -> Result<String> {
@@ -89,8 +88,10 @@ impl GoogleCSE {
 
         let ret = self.query_remote(&query);
 
-        if let Ok(data) = &ret {
-            self.cache.insert(query.as_ref().into(), data.clone());
+        if let Ok(data) = &ret
+            && let Err(e) = self.cache.add(GCSE_CACHE_REALM, query, data)
+        {
+            error!("unable to write cache entry ({e}");
         }
 
         ret
@@ -133,7 +134,12 @@ mod tests {
 
         let config = AdoConfig::from_default().unwrap();
 
-        let search = GoogleCSE::new(&config).unwrap();
+        let td = tempfile::Builder::new().prefix("kvcache_").tempdir().unwrap();
+        let cache_file = td.path().join("cache.kv");
+
+        let cache = KVCache::new(cache_file).unwrap();
+
+        let search = GoogleCSE::new(&config, &cache).unwrap();
 
         let d = search.lucky("test");
 

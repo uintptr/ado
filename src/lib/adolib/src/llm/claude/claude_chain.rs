@@ -59,11 +59,15 @@ impl LLMChainTrait for ClaudeChain {
         let usage = &resp.usage;
         info!(
             "tokens: input={} output={} cache_read={} cache_write={}",
-            usage.input_tokens, usage.output_tokens, usage.cache_read_input_tokens, usage.cache_creation_input_tokens
+            usage.input_tokens,
+            usage.output_tokens,
+            usage.cache_read_input_tokens,
+            usage.cache_creation_input_tokens
         );
 
         self.tokens.input_tokens = self.tokens.input_tokens.saturating_add(resp.usage.input_tokens);
-        self.tokens.output_tokens = self.tokens.output_tokens.saturating_add(resp.usage.output_tokens);
+        self.tokens.output_tokens =
+            self.tokens.output_tokens.saturating_add(resp.usage.output_tokens);
 
         let text = resp.message()?;
 
@@ -99,9 +103,10 @@ impl LLMChainTrait for ClaudeChain {
         }
     }
 
-    fn message<S>(&self, content: S) -> Result<String>
+    fn message<S, M>(&self, content: S, _model: Option<M>) -> Result<String>
     where
         S: Into<String>,
+        M: AsRef<str>,
     {
         let resp = self.api.message(content)?;
         Ok(resp.message()?.to_string())
@@ -156,6 +161,6 @@ mod tests {
 
         let chain = ClaudeChain::new(&config_file).unwrap();
 
-        chain.message("hello world").unwrap();
+        chain.message("hello world", None::<&str>).unwrap();
     }
 }

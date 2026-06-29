@@ -1,6 +1,6 @@
 pub type Result<T> = core::result::Result<T, Error>;
 
-use std::{env::VarError, path::PathBuf, string::FromUtf8Error};
+use std::{env::VarError, path::PathBuf, string::FromUtf8Error, time::SystemTimeError};
 
 use thiserror::Error;
 
@@ -75,7 +75,9 @@ pub enum Error {
     LlmNotFound { llm: String },
     #[error("MissingArgument: {name}")]
     MissingArgument { name: String },
-    #[error("API was not found. Either use an config file or define the OPENAI_API_KEY env variable")]
+    #[error(
+        "API was not found. Either use an config file or define the OPENAI_API_KEY env variable"
+    )]
     ApiKeyNotFound,
     #[error("ApiFailure: {message}")]
     ApiFailure { message: String },
@@ -100,6 +102,8 @@ pub enum Error {
     Env(#[from] VarError),
     #[error("{0}")]
     StrError(String),
+    #[error(transparent)]
+    Time(#[from] SystemTimeError),
 
     //
     // 3rd party
@@ -118,6 +122,8 @@ pub enum Error {
     WalkDir(#[from] walkdir::Error),
     #[error(transparent)]
     Http(#[from] ureq::Error),
+    #[error(transparent)]
+    Cache(#[from] sled::Error),
 }
 
 impl From<String> for Error {

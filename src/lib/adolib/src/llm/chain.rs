@@ -44,9 +44,10 @@ pub trait LLMChainTrait {
     where
         S: Into<String>;
     fn call(&mut self) -> Result<AdoData>;
-    fn message<S>(&self, content: S) -> Result<String>
+    fn message<S, M>(&self, content: S, model: Option<M>) -> Result<String>
     where
-        S: Into<String>;
+        S: Into<String>,
+        M: AsRef<str>;
     fn reset(&mut self);
     fn models(&self) -> Vec<String>;
     fn model(&self) -> &str;
@@ -97,13 +98,14 @@ impl LLMChain {
         }
     }
 
-    pub fn message<S>(&self, content: S) -> Result<String>
+    pub fn message<S, M>(&self, content: S, model: Option<M>) -> Result<String>
     where
         S: Into<String>,
+        M: AsRef<str>,
     {
         match self {
-            LLMChain::Ollama(ollama) => ollama.message(content),
-            LLMChain::Claude(claude) => claude.message(content),
+            LLMChain::Ollama(ollama) => ollama.message(content, model),
+            LLMChain::Claude(claude) => claude.message(content, model),
         }
     }
 

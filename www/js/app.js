@@ -33,6 +33,15 @@ let thinking_el = null;
  */
 let pending_dest = null;
 
+/**
+ * Command passthru: when set, the next plaintext response is consumed by passing
+ * its raw text to this function and redirecting to the returned URL, instead of
+ * rendering it. Returning null falls back to rendering. Used by command bangs
+ * (e.g. `/reddit`) that reply with a single value rather than search results.
+ * @type {((text: string) => string | null) | null}
+ */
+let pending_text = null;
+
 function show_thinking() {
     const container = document.getElementById("results");
     if (container instanceof HTMLElement) {
@@ -285,6 +294,19 @@ function display_response(msg) {
             display_string(msg.text);
             return;
         case "plaintext": {
+            // Command bang passthru (e.g. `/reddit`): map the text to a URL.
+            if (pending_text) {
+                const dest = pending_text;
+                pending_text = null;
+                const url = dest(msg.text);
+                if (url) {
+                    console.log("[ado] passthru redirect:", url);
+                    window.location.href = url;
+                    return;
+                }
+                // No usable URL — fall back to rendering the text.
+            }
+
             // `/search` emits its WebResult as a JSON blob — render as cards;
             // anything else printed verbatim falls back to text.
             let parsed = null;
@@ -412,29 +434,30 @@ function init_cmd_line(client) {
  */
 const SEARCH_BANGS = {
     a: "https://www.amazon.ca/s?k=%s",
+    g: "https://www.google.ca/search?q=%s",
     i: "https://www.google.com/search?tbm=isch&q=%s",
 };
 
 /**
- * "Lucky" bangs: run an ado/Google search, then redirect to the first result.
- * `query(terms)` builds the search string; `dest(link)` maps the first result's
- * link to the final URL (return null to fall back to rendering result cards).
- * @type {Record<string, {query: (t: string) => string, dest: (link: string) => string | null}>}
+ * Command bangs: run an ado command, then map its single-line plaintext response
+ * to a redirect URL. `command(terms)` builds the command line; `dest(text)` maps
+ * the command's output to the final URL (return null to fall back to rendering).
+ * @type {Record<string, {command: (t: string) => string, dest: (text: string) => string | null}>}
  */
-const LUCKY_BANGS = {
-    // "r dev humor" → google "subreddit for dev humor" → first hit is
-    // reddit.com/r/ProgrammerHumor → send the user to the old.reddit.com page.
+const COMMAND_BANGS = {
+    // "r dev humor" → `/reddit dev humor` → backend returns "/r/ProgrammerHumor"
+    // → send the user to the matching old.reddit.com page.
     r: {
-        query: (t) => `what is the subreddit for ${t}`,
-        dest: (link) => {
-            try {
-                const u = new URL(link);
-                if (!u.hostname.endsWith("reddit.com")) return null;
-                u.hostname = "old.reddit.com";
-                return u.href;
-            } catch {
-                return null;
-            }
+        command: (t) => `/reddit ${t}`,
+        dest: (text) => {
+            // Backend replies with e.g. "/r/ProgrammerHumor"; tolerate a
+            // missing leading slash or "r/" prefix too.
+            const sub = text
+                .trim()
+                .replace(/^\/+/, "")
+                .replace(/^r\//i, "");
+            if (!sub) return null;
+            return `https://old.reddit.com/r/${sub}`;
         },
     },
 };
@@ -461,10 +484,28 @@ function run_search(client, terms, dest) {
 }
 
 /**
+ * Send an ado command whose plaintext response should redirect the browser (see
+ * {@link pending_text}).
+ * @param {AdoClient} client
+ * @param {string} command
+ * @param {(text: string) => string | null} dest
+ */
+function run_command(client, command, dest) {
+    pending_text = dest;
+    console.log("[ado] command:", command, "(passthru)");
+    try {
+        client.send(command);
+    } catch (error) {
+        console.error("[ado] command failed", error);
+        pending_text = null;
+    }
+}
+
+/**
  * Handle a `/search?q=...` deep link.
  * Behaviour by leading bang:
  *   - `<bang> ` in {@link SEARCH_BANGS} → redirect to that external provider.
- *   - `<bang> ` in {@link LUCKY_BANGS} → search, then redirect to first result.
+ *   - `<bang> ` in {@link COMMAND_BANGS} → run that command, redirect on its reply.
  *   - `s `                             → run ado's search, show results page.
  *   - (no recognised prefix)          → "I'm feeling lucky": redirect to the
  *                                        first ado result once it comes back.
@@ -501,10 +542,10 @@ function search_handler(client, search) {
             return;
         }
 
-        // Lucky bang → rewritten query, transformed result link.
-        if (Object.prototype.hasOwnProperty.call(LUCKY_BANGS, bang)) {
-            const { query, dest } = LUCKY_BANGS[bang];
-            run_search(client, query(rest), dest);
+        // Command bang → run the ado command, redirect using its text reply.
+        if (Object.prototype.hasOwnProperty.call(COMMAND_BANGS, bang)) {
+            const { command, dest } = COMMAND_BANGS[bang];
+            run_command(client, command(rest), dest);
             return;
         }
     }

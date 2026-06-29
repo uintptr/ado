@@ -31,7 +31,7 @@ impl Display for WebResult {
         let s = match serde_json::to_string(self) {
             Ok(v) => v,
             Err(e) => {
-                error!("unable deserialized {self} ({e})");
+                error!("unable deserialized ({e})");
                 "{}".to_string()
             }
         };

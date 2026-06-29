@@ -1,7 +1,7 @@
 use std::fs;
 
 use ado::{commands::UserCommands, headless::headless_run};
-use adolib::{config::loader::AdoConfig, error::Error};
+use adolib::{config::loader::AdoConfig, error::Error, kv::cache::KVCache};
 use anyhow::{Context, Result};
 use clap::Parser;
 use log::LevelFilter;
@@ -31,7 +31,11 @@ fn load_config_local(local_config: Option<&String>) -> Result<AdoConfig> {
 }
 
 fn init_logging(verbose: bool) {
-    let level = if verbose { LevelFilter::Info } else { LevelFilter::Error };
+    let level = if verbose {
+        LevelFilter::Info
+    } else {
+        LevelFilter::Error
+    };
     env_logger::builder().filter_level(level).init();
 }
 
@@ -41,8 +45,9 @@ fn main() -> Result<()> {
     init_logging(true);
 
     let config = load_config_local(args.config_file.as_ref())?;
+    let cache = KVCache::default_path().context("Unable to initialize kv cache")?;
 
-    let commands = UserCommands::new(&config)?;
+    let commands = UserCommands::new(&config, &cache)?;
 
     let config_dir = dirs::config_dir().ok_or(Error::ConfigNotFound)?;
     let history_file = config_dir.join("ado").join("history.txt");

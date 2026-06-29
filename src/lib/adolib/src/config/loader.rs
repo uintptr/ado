@@ -27,9 +27,20 @@ pub struct ConfigSearch {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ConfigCommandReddit {
+    pub model: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct ConfigCommand {
+    pub reddit: ConfigCommandReddit,
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
 struct ConfigFile {
     llm: ConfigLlm,
     search: ConfigSearch,
+    command: ConfigCommand,
 }
 
 #[derive(Clone)]
@@ -48,7 +59,10 @@ impl ConfigFile {}
 
 impl AdoConfig {
     fn new(source: AdoConfigSource, config_file: ConfigFile) -> Self {
-        Self { source, config_file }
+        Self {
+            source,
+            config_file,
+        }
     }
 
     pub fn sync(&self) -> Result<()> {
@@ -61,7 +75,8 @@ impl AdoConfig {
             AdoConfigSource::File { path } => {
                 info!("syncing {}", path.display());
 
-                let mut fd = fs::OpenOptions::new().write(true).truncate(true).create(true).open(path)?;
+                let mut fd =
+                    fs::OpenOptions::new().write(true).truncate(true).create(true).open(path)?;
 
                 fd.lock()?;
                 fd.write_all(toml_file.as_bytes())?;
@@ -157,5 +172,10 @@ impl AdoConfig {
         }
 
         Err(Error::ConfigNotFound)
+    }
+
+    #[must_use]
+    pub fn command(&self) -> &ConfigCommand {
+        &self.config_file.command
     }
 }

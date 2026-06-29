@@ -18,7 +18,7 @@ use crate::{agentic, commands::UserCommands};
 #[derive(Serialize)]
 #[serde(tag = "type", rename_all = "lowercase")]
 enum HeadlessMessage<'a> {
-    /// Backend version (from Cargo.toml via CARGO_PKG_VERSION), sent once on
+    /// Backend version (from Cargo.toml via `CARGO_PKG_VERSION`), sent once on
     /// startup so the webapp can display the running build's version.
     Version {
         version: &'a str,
@@ -109,7 +109,10 @@ pub fn headless_run(mut commands: UserCommands) -> Result<()> {
     let console = HeadlessConsole {};
     let stdin = io::stdin();
 
-    HeadlessMessage::Version { version: env!("CARGO_PKG_VERSION") }.emit();
+    HeadlessMessage::Version {
+        version: env!("CARGO_PKG_VERSION"),
+    }
+    .emit();
 
     for line in stdin.lock().lines() {
         let line = line?;

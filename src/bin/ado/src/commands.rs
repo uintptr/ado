@@ -10,17 +10,18 @@ use std::{
 use adolib::{
     config::loader::AdoConfig,
     console::ConsoleTrait,
+    kv::cache::KVCache,
     llm::chain::{LLMChain, LLMRole},
     search::{SearchTrait, WebSearch},
 };
 use anyhow::{Context, Result, bail};
 use log::{error, info};
 
-use crate::intrinsics::IntrinsicPrompts;
+use crate::{intrinsics::IntrinsicPrompts, sub_commands::reddit::CommandReddit};
 
-pub struct UserCommands {
+pub struct UserCommands<'a> {
     chain: LLMChain,
-    commands: Vec<Box<dyn UserCommansTrait + 'static>>,
+    commands: Vec<Box<dyn UserCommansTrait + 'a>>,
 }
 
 pub trait UserCommansTrait: Send {
@@ -35,19 +36,19 @@ struct CommandHelp {
 struct CommandModels;
 struct CommandReset;
 struct CommandModel;
-struct CommandSearch {
-    gcse: WebSearch,
+struct CommandSearch<'a> {
+    gcse: WebSearch<'a>,
 }
 
-impl CommandSearch {
-    pub fn new(config: &AdoConfig) -> Result<Self> {
-        let gcse = WebSearch::new(config)?;
+impl<'a> CommandSearch<'a> {
+    pub fn new(config: &AdoConfig, cache: &'a KVCache) -> Result<Self> {
+        let gcse = WebSearch::new(config, cache)?;
 
         Ok(Self { gcse })
     }
 }
 
-impl UserCommansTrait for CommandSearch {
+impl UserCommansTrait for CommandSearch<'_> {
     fn name(&self) -> &'static str {
         "search"
     }
@@ -199,7 +200,7 @@ impl UserCommansTrait for CommandHelp {
             lines.push(line);
         }
 
-        lines.push("".into());
+        lines.push(String::new());
         lines.push("## Completion".into());
         lines.push("* Type `/` to trigger command completion".into());
         lines.push("* Type `@path` to attach a file (Tab to browse)".into());
@@ -227,7 +228,8 @@ fn load_ado_md(chain: &mut LLMChain) -> Result<()> {
 
     if ado_md.exists() {
         info!("reading {}", ado_md.display());
-        let data = fs::read_to_string(&ado_md).with_context(|| format!("Unable to read {}", ado_md.display()))?;
+        let data = fs::read_to_string(&ado_md)
+            .with_context(|| format!("Unable to read {}", ado_md.display()))?;
         chain.add_content(LLMRole::System, data);
     }
 
@@ -307,16 +309,20 @@ fn init_chain(config: &AdoConfig) -> Result<LLMChain> {
     Ok(chain)
 }
 
-impl UserCommands {
-    pub fn new(config: &AdoConfig) -> Result<Self> {
+impl<'a> UserCommands<'a> {
+    pub fn new(config: &AdoConfig, cache: &'a KVCache) -> Result<Self> {
         let chain = init_chain(config).context("Unable to initialize llm chain")?;
 
-        let mut commands: Vec<Box<dyn UserCommansTrait>> =
-            vec![Box::new(CommandModels {}), Box::new(CommandReset {}), Box::new(CommandModel {})];
+        let mut commands: Vec<Box<dyn UserCommansTrait + 'a>> = vec![
+            Box::new(CommandModels {}),
+            Box::new(CommandReset {}),
+            Box::new(CommandModel {}),
+            Box::new(CommandReddit::new(config, cache)),
+        ];
 
         let mut help = CommandHelp::new();
 
-        if let Ok(search) = CommandSearch::new(config) {
+        if let Ok(search) = CommandSearch::new(config, cache) {
             commands.push(Box::new(search));
         }
 
@@ -383,7 +389,7 @@ impl UserCommands {
     }
 
     #[must_use]
-    pub fn list_commands(&self) -> &[Box<dyn UserCommansTrait>] {
+    pub fn list_commands(&self) -> &[Box<dyn UserCommansTrait + 'a>] {
         &self.commands
     }
 }
