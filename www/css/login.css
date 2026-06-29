@@ -30,8 +30,8 @@ body {
             0deg,
             transparent,
             transparent 2px,
-            rgba(0, 204, 153, 0.01) 2px,
-            rgba(0, 204, 153, 0.01) 4px
+            rgba(0, 204, 153,0.01) 2px,
+            rgba(0, 204, 153,0.01) 4px
         );
     color: var(--text-primary);
     font-family: var(--modern-font);
@@ -59,8 +59,8 @@ body::before {
         90deg,
         transparent,
         transparent 2px,
-        rgba(0, 204, 153, 0.02) 2px,
-        rgba(0, 204, 153, 0.02) 4px
+        rgba(0, 204, 153,0.02) 2px,
+        rgba(0, 204, 153,0.02) 4px
     );
     pointer-events: none;
     z-index: 1;
@@ -85,7 +85,7 @@ body::before {
     border-radius: var(--border-radius);
     box-shadow:
         0 8px 32px rgba(0, 0, 0, 0.4),
-        inset 0 0 0 1px rgba(0, 204, 153, 0.1);
+        inset 0 0 0 1px rgba(0, 204, 153,0.1);
     padding: 48px 40px 40px 40px;
     width: 100%;
     max-width: 420px;
@@ -103,12 +103,12 @@ body::before {
     100% {
         box-shadow:
             0 8px 32px rgba(0, 0, 0, 0.4),
-            inset 0 0 0 1px rgba(0, 204, 153, 0.1);
+            inset 0 0 0 1px rgba(0, 204, 153,0.1);
     }
     50% {
         box-shadow:
             0 12px 40px rgba(0, 0, 0, 0.5),
-            inset 0 0 0 1px rgba(0, 204, 153, 0.2);
+            inset 0 0 0 1px rgba(0, 204, 153,0.2);
     }
 }
 
@@ -216,7 +216,7 @@ body::before {
 .login-input:focus {
     border-color: var(--accent-color);
     box-shadow:
-        0 0 0 2px rgba(0, 204, 153, 0.2),
+        0 0 0 2px rgba(0, 204, 153,0.2),
         0 4px 12px rgba(0, 0, 0, 0.2);
     animation: input-glow 3s ease-in-out infinite;
 }
@@ -225,12 +225,12 @@ body::before {
     0%,
     100% {
         box-shadow:
-            0 0 0 2px rgba(0, 204, 153, 0.2),
+            0 0 0 2px rgba(0, 204, 153,0.2),
             0 4px 12px rgba(0, 0, 0, 0.2);
     }
     50% {
         box-shadow:
-            0 0 0 2px rgba(0, 204, 153, 0.3),
+            0 0 0 2px rgba(0, 204, 153,0.3),
             0 4px 16px rgba(0, 0, 0, 0.3);
     }
 }
@@ -247,7 +247,7 @@ body::before {
     font-weight: 600;
     cursor: pointer;
     transition: all var(--transition-speed);
-    box-shadow: 0 4px 12px rgba(0, 204, 153, 0.3);
+    box-shadow: 0 4px 12px rgba(0, 204, 153,0.3);
     position: relative;
     overflow: hidden;
 }
@@ -270,7 +270,7 @@ body::before {
 
 .login-btn:hover {
     background: var(--accent-hover);
-    box-shadow: 0 6px 20px rgba(0, 204, 153, 0.4);
+    box-shadow: 0 6px 20px rgba(0, 204, 153,0.4);
     transform: translateY(-2px);
     animation: button-hover 0.3s ease-out;
 }
@@ -294,18 +294,18 @@ body::before {
 .login-icon {
     font-size: 48px;
     color: var(--accent-color);
-    text-shadow: 0 0 12px rgba(0, 204, 153, 0.4);
+    text-shadow: 0 0 12px rgba(0, 204, 153,0.4);
     animation: icon-pulse 4s ease-in-out infinite;
 }
 
 @keyframes icon-pulse {
     0%,
     100% {
-        text-shadow: 0 0 12px rgba(0, 204, 153, 0.4);
+        text-shadow: 0 0 12px rgba(0, 204, 153,0.4);
         transform: scale(1);
     }
     50% {
-        text-shadow: 0 0 20px rgba(0, 204, 153, 0.6);
+        text-shadow: 0 0 20px rgba(0, 204, 153,0.6);
         transform: scale(1.05);
     }
 }
@@ -352,7 +352,7 @@ body::before {
 
 .login-hint a:hover {
     color: var(--accent-hover) !important;
-    text-shadow: 0 0 6px rgba(0, 204, 153, 0.4);
+    text-shadow: 0 0 6px rgba(0, 204, 153,0.4);
 }
 
 @media (max-width: 500px) {
@@ -384,4 +384,153 @@ body::before {
         animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
     }
+}
+
+/* ------------------------------------------------------------------ */
+/* Visual effects (moved out of the inline <style> in login.html).    */
+/* ------------------------------------------------------------------ */
+
+.login-icon {
+    width: 56px;
+    height: 56px;
+    filter: drop-shadow(0 0 12px rgba(0, 204, 153,0.5));
+    animation: shield-pulse 3s ease-in-out infinite;
+}
+
+@keyframes shield-pulse {
+    0%,
+    100% {
+        transform: scale(1);
+        filter: drop-shadow(0 0 12px rgba(0, 204, 153,0.5));
+    }
+    50% {
+        transform: scale(1.05);
+        filter: drop-shadow(0 0 20px rgba(0, 204, 153,0.7));
+    }
+}
+
+/* Grid pattern overlay */
+.grid-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image:
+        linear-gradient(rgba(0, 204, 153,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 204, 153,0.03) 1px, transparent 1px);
+    background-size: 50px 50px;
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* Input focus lift */
+.login-input {
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.login-input:focus {
+    transform: translateY(-1px);
+}
+
+/* Button ripple on press (CSS-only — no JS handler needed) */
+.login-btn {
+    position: relative;
+    overflow: hidden;
+}
+
+.login-btn::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    transform: translate(-50%, -50%);
+    transition:
+        width 0.6s,
+        height 0.6s;
+}
+
+.login-btn:active::after {
+    width: 300px;
+    height: 300px;
+}
+
+/* Glowing icons in hints */
+.support-info svg,
+.security-notice svg {
+    width: 14px;
+    height: 14px;
+    filter: drop-shadow(0 0 4px currentColor);
+}
+
+/* Security badge animation */
+.security-badge {
+    animation: badge-glow 2s ease-in-out infinite;
+}
+
+@keyframes badge-glow {
+    0%,
+    100% {
+        box-shadow: 0 0 8px rgba(0, 204, 153,0.4);
+    }
+    50% {
+        box-shadow: 0 0 16px rgba(0, 204, 153,0.6);
+    }
+}
+
+/* Wrapper entrance animation */
+.login-wrapper {
+    animation: slideIn 0.5s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Form field stagger-in */
+.input-group {
+    animation: fadeInUp 0.5s ease-out backwards;
+}
+
+.input-group:nth-child(1) {
+    animation-delay: 0.1s;
+}
+
+.input-group:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.login-btn {
+    animation: fadeInUp 0.5s ease-out backwards;
+    animation-delay: 0.3s;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Input label nudge on focus */
+.input-group:focus-within .input-label {
+    color: var(--accent-color);
+    transform: translateX(4px);
+    transition: all 0.2s ease;
 }

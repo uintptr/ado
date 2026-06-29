@@ -2,23 +2,8 @@
 
 import * as utils from "./utils.js";
 import { AdoClient } from "./ado-client.js";
-
-const marked = window["marked"];
-
-// @ts-ignore
-if (window.hljs) {
-    marked.setOptions({
-        highlight: function (code, lang) {
-            // @ts-ignore
-            if (lang && window.hljs.getLanguage(lang)) {
-                // @ts-ignore
-                return window.hljs.highlight(code, { language: lang }).value;
-            }
-            // @ts-ignore
-            return window.hljs.highlightAuto(code).value;
-        },
-    });
-}
+import { marked } from "https://cdn.jsdelivr.net/npm/marked@12.0.2/lib/marked.esm.js";
+import hljs from "https://cdn.jsdelivr.net/npm/@highlightjs/cdn-assets@11.9.0/es/highlight.min.js";
 
 export {};
 
@@ -45,7 +30,6 @@ let pending_text = null;
 function show_thinking() {
     const container = document.getElementById("results");
     if (container instanceof HTMLElement) {
-        utils.show_element(container);
         thinking_el = document.createElement("div");
         thinking_el.className = "result-item thinking-card";
         thinking_el.innerHTML =
@@ -164,8 +148,6 @@ function display_search_results(result) {
         const card = search_new_card(entry);
         if (card != null) container.appendChild(card);
     }
-
-    utils.show_element(container);
 }
 
 /**
@@ -187,8 +169,6 @@ function display_string(
         return;
     }
 
-    utils.show_element(container);
-
     const result = utils.new_template("command_result");
 
     if (null != result) {
@@ -204,21 +184,13 @@ function display_string(
         const text_container = result.querySelector("#command_text");
 
         if (text_container != null && text_container instanceof HTMLElement) {
-            if (true == markdown && marked) {
+            if (markdown) {
                 text_container.innerHTML = marked.parse(response);
-                // @ts-ignore
-                if (window.hljs) {
-                    result.querySelectorAll("pre code").forEach((block) => {
-                        // @ts-ignore
-                        window.hljs.highlightElement(block);
-                    });
-                }
+                result.querySelectorAll("pre code").forEach((block) => {
+                    hljs.highlightElement(block);
+                });
                 add_copy_buttons(result);
             } else {
-                // Plain text, or markdown lib unavailable (CDN blocked/offline).
-                if (true == markdown && !marked) {
-                    console.warn("[ado] marked.js not loaded; rendering as text");
-                }
                 text_container.innerText = response;
             }
 

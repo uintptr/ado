@@ -1,13 +1,6 @@
 //@ts-check
 
 /**
- * @param {HTMLElement} element
- */
-export function show_element(element) {
-    element.style.display = "block";
-}
-
-/**
  * @param {string} id
  * @param {string} inner_tag
  * @returns {HTMLElement|null}

@@ -12,6 +12,9 @@
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
+        <!-- CDN for marked + highlight.js (CSS + ESM modules) -->
+        <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
         <link
             href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500;600&display=swap"
             rel="stylesheet"
@@ -24,70 +27,11 @@
             href="https://cdn.jsdelivr.net/npm/@highlightjs/cdn-assets@11.9.0/styles/github-dark.min.css"
         />
 
-        <!-- Third-party libs (regular scripts: run before the deferred modules
-             below, so window.marked / window.hljs are ready in time) -->
-        <script src="https://cdn.jsdelivr.net/npm/marked@4.3.0/marked.min.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/@highlightjs/cdn-assets@11.9.0/highlight.min.js"></script>
-
-        <!-- Application modules -->
-        <script src="/js/utils.js" type="module"></script>
-        <script src="/js/ado-client.js" type="module"></script>
+        <!-- Application entry point. ES module: deferred by default, and it pulls
+             in utils, ado-client, and marked + highlight.js (from CDN as ESM).
+             Nothing here blocks first paint. -->
         <script src="/js/app.js" type="module"></script>
 
-        <style>
-            /* Enhanced visual effects */
-            .brand-icon {
-                width: 24px;
-                height: 24px;
-                filter: drop-shadow(0 0 8px rgba(0, 204, 153, 0.5));
-            }
-
-            .terminal-art svg {
-                width: 64px;
-                height: 64px;
-                filter: drop-shadow(0 0 12px rgba(0, 204, 153, 0.4));
-            }
-
-            /* Enhanced result animations */
-            .result-item {
-                position: relative;
-                overflow: hidden;
-            }
-
-            .result-item::before {
-                content: "";
-                position: absolute;
-                left: 0;
-                top: 0;
-                height: 100%;
-                width: 3px;
-                background: var(--accent-color);
-                transform: scaleY(0);
-                transition: transform 0.3s ease;
-            }
-
-            .result-item:hover::before {
-                transform: scaleY(1);
-            }
-
-            /* Improved empty state */
-
-            .hint {
-                display: inline-flex;
-                align-items: center;
-                gap: 8px;
-                padding: 8px 16px;
-                background: rgba(0, 204, 153, 0.05);
-                border: 1px solid rgba(0, 204, 153, 0.2);
-                border-radius: 20px;
-                margin-top: 12px;
-            }
-
-            .hint::before {
-                content: "💡";
-                font-size: 14px;
-            }
-        </style>
     </head>
 
     <body>
@@ -117,7 +61,7 @@
 
         <div class="content-wrapper">
             <div class="container">
-                <div id="results" class="results" style="display: none">
+                <div id="results" class="results">
                     <!-- Results will be populated here -->
                 </div>
                 <div id="empty-state" class="empty-state">
@@ -180,55 +124,5 @@
             </div>
         </template>
 
-        <script type="module">
-            // Page initialization
-            const results = document.getElementById("results");
-            const emptyState = document.getElementById("empty-state");
-            const cmdLine = document.getElementById("cmd_line");
-
-            // Toggle empty state based on results
-            function toggleEmptyState() {
-                const hasResults =
-                    results.style.display !== "none" &&
-                    results.children.length > 0;
-                emptyState.style.display = hasResults ? "none" : "flex";
-            }
-
-            // Observe results changes
-            const observer = new MutationObserver((mutations) => {
-                for (const mutation of mutations) {
-                    if (
-                        mutation.type === "childList" ||
-                        (mutation.type === "attributes" &&
-                            mutation.attributeName === "style")
-                    ) {
-                        toggleEmptyState();
-                        break;
-                    }
-                }
-            });
-
-            observer.observe(results, {
-                childList: true,
-                subtree: true,
-                attributes: true,
-                attributeFilter: ["style"],
-            });
-
-            // Initial setup
-            toggleEmptyState();
-            cmdLine.focus();
-
-            // Add focus effects
-            cmdLine.addEventListener("focus", () => {
-                document.querySelector(".command-line").style.borderTopColor =
-                    "rgba(0, 204, 153, 0.3)";
-            });
-
-            cmdLine.addEventListener("blur", () => {
-                document.querySelector(".command-line").style.borderTopColor =
-                    "";
-            });
-        </script>
     </body>
 </html>

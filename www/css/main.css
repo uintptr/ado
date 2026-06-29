@@ -13,10 +13,10 @@
     --border-color: #00aa77;
     --border-subtle: #21262d;
     --transition-speed: 0.15s;
-    --shadow: 0 0 20px rgba(0, 204, 153, 0.2);
+    --shadow: 0 0 20px rgba(0, 204, 153,0.2);
     --card-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
-    --border-radius: 8px;
-    --input-border-radius: 6px;
+    --border-radius: 10px;
+    --input-border-radius: 8px;
     --retro-font:
         "JetBrains Mono", "Courier New", "Monaco", "Menlo", "Consolas",
         monospace;
@@ -40,8 +40,8 @@ body {
             0deg,
             transparent,
             transparent 2px,
-            rgba(0, 204, 153, 0.02) 2px,
-            rgba(0, 204, 153, 0.02) 4px
+            rgba(0, 204, 153,0.02) 2px,
+            rgba(0, 204, 153,0.02) 4px
         );
     color: var(--text-primary);
     font-family: var(--modern-font);
@@ -54,20 +54,6 @@ body {
     line-height: 1.5;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
-    animation: subtle-flicker 8s infinite linear alternate;
-}
-
-@keyframes subtle-flicker {
-    0%,
-    95% {
-        opacity: 1;
-    }
-    97% {
-        opacity: 0.99;
-    }
-    100% {
-        opacity: 1;
-    }
 }
 
 /* Header Styles */
@@ -285,26 +271,14 @@ body {
 
 .result-title a:hover {
     color: var(--accent-hover);
-    text-shadow: 0 0 4px rgba(0, 204, 153, 0.3);
+    text-shadow: 0 0 4px rgba(0, 204, 153,0.3);
 }
 
 .result-title a::before {
-    content: "▶ ";
+    content: "▸";
     color: var(--accent-secondary);
     font-size: 12px;
-    margin-right: 4px;
-    animation: gentle-pulse 3s ease-in-out infinite;
-}
-
-@keyframes gentle-pulse {
-    0%,
-    70%,
-    100% {
-        opacity: 0.8;
-    }
-    85% {
-        opacity: 1;
-    }
+    margin-right: 6px;
 }
 
 .result-url {
@@ -324,12 +298,6 @@ body {
     align-items: center;
     gap: 6px;
     font-weight: 400;
-}
-
-.result-breadcrumb::before {
-    content: "📁 ";
-    font-size: 10px;
-    margin-right: 2px;
 }
 
 .result-breadcrumb i {
@@ -418,24 +386,7 @@ body {
 
 .command-line input:focus {
     border-color: var(--accent-color);
-    box-shadow:
-        0 0 0 2px rgba(0, 204, 153, 0.2),
-        0 2px 8px rgba(0, 0, 0, 0.2);
-    animation: subtle-glow 3s ease-in-out infinite;
-}
-
-@keyframes subtle-glow {
-    0%,
-    100% {
-        box-shadow:
-            0 0 0 2px rgba(0, 204, 153, 0.2),
-            0 2px 8px rgba(0, 0, 0, 0.2);
-    }
-    50% {
-        box-shadow:
-            0 0 0 2px rgba(0, 204, 153, 0.3),
-            0 2px 12px rgba(0, 0, 0, 0.3);
-    }
+    box-shadow: 0 0 0 3px rgba(0, 204, 153,0.15);
 }
 
 .empty-state {
@@ -458,7 +409,7 @@ body {
 .terminal-art i {
     font-size: 56px;
     color: var(--accent-color);
-    text-shadow: 0 0 12px rgba(0, 204, 153, 0.4);
+    text-shadow: 0 0 12px rgba(0, 204, 153,0.4);
     animation: smooth-pulse 4s ease-in-out infinite;
 }
 
@@ -498,11 +449,11 @@ body {
 @keyframes smooth-pulse {
     0%,
     100% {
-        text-shadow: 0 0 12px rgba(0, 204, 153, 0.4);
+        text-shadow: 0 0 12px rgba(0, 204, 153,0.4);
         transform: scale(1);
     }
     50% {
-        text-shadow: 0 0 20px rgba(0, 204, 153, 0.6);
+        text-shadow: 0 0 20px rgba(0, 204, 153,0.6);
         transform: scale(1.02);
     }
 }
@@ -631,8 +582,8 @@ body {
 
 /* User command echo */
 .result-item.user-cmd {
-    background: rgba(0, 204, 153, 0.04);
-    border-left: 2px solid rgba(0, 204, 153, 0.4);
+    background: rgba(0, 204, 153,0.04);
+    border-left: 2px solid rgba(0, 204, 153,0.4);
     padding-top: 14px;
     padding-bottom: 14px;
 }
@@ -702,8 +653,8 @@ body {
     position: absolute;
     top: 8px;
     right: 8px;
-    background: rgba(0, 204, 153, 0.08);
-    border: 1px solid rgba(0, 204, 153, 0.25);
+    background: rgba(0, 204, 153,0.08);
+    border: 1px solid rgba(0, 204, 153,0.25);
     border-radius: 4px;
     color: var(--accent-color);
     font-family: var(--retro-font);
@@ -720,7 +671,7 @@ pre:hover .copy-btn {
 }
 
 .copy-btn:hover {
-    background: rgba(0, 204, 153, 0.18);
+    background: rgba(0, 204, 153,0.18);
     border-color: var(--accent-color);
 }
 
@@ -769,8 +720,8 @@ pre:hover .copy-btn {
 }
 
 .result-snippet code {
-    background: rgba(0, 204, 153, 0.08);
-    border: 1px solid rgba(0, 204, 153, 0.2);
+    background: rgba(0, 204, 153,0.08);
+    border: 1px solid rgba(0, 204, 153,0.2);
     border-radius: 3px;
     padding: 1px 5px;
     font-family: var(--retro-font);
@@ -834,7 +785,7 @@ pre:hover .copy-btn {
 }
 
 .result-snippet th {
-    background: rgba(0, 204, 153, 0.08);
+    background: rgba(0, 204, 153,0.08);
     color: var(--text-primary);
     font-weight: 600;
 }
@@ -846,4 +797,55 @@ pre:hover .copy-btn {
 
 .result-snippet em {
     color: var(--text-secondary);
+}
+
+/* Brand + empty-state icons (SVG) */
+.brand-icon {
+    width: 24px;
+    height: 24px;
+    filter: drop-shadow(0 0 8px rgba(0, 204, 153,0.5));
+}
+
+.terminal-art svg {
+    width: 64px;
+    height: 64px;
+    filter: drop-shadow(0 0 12px rgba(0, 204, 153,0.4));
+}
+
+/* Result hover accent bar */
+.result-item {
+    position: relative;
+    overflow: hidden;
+}
+
+.result-item::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    height: 100%;
+    width: 3px;
+    background: var(--accent-color);
+    transform: scaleY(0);
+    transition: transform 0.3s ease;
+}
+
+.result-item:hover::before {
+    transform: scaleY(1);
+}
+
+/* Empty state is shown until the results box has children — CSS-only, no JS.
+   #results lives immediately before #empty-state in the DOM. */
+.results:empty {
+    display: none;
+}
+
+.results:not(:empty) ~ .empty-state {
+    display: none;
+}
+
+/* Accent the command bar while it (or its input) has focus — replaces the old
+   JS focus/blur handlers. */
+.command-line:focus-within {
+    border-top-color: rgba(0, 204, 153,0.3);
 }
