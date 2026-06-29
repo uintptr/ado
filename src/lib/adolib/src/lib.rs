@@ -1,9 +1,9 @@
+pub mod cache;
 pub mod config;
 pub mod console;
 pub mod const_vars;
 pub mod data;
 pub mod error;
-pub mod kv;
 pub mod llm;
 pub(crate) mod rest;
 pub mod search;

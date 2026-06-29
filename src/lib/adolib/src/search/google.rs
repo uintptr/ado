@@ -18,9 +18,9 @@ pub struct GoogleCSE<'a> {
 }
 
 use crate::{
+    cache::kv::KVCache,
     config::loader::AdoConfig,
     error::{Error, Result},
-    kv::cache::KVCache,
     search::{
         SearchTrait,
         results::{WebResult, WebResultEntry},

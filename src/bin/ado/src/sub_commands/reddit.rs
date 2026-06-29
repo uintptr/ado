@@ -1,5 +1,5 @@
 use adolib::{
-    config::loader::AdoConfig, console::ConsoleTrait, kv::cache::KVCache, llm::chain::LLMChain,
+    cache::kv::KVCache, config::loader::AdoConfig, console::ConsoleTrait, llm::chain::LLMChain,
 };
 use anyhow::Result;
 use log::{error, info};

@@ -1,10 +1,16 @@
-use std::{fs, path::Path};
+use std::{
+    env, fs,
+    path::{Path, PathBuf},
+};
 
 use log::{error, info};
 use md5::{Digest, Md5};
 use sled::Db;
 
-use crate::error::{Error, Result};
+use crate::{
+    const_vars::LIB_NAME,
+    error::{Error, Result},
+};
 
 #[derive(Debug)]
 pub struct KVCache {
@@ -16,6 +22,23 @@ fn hash_str(data: &[u8]) -> String {
     hasher.update(data);
     let hash = hasher.finalize();
     hex::encode(hash)
+}
+
+fn get_data_path() -> Result<PathBuf> {
+    let data_dir = dirs::data_dir().ok_or_else(|| Error::ConfigNotFound)?;
+
+    let data_dir = data_dir.join(LIB_NAME);
+
+    info!("data dir: {}", data_dir.display());
+
+    if !data_dir.exists()
+        && let Err(e) = fs::create_dir_all(&data_dir)
+    {
+        error!("Unanble to create {}", data_dir.display());
+        return Err(e.into());
+    }
+
+    Ok(data_dir.join("cache.sled"))
 }
 
 impl KVCache {
@@ -37,7 +60,13 @@ impl KVCache {
     }
 
     pub fn default_path() -> Result<Self> {
-        let data_dir = dirs::data_dir().ok_or_else(|| Error::ConfigNotFound)?;
+        let data_dir = if let Ok(env_dir) = env::var("ADO_CACHE_DIRECTORY") {
+            PathBuf::from(env_dir)
+        } else {
+            get_data_path()?
+        };
+
+        info!("data dir: {}", data_dir.display());
 
         if !data_dir.exists()
             && let Err(e) = fs::create_dir_all(&data_dir)

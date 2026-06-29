@@ -22,7 +22,10 @@ services:
         restart: unless-stopped
         expose:
             - "7681"
+        environment:
+            - ADO_CACHE_DIRECTORY=/cache
         volumes:
+            - ./cache:/cache
             - ./bin:/usr/local/bin:ro
             - ./config.toml:/config.toml:ro
         command:

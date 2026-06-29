@@ -8,9 +8,9 @@ use std::{
 };
 
 use adolib::{
+    cache::kv::KVCache,
     config::loader::AdoConfig,
     console::ConsoleTrait,
-    kv::cache::KVCache,
     llm::chain::{LLMChain, LLMRole},
     search::{SearchTrait, WebSearch},
 };

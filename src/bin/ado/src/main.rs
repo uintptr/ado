@@ -1,7 +1,7 @@
 use std::fs;
 
 use ado::{commands::UserCommands, headless::headless_run};
-use adolib::{config::loader::AdoConfig, error::Error, kv::cache::KVCache};
+use adolib::{cache::kv::KVCache, config::loader::AdoConfig, error::Error};
 use anyhow::{Context, Result};
 use clap::Parser;
 use log::LevelFilter;
