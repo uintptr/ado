@@ -49,16 +49,20 @@ fn main() -> Result<()> {
 
     let commands = UserCommands::new(&config, &cache)?;
 
-    let config_dir = dirs::config_dir().ok_or(Error::ConfigNotFound)?;
-    let history_file = config_dir.join("ado").join("history.txt");
-
-    if !config_dir.exists() {
-        fs::create_dir_all(&config_dir)?;
-    }
-
     if args.headless {
+        // Headless has no config dir dependency: config comes from
+        // --config-file and the cache from ADO_CACHE_DIRECTORY. Avoid touching
+        // dirs::config_dir() so it works when running as a bare uid with no
+        // $HOME (e.g. an unprivileged container user).
         headless_run(commands)
     } else {
+        let config_dir = dirs::config_dir().ok_or(Error::ConfigNotFound)?;
+        let history_file = config_dir.join("ado").join("history.txt");
+
+        if !config_dir.exists() {
+            fs::create_dir_all(&config_dir)?;
+        }
+
         ado::tui_app::run(commands, &history_file)
     }
 }

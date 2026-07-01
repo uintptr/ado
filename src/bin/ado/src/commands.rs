@@ -4,7 +4,7 @@ use std::{
     fmt::Display,
     fs,
     io::{self, Write},
-    path::Path,
+    path::{Path, PathBuf},
 };
 
 use adolib::{
@@ -36,6 +36,7 @@ struct CommandHelp {
 struct CommandModels;
 struct CommandReset;
 struct CommandModel;
+struct CommandSkills;
 struct CommandSearch<'a> {
     gcse: WebSearch<'a>,
 }
@@ -178,6 +179,60 @@ impl UserCommansTrait for CommandModels {
     }
 }
 
+impl UserCommansTrait for CommandSkills {
+    fn name(&self) -> &'static str {
+        "skills"
+    }
+
+    fn desc(&self) -> &'static str {
+        "list external skills loaded from disk"
+    }
+
+    fn callback(&mut self, _input: &str, _chain: &mut LLMChain, console: &dyn ConsoleTrait) {
+        let mut output = Vec::new();
+
+        output.push("# Skills".to_string());
+
+        for dir in skills_dirs() {
+            output.push(format!("\n## {}", dir.display()));
+
+            if !dir.exists() {
+                output.push("_directory does not exist_".to_string());
+                continue;
+            }
+
+            let glob_pattern = format!("{}/*.md", dir.display());
+
+            let mut entries: Vec<PathBuf> = match glob::glob(&glob_pattern) {
+                Ok(paths) => paths.flatten().collect(),
+                Err(e) => {
+                    error!("Unable to list skills in {} ({e})", dir.display());
+                    output.push(format!("_unable to list skills ({e})_"));
+                    continue;
+                }
+            };
+
+            if entries.is_empty() {
+                output.push("_no skills_".to_string());
+                continue;
+            }
+
+            entries.sort();
+
+            for entry in entries {
+                let name = entry
+                    .file_stem()
+                    .and_then(|s| s.to_str())
+                    .unwrap_or("<unknown>");
+
+                output.push(format!("* {name}"));
+            }
+        }
+
+        console.print_markdown(&output.join("\n"));
+    }
+}
+
 impl UserCommansTrait for CommandHelp {
     fn name(&self) -> &'static str {
         "help"
@@ -260,11 +315,11 @@ fn load_skills_from_path(chain: &mut LLMChain, path: &Path) -> Result<()> {
     Ok(())
 }
 
-fn load_skills(chain: &mut LLMChain) {
+fn skills_dirs() -> Vec<PathBuf> {
     let mut skills_dirs = Vec::new();
 
     //
-    // Load skills in the user directory
+    // Skills in the user directory
     //
     if let Some(config_dir) = dirs::config_dir() {
         let config_dir = config_dir.join("ado");
@@ -274,14 +329,18 @@ fn load_skills(chain: &mut LLMChain) {
     }
 
     //
-    // Load skill in the current directory
+    // Skills in the current directory
     //
     if let Ok(cwd) = env::current_dir() {
         let skills_dir = cwd.join("skills");
         skills_dirs.push(skills_dir);
     }
 
-    for dir in skills_dirs {
+    skills_dirs
+}
+
+fn load_skills(chain: &mut LLMChain) {
+    for dir in skills_dirs() {
         if !dir.exists() {
             info!("{} doesn't exist", dir.display());
             continue;
@@ -317,6 +376,7 @@ impl<'a> UserCommands<'a> {
             Box::new(CommandModels {}),
             Box::new(CommandReset {}),
             Box::new(CommandModel {}),
+            Box::new(CommandSkills {}),
             Box::new(CommandReddit::new(config, cache)),
         ];
 

@@ -289,6 +289,14 @@ class DockerBuilder:
 
         self.__download_ttyd(bin_dir)
 
+    def __build_cache(self, container_root: str) -> None:
+
+        cache_dir = os.path.join(container_root, "cache")
+        os.mkdir(cache_dir)
+
+        with open(os.path.join(cache_dir, ".keep"), "w+"):
+            pass
+
     def __build_docker_compose(self, container_root: str) -> None:
 
         template = self.__get_template("docker-compose.yml")
@@ -351,6 +359,14 @@ class DockerBuilder:
             #
             shutil.copy2(self.args.ado_config,
                          os.path.join(container_root, "config.toml"))
+
+            #
+            # cache dir (bind-mounted into the container). Ship it so Docker
+            # doesn't auto-create it as root; ado runs as an unprivileged user
+            # and needs to write here. The .keep survives the tarball (empty
+            # dirs are skipped).
+            #
+            self.__build_cache(container_root)
 
             #
             # docker compose file

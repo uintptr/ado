@@ -20,22 +20,46 @@ services:
             - 8.8.8.8
             - 8.8.4.4
         restart: unless-stopped
+        # Hardening. The process runs as root inside the container, so constrain
+        # what that root can do: drop every Linux capability, forbid gaining new
+        # privileges, and make the root filesystem read-only. ado executes
+        # model-driven shell commands, so this shrinks the blast radius if it is
+        # abused (e.g. prompt injection).
+        cap_drop:
+            - ALL
+        security_opt:
+            - no-new-privileges:true
+        read_only: true
+        # Writable scratch (rootfs is read-only): /cache is persisted via the
+        # bind mount below; /tmp is ephemeral. ado should write only to these.
+        tmpfs:
+            - /tmp
+        # Blunt fork bombs from executed commands.
+        pids_limit: 512
         expose:
             - "7681"
         environment:
-            - ADO_CACHE_DIRECTORY=/cache
+            - ADO_CACHE_DIRECTORY=/tmp
+            - PATH=/root/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
         volumes:
-            - ./cache:/cache
             - ./bin:/usr/local/bin:ro
             - ./config.toml:/config.toml:ro
+            - /etc/ssl/certs:/etc/ssl/certs:ro
+            - $HOME/.config/ado/skills:/root/.config/ado/skills:ro
+            - $HOME/.local/bin/hacli:/root/.local/bin/hacli:ro
+            - $HOME/.config/hacli:/root/.config/hacli
+        # ttyd runs ado under a PTY, which merges stdout+stderr into the single
+        # stream forwarded to the browser. ado already keeps the JSON protocol on
+        # stdout and logs on stderr, so redirect ado's stderr to ttyd's own
+        # stderr (PID 1's fd 2) to keep logs out of the browser and in the
+        # container log (`docker compose logs ado-ng`).
         command:
             [
                 "ttyd",
                 "-W",
                 "-p",
                 "7681",
-                "ado",
-                "--headless",
-                "--config-file",
-                "/config.toml",
+                "sh",
+                "-c",
+                "exec ado --headless --config-file /config.toml 2>/proc/1/fd/2",
             ]
