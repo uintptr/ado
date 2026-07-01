@@ -17,6 +17,8 @@ pub enum Error {
     DirnameError,
     #[error("NotFound")]
     NotFound,
+    #[error("Expired")]
+    Expired,
     #[error("InvalidFormat")]
     InvalidFormat,
     #[error("NotInitialized")]

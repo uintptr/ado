@@ -1,16 +1,29 @@
 use std::{
     env, fs,
     path::{Path, PathBuf},
+    time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
-use log::{error, info};
+use log::{error, info, warn};
 use md5::{Digest, Md5};
+use serde::{Deserialize, Serialize};
 use sled::Db;
 
 use crate::{
     const_vars::LIB_NAME,
     error::{Error, Result},
 };
+
+#[derive(Serialize, Deserialize)]
+enum KVEntryType {
+    String(String),
+}
+
+#[derive(Serialize, Deserialize)]
+struct KVEntry {
+    expiry: u64,
+    data: KVEntryType,
+}
 
 #[derive(Debug)]
 pub struct KVCache {
@@ -78,35 +91,64 @@ impl KVCache {
         KVCache::new(db_file)
     }
 
-    pub fn add<R, K, V>(&self, realm: R, key: K, value: V) -> Result<()>
+    pub fn add_string<R, K, V>(&self, realm: R, key: K, value: V, expiry: &Duration) -> Result<()>
     where
         R: AsRef<str>,
         K: AsRef<str>,
-        V: AsRef<str>,
+        V: Into<String>,
     {
         let key = format!("{}_{}", realm.as_ref(), hash_str(key.as_ref().as_bytes()));
 
-        self.db.insert(key, value.as_ref().as_bytes())?;
+        let now = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
+
+        let entry = KVEntry {
+            expiry: now + expiry.as_secs(),
+            data: KVEntryType::String(value.into()),
+        };
+
+        let entry_str = serde_json::to_string(&entry)?;
+
+        self.db.insert(key, entry_str.as_bytes())?;
+
         Ok(())
     }
 
-    pub fn get_string<R, K>(&self, realm: R, key: K) -> Option<String>
+    pub fn get_string<R, K>(&self, realm: R, key: K) -> Result<String>
     where
         R: AsRef<str>,
         K: AsRef<str>,
     {
         let key = format!("{}_{}", realm.as_ref(), hash_str(key.as_ref().as_bytes()));
-        let Ok(ret) = self.db.get(key) else {
-            return None;
+        let Ok(ret) = self.db.get(&key) else {
+            return Err(Error::NotFound);
         };
 
-        let data = ret?;
-
-        let Ok(data) = String::from_utf8(data.to_vec()) else {
-            error!("Unable to convert usafe data to a string");
-            return None;
+        let Some(data) = ret else {
+            return Err(Error::NotFound);
         };
 
-        Some(data)
+        let data = String::from_utf8(data.to_vec()).map_err(|e| {
+            error!("Unable to convert unsafe data to a string");
+            e
+        })?;
+
+        let entry: KVEntry = serde_json::from_str(&data).map_err(|e| {
+            error!("Unable to deserialize {data}");
+            e
+        })?;
+
+        let now = SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs();
+
+        if now > entry.expiry {
+            warn!("{key} is expired");
+            if let Err(e) = self.db.remove(&key) {
+                error!("Unable to delete {key} ({e})");
+            }
+            return Err(Error::Expired);
+        }
+
+        let KVEntryType::String(s) = entry.data;
+
+        Ok(s)
     }
 }

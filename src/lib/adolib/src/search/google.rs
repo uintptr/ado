@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use log::{error, info};
 use serde::{Deserialize, Serialize};
 
@@ -28,6 +30,7 @@ use crate::{
 };
 
 const GCSE_CACHE_REALM: &str = "gcse";
+const GCSE_CACHE_DURATION: Duration = Duration::from_hours(5);
 
 #[derive(Deserialize)]
 struct GoogleItem {
@@ -77,7 +80,11 @@ impl<'a> GoogleCSE<'a> {
     }
 
     fn query_cached<S: AsRef<str>>(&self, query: S) -> Option<String> {
-        self.cache.get_string(GCSE_CACHE_REALM, query)
+        if let Ok(v) = self.cache.get_string(GCSE_CACHE_REALM, query) {
+            return Some(v);
+        }
+
+        None
     }
 
     fn query_layerd<S: AsRef<str>>(&self, query: S) -> Result<String> {
@@ -89,7 +96,8 @@ impl<'a> GoogleCSE<'a> {
         let ret = self.query_remote(&query);
 
         if let Ok(data) = &ret
-            && let Err(e) = self.cache.add(GCSE_CACHE_REALM, query, data)
+            && let Err(e) =
+                self.cache.add_string(GCSE_CACHE_REALM, query, data, &GCSE_CACHE_DURATION)
         {
             error!("unable to write cache entry ({e}");
         }

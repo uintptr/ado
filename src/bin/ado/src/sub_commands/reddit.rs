@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use adolib::{
     cache::kv::KVCache, config::loader::AdoConfig, console::ConsoleTrait, llm::chain::LLMChain,
 };
@@ -12,6 +14,7 @@ pub struct CommandReddit<'a> {
 }
 
 const REDDIT_CACHE_REALM: &str = "reddit";
+const REDDIT_CACHE_DURATION: Duration = Duration::from_hours(24);
 
 impl<'a> CommandReddit<'a> {
     #[must_use]
@@ -23,7 +26,11 @@ impl<'a> CommandReddit<'a> {
     }
 
     fn query_cached<S: AsRef<str>>(&self, query: S) -> Option<String> {
-        self.cache.get_string(REDDIT_CACHE_REALM, query)
+        if let Ok(v) = self.cache.get_string(REDDIT_CACHE_REALM, query) {
+            return Some(v);
+        }
+
+        None
     }
 
     fn query<S: AsRef<str>>(&self, query: S, chain: &LLMChain) -> Result<String> {
@@ -35,7 +42,8 @@ impl<'a> CommandReddit<'a> {
         let ret = self.query_remote(&query, chain);
 
         if let Ok(data) = &ret
-            && let Err(e) = self.cache.add(REDDIT_CACHE_REALM, query, data)
+            && let Err(e) =
+                self.cache.add_string(REDDIT_CACHE_REALM, query, data, &REDDIT_CACHE_DURATION)
         {
             error!("unable to write cache entry ({e}");
         }
