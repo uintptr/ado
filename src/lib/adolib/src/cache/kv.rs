@@ -29,8 +29,6 @@ fn get_data_path() -> Result<PathBuf> {
 
     let data_dir = data_dir.join(LIB_NAME);
 
-    info!("data dir: {}", data_dir.display());
-
     if !data_dir.exists()
         && let Err(e) = fs::create_dir_all(&data_dir)
     {
@@ -38,7 +36,7 @@ fn get_data_path() -> Result<PathBuf> {
         return Err(e.into());
     }
 
-    Ok(data_dir.join("cache.sled"))
+    Ok(data_dir)
 }
 
 impl KVCache {
