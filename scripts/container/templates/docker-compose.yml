@@ -61,5 +61,5 @@ services:
                 "7681",
                 "sh",
                 "-c",
-                "exec ado --headless --config-file /config.toml 2>/proc/1/fd/2",
+                "exec ado --headless --config-file /config.toml",
             ]

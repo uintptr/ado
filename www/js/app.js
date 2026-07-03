@@ -479,6 +479,7 @@ function run_command(client, command, dest) {
  *   - `<bang> ` in {@link SEARCH_BANGS} → redirect to that external provider.
  *   - `<bang> ` in {@link COMMAND_BANGS} → run that command, redirect on its reply.
  *   - `s `                             → run ado's search, show results page.
+ *   - `c `                             → start an in-app chat with the LLM.
  *   - (no recognised prefix)          → "I'm feeling lucky": redirect to the
  *                                        first ado result once it comes back.
  * @param {AdoClient} client
@@ -511,6 +512,19 @@ function search_handler(client, search) {
         // `s ` → normal results page.
         if (bang === "s") {
             run_search(client, rest, null);
+            return;
+        }
+
+        // `c ` → start a chat with the LLM in-app (no redirect). Mirrors typing
+        // plain text into the command line: echo the message, then send it.
+        if (bang === "c") {
+            display_string(rest, false, null, "user-cmd");
+            try {
+                client.send(rest);
+            } catch (error) {
+                console.error("[ado] chat failed", error);
+                display_string("`error: " + error + "`");
+            }
             return;
         }
 
