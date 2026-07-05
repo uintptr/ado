@@ -38,6 +38,7 @@ struct GoogleItem {
     link: String,
     #[serde(rename = "displayLink")]
     display_link: String,
+    #[serde(default)]
     snippet: String,
 }
 
