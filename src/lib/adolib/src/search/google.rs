@@ -9,7 +9,9 @@ pub struct GoogleConfig {
     pub geo: String,
     pub key: String,
     pub url: String,
+    #[serde(default)]
     pub cache_size: u64,
+    #[serde(default)]
     pub cache_ttl: u64,
 }
 
@@ -137,11 +139,27 @@ mod tests {
 
     use super::*;
 
+    const TEST_CONFIG: &str = r#"
+[llm]
+provider = "claude"
+
+[search.google]
+cx = "test-cx"
+geo = "ca"
+key = "test-key"
+url = "https://ado.uintptr.ca/google/customsearch/v1/"
+cache_size = 0
+cache_ttl = 0
+
+[command.reddit]
+model = "test"
+"#;
+
     #[test]
     fn test_lucky() {
-        env_logger::init();
+        let _ = env_logger::try_init();
 
-        let config = AdoConfig::from_default().unwrap();
+        let config = AdoConfig::from_string(TEST_CONFIG).unwrap();
 
         let td = tempfile::Builder::new().prefix("kvcache_").tempdir().unwrap();
         let cache_file = td.path().join("cache.kv");
@@ -157,7 +175,7 @@ mod tests {
 
     #[test]
     fn test_parse_results() {
-        env_logger::init();
+        let _ = env_logger::try_init();
 
         let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         let test_file = root.join("test").join("search_test.json");

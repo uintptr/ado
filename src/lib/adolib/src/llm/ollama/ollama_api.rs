@@ -226,7 +226,8 @@ mod tests {
         let config = if let Ok(v) = make_config() { v } else { return };
         let api = OllamaApi::new(&config);
 
-        let models = api.models().unwrap();
+        // Skip if the Ollama instance pointed to by OLLAMA_HOST isn't reachable.
+        let models = if let Ok(v) = api.models() { v } else { return };
 
         for m in &models {
             api.set_model(&m.name).unwrap();
