@@ -2,6 +2,15 @@
 
 ## Local Binary
 
+### Install / update (prebuilt binary)
+
+Downloads the latest release for your platform (macOS universal, Linux x86_64)
+into `~/.local/bin`. Re-run the same command to update:
+
+```sh
+curl -fsSL https://raw.githubusercontent.com/uintptr/ado/main/scripts/install.sh | bash
+```
+
 ### Install from source
 
 ```sh
